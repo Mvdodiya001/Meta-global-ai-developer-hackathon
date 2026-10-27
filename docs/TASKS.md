@@ -20,14 +20,14 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
 
 ---
 ## M0 — Setup (Day 1)
-- [ ] **T0.1 Repo and new-work evidence** (H) · I/T
+- [x] **T0.1 Repo and new-work evidence** (H) · I/T
   - Create public GitHub repo, LICENSE (MIT or Apache-2.0), README stub, `AGENTS.md`, `docs/*`, `NEW_WORK.md`, `NOTICE.md`, `.gitignore`, `.env.example`.
   - Done when: first commit exists **before any code**; repo opens in a logged-out browser.
-- [ ] **T0.2 Credits and accounts** (H) · M
+- [x] **T0.2 Credits and accounts** (H) · M
   - Claim $150 Meta credits (add card, set the spend-limit notification); join Discord, post in #intros.
   - Partner credits (Baseten, Modal, Fireworks) are **not needed** for the core. Optional: submit the request forms if they are still open, only for T7.5.
   - Done when: Billing page shows the Meta credits.
-- [ ] **T0.3 Meta API hello-world + cost calibration** (MC) · M
+- [x] **T0.3 Meta API hello-world + cost calibration** (MC) · M
   - Files: `scripts/hello_meta.py`. Call `https://api.meta.ai/v1/responses` with `muse-spark-1.3`; do one function-call round trip.
   - Done when: tool call works; tokens and cost per call recorded in `PROGRESS.md` (this sets the daily budget).
 - [ ] **T0.4 Scaffold and CI** (MC backend, CU frontend) · T

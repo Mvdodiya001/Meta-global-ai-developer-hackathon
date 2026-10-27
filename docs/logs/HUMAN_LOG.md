@@ -10,7 +10,7 @@ Before each agent session, commit a checkpoint so `git diff` shows only that ses
 ## Commits
 | Date/time (IST) | Hash | Lane | Tasks covered | Notes (reviewed? check result?) |
 |-----------------|------|------|---------------|---------------------------------|
-| _(example)_ Day 1 | abc1234 | docs | T0.1 | first commit, docs + licence only |
+| Day 1 | 91fc1f | docs | T0.1 | first commit, docs + licence only |
 
 ## Decisions and incidents
 | Date | What happened / decided | Action taken |

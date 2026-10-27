@@ -14,13 +14,13 @@ Maintained by the human (or by the assistant from the agent logs). Agents do NOT
 | Meta credits granted | $150 (claim before the hackathon deadline; not yet claimed) |
 | Spend limit alert set | no |
 | Partner credits (Baseten / Modal / Fireworks) | not requested; open weights is optional and later (T7.5) |
-| Measured cost per extraction call | _(fill after T0.3)_ |
-| Measured cost per agent run | _(fill after T0.3)_ |
-| Daily dev budget | ~$14 |
-| Spent so far | $0 |
+| Measured cost per extraction call | less then 0.01$ for  contributor  tire which  used  |
+| Measured cost per agent run | 0.1$  or  less in  normal  as  well  use  spark not wonder |
+| Daily dev budget | ~$4 |
+| Spent so far | $0.01 or  less |
 
 ## Completed tasks
-_(none yet — format: `- Day 1 · T0.1 · what was done · commit abc123`)_
+Day 1 · T0.1 · what was done · commit 91fc1f3c5327494199a3cd6005904e3780f24b86
 
 ## Decisions made
 | Date | Decision | Why | Alternatives rejected |
