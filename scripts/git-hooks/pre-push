@@ -1,0 +1,7 @@
+#!/bin/sh
+# ClauseTrace: pushes are human-only. Humans push with `git hp` (sets CT_HUMAN=1).
+if [ "$CT_HUMAN" != "1" ]; then
+  echo "BLOCKED: pushes are human-only in this repo. Use: git hp" >&2
+  exit 1
+fi
+exit 0

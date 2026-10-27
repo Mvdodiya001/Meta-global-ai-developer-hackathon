@@ -1,0 +1,7 @@
+#!/bin/sh
+# ClauseTrace: no co-author or "generated with" attribution in commit messages.
+if grep -qiE '^(co-authored-by:|generated (with|by))|🤖' "$1"; then
+  echo "BLOCKED: remove Co-authored-by / Generated with lines from the commit message." >&2
+  exit 1
+fi
+exit 0

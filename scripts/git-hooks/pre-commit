@@ -1,0 +1,7 @@
+#!/bin/sh
+# ClauseTrace: commits are human-only. Humans commit with `git hc ...` (sets CT_HUMAN=1).
+if [ "$CT_HUMAN" != "1" ]; then
+  echo "BLOCKED: commits are human-only in this repo. Use: git hc -m \"message\"" >&2
+  exit 1
+fi
+exit 0
