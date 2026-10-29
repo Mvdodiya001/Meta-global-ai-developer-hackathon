@@ -1,4 +1,4 @@
-import type { SensitivityHint } from '../../lib/findingTraces'
+import type { SensitivityHint } from '../../utils/findingTraces'
 
 type WhatWouldChangePanelProps = {
   hints: SensitivityHint[]

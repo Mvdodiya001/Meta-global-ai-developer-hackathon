@@ -15,7 +15,7 @@ import {
   buildPremiseTrace,
   buildSourceTrace,
   buildWhatWouldChange,
-} from '../lib/findingTraces'
+} from '../utils/findingTraces'
 
 type VerifyPhase = 'idle' | 'running' | 'done'
 

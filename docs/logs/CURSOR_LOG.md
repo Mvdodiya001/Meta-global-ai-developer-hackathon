@@ -72,3 +72,20 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 - New-work note: Screen 1 clause review mock flow 2026-10-29
 - Third-party added: none
 - Ready for human commit: yes — suggested message: `T5.1: build clause review screen with ask box and tool trace`
+
+## [T5.1] STARTED · 2026-10-29 20:01 IST
+- Task: CI fix — findingTraces missing on runner
+- Built against: contract v0 · openapi/examples mocks
+
+## [T5.1] DONE · 2026-10-29 20:02 IST
+- Task: CI fix — findingTraces missing on runner
+- Built against: contract v0 · openapi/examples mocks
+- Files changed: `frontend/src/utils/findingTraces.ts` (new), `frontend/src/utils/findingTraces.test.ts` (new), `frontend/src/pages/ClauseReviewPage.tsx` (modified), `frontend/src/components/clause-review/SourceTrace.tsx` (modified), `frontend/src/components/clause-review/PremiseTrace.tsx` (modified), `frontend/src/components/clause-review/WhatWouldChangePanel.tsx` (modified), `docs/logs/CURSOR_LOG.md` (modified). Removed local `frontend/src/lib/` (was never tracked).
+- What changed: CI failed because Vite could not resolve `../lib/findingTraces`. Root `.gitignore` line `lib/` (Python packaging template) matches any directory named `lib/`, so `frontend/src/lib/` never entered git even though local `make check-frontend` passed. Moved the module to `frontend/src/utils/` which is not ignored. Did not edit `.gitignore` (outside Cursor lane).
+- Checks run: `make check-frontend` → pass (oxlint 0 issues; vitest 10/10); `npm run build` → pass; `git check-ignore frontend/src/utils/findingTraces.ts` → not ignored
+- Decisions / assumptions: Relocate rather than change gitignore. Human commit must include `frontend/src/utils/`.
+- Requests: [REQ → H] consider narrowing root `.gitignore` `lib/` to `/lib/` so a future `frontend/src/lib` is not silently dropped
+- UI rules checked: disclaimer still on `/review` · badges unchanged
+- New-work note: none
+- Third-party added: none
+- Ready for human commit: yes — suggested message: `T5.1: move finding traces off gitignored lib path`

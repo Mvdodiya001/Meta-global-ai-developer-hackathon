@@ -106,7 +106,7 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
   - All endpoints from `DATA_MODEL_API.md` §7; regenerate `openapi/openapi.json`; log `[CONTRACT vN → vN+1]` in `MUSE_CODE_LOG.md` so CU regenerates types.
 
 ## M5/M6 — UI (built on mocks from Day 3, wired on Day 6) and challenger
-- [ ] **T5.1 Screen 1: clause review** (CU, Days 3–4, on mocks) · D — Deps: T5.0
+- [x] **T5.1 Screen 1: clause review** (CU, Days 3–4, on mocks) · D — Deps: T5.0
   - Clause list, ask box, live tool trace (SSE or polling), finding card, syllogism, source trace, premise trace, "what would change my answer", AI-draft/Lawyer-reviewed badge.
 - [ ] **T5.2 Screen 2: source change and impact** (CU, Days 4–5, on mocks) · D — Deps: T5.0
   - Version picker, side-by-side diff, React Flow graph with stale highlight, before/after split, Re-verify button, audit panel, SIMULATED badge.

@@ -1,6 +1,6 @@
 import type { TrustClass } from '../../api/types'
 import { TrustChip } from '../TrustChip'
-import type { PremiseTraceRow } from '../../lib/findingTraces'
+import type { PremiseTraceRow } from '../../utils/findingTraces'
 
 type PremiseTraceProps = {
   rows: PremiseTraceRow[]

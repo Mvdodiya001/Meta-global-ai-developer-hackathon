@@ -1,4 +1,4 @@
-import type { SourceTraceRow } from '../../lib/findingTraces'
+import type { SourceTraceRow } from '../../utils/findingTraces'
 
 type SourceTraceProps = {
   rows: SourceTraceRow[]
