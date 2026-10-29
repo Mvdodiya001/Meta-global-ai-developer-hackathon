@@ -23,4 +23,20 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 
 ---
 ## Log (newest at the bottom)
-_(no entries yet)_
+
+## [T0.4] STARTED · 2026-10-29 08:45 IST
+- Task: Scaffold and CI (frontend lane)
+- Built against: no API contract yet (pre v0)
+
+## [T0.4] DONE · 2026-10-29 08:46 IST
+- Task: Scaffold and CI (frontend lane)
+- Built against: API_STUB not wired yet · contract pre-v0 (T0.7)
+- Files changed: `frontend/` (new scaffold), `frontend/package.json`, `frontend/package-lock.json`, `frontend/vite.config.ts`, `frontend/tsconfig*.json`, `frontend/tailwind.config.js`, `frontend/postcss.config.js`, `frontend/index.html`, `frontend/src/**`, `README.md` (modified), `docs/logs/CURSOR_LOG.md` (modified)
+- What changed: Added Vite + React 18 + TypeScript app with Tailwind, oxlint, Vitest, and `src/{pages,components,api}` layout. Minimal HomePage and App smoke test. Root README documents setup and lane checks. `gen:api` script ready for openapi when MC lands contract v0.
+- Checks run: `make check-frontend` → pass (oxlint 0 issues; vitest 1/1); `npm run build` → pass
+- Decisions / assumptions: React 18 per AGENTS (not Vite template’s React 19). React Flow deferred to T5.x. GitHub Actions CI is MC/human scope (`.github/` outside CU lane).
+- Requests: [REQ → H] add `node_modules/` and `frontend/dist/` to root `.gitignore` if not already present
+- UI rules checked: disclaimer banner N/A (T5.0); scaffold only
+- New-work note: frontend scaffold 2026-10-29
+- Third-party added: react 18.3.1 MIT · react-dom 18.3.1 MIT · vite 6.x MIT · vitest 3.x MIT · tailwindcss 3.4 MIT · @testing-library/react 16.x MIT · openapi-typescript 7.x MIT (dev, for gen:api)
+- Ready for human commit: yes — suggested message: `T0.4: scaffold frontend with Vite, Tailwind, and Vitest`

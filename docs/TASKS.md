@@ -30,18 +30,18 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
 - [x] **T0.3 Meta API hello-world + cost calibration** (MC) · M
   - Files: `scripts/hello_meta.py`. Call `https://api.meta.ai/v1/responses` with `muse-spark-1.3`; do one function-call round trip.
   - Done when: tool call works; tokens and cost per call recorded in `PROGRESS.md` (this sets the daily budget).
-- [ ] **T0.4 Scaffold and CI** (MC backend, CU frontend) · T
+- [x] **T0.4 Scaffold and CI** (MC backend, CU frontend) · T
   - Tests first: `tests/test_health.py`. FastAPI `/api/health`, pytest, ruff, mypy, Vite app, `Makefile`, GitHub Actions.
   - Extend the starter `Makefile` (MC) so `check-backend` and `check-frontend` work.
   - Done when: both lane checks green locally and in CI; logged in each agent's log.
-- [ ] **T0.6 Verify the corpus** (H) · I/T
+- [x] **T0.6 Verify the corpus** (H) · I/T
   - Download official DPDP Act 2023, DPDP Rules 2025 and the commencement notification(s) from India Code / MeitY. Record URL + retrieval date in `NOTICE.md`.
   - Pick 5–8 provisions and a decoy source S4. Write `corpus/NOTES.md`: provision key, exact text, commencement/effective dates. Check every section number and date yourself.
   - Done when: the table is complete and every item is traceable to an official page.
 - [ ] **T0.7 Contract v0 + stub mode** (MC) · T/D — Deps: T0.4
   - Files: `openapi/openapi.json`, `openapi/examples/*.json`. Pydantic response models for every endpoint in `DATA_MODEL_API.md` §7; stub mode `API_STUB=1` returns the examples (clause list, finding with proof, impact report, graph slice, audit rows, facts with trust classes).
   - Done when: `curl localhost:8000/api/health` and one stubbed endpoint work; `info.version` is `v0`; logged as `[CONTRACT v0]`. Contract v1 (SP1) follows at the end of Day 2.
-- [ ] **T0.8 Install git guards** (H) · process — Deps: T0.1
+- [x] **T0.8 Install git guards** (H) · process — Deps: T0.1
   - Run `make hooks`. Test: a plain `git commit` is blocked; `git hc -m "..."` works; a message with a co-author line is blocked.
   - Done when: all three behave as described. Check Cursor and Muse Code settings for any auto-commit or attribution option and turn it off.
 
