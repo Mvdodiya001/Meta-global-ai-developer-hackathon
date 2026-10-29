@@ -8,10 +8,14 @@ import {
   fetchMockGraph,
   fetchMockImpact,
   fetchMockMatter,
+  fetchMockCreateClaim,
+  fetchMockRunEvents,
   fetchMockSourceVersions,
+  pollMockRunEvents,
 } from './mocks'
 import type {
   AuditTrail,
+  ClaimCreated,
   Clause,
   DiffResult,
   Fact,
@@ -20,12 +24,25 @@ import type {
   ImpactReport,
   Matter,
   SourceVersionList,
+  ToolCall,
 } from './types'
 
 const useLiveApi = import.meta.env.VITE_USE_LIVE_API === '1'
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${getApiBase()}${path}`)
+  if (!response.ok) {
+    throw new Error(`API ${path} failed: ${response.status}`)
+  }
+  return response.json() as Promise<T>
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${getApiBase()}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
   if (!response.ok) {
     throw new Error(`API ${path} failed: ${response.status}`)
   }
@@ -70,4 +87,17 @@ export const api = {
       : fetchMockSourceVersions(),
   impact: (_reportId: string): Promise<ImpactReport> =>
     useLiveApi ? getJson<ImpactReport>(`/api/impact/${_reportId}`) : fetchMockImpact(),
+  createClaim: (_body: {
+    clause_id: string
+    question: string
+    as_of: string
+  }): Promise<ClaimCreated> =>
+    useLiveApi
+      ? postJson<ClaimCreated>('/api/claims', _body)
+      : fetchMockCreateClaim(),
+  runEvents: (runId: string): Promise<ToolCall[]> =>
+    useLiveApi
+      ? getJson<{ events: ToolCall[] }>(`/api/runs/${runId}/events`).then((r) => r.events)
+      : fetchMockRunEvents(runId),
+  pollRunEvents: pollMockRunEvents,
 }

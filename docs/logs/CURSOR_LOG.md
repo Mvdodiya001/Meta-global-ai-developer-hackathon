@@ -55,3 +55,20 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 - New-work note: UI foundation + mock screens 2026-10-29
 - Third-party added: react-router-dom 7.x MIT · @xyflow/react 12.x MIT
 - Ready for human commit: yes — suggested message: `T5.0: add layout, routes, and shared UI components on mocks`
+
+## [T5.1] STARTED · 2026-10-29 19:48 IST
+- Task: Screen 1 clause review
+- Built against: contract v0 · openapi/examples mocks
+
+## [T5.1] DONE · 2026-10-29 19:50 IST
+- Task: Screen 1 clause review
+- Built against: contract v0 · openapi/examples + frontend mock run trace
+- Files changed: `frontend/src/pages/ClauseReviewPage.tsx`, `frontend/src/pages/ClauseReviewPage.test.tsx`, `frontend/src/components/clause-review/*`, `frontend/src/components/FindingCard.tsx`, `frontend/src/components/FindingCard.test.tsx`, `frontend/src/lib/findingTraces.ts`, `frontend/src/lib/findingTraces.test.ts`, `frontend/src/api/client.ts`, `frontend/src/api/mocks/index.ts`, `frontend/src/api/mocks/runTrace.ts`, `frontend/src/api/types.ts`, `docs/logs/CURSOR_LOG.md`
+- What changed: Screen 1 now has selectable clause list, ask box (question + as-of), mock verify flow with progressive tool-trace polling, then finding card, syllogism, source trace, premise trace, and “what would change my answer” panels. API client gained createClaim/runEvents/pollRunEvents; traces derived from finding + facts mocks. Lawyer-reviewed badge demo toggle on finding card.
+- Checks run: `make check-frontend` → pass (oxlint 0 issues; vitest 10/10); `npm run build` → pass
+- Decisions / assumptions: Full demo tool sequence lives in `runTrace.ts` (v0 `run_events.json` only has 2 steps). Sensitivity hints computed client-side until API exposes them. Live API path uses POST `/api/claims` and GET `/api/runs/{id}/events` when `VITE_USE_LIVE_API=1`.
+- Requests: none
+- UI rules checked: disclaimer via layout on `/review` · AI-draft default + Lawyer-reviewed demo · status text+icon · SIMULATED N/A on this screen
+- New-work note: Screen 1 clause review mock flow 2026-10-29
+- Third-party added: none
+- Ready for human commit: yes — suggested message: `T5.1: build clause review screen with ask box and tool trace`

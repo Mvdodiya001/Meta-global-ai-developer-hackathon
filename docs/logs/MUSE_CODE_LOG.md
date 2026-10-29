@@ -143,3 +143,20 @@ _(no entries yet)_
 - Third-party added: none (stdlib dataclasses + SQLAlchemy)
 - Credit spend: none (no model calls)
 - Ready for human commit: yes — suggested message: `T1.5: add version diff and as-of check`
+
+## [T2.1] STARTED · 2026-10-29 19:48 IST
+- Task: LLM gateway
+- Scope: `backend/app/agent/llm.py` (`live|replay|mock`, request-hash cache in `.cache/llm/`, `llm_calls` logging, retry/timeout caps), tests first in `backend/tests/test_llm_gateway.py`. Stdlib HTTP (urllib, no new deps); pricing from T0.3 calibration; live never runs under pytest and is not exercised in this task (zero credits)
+
+## [T2.1] DONE · 2026-10-29 19:50 IST
+- Task: LLM gateway
+- Files changed: `backend/app/agent/__init__.py` + `backend/app/agent/llm.py` (new, gateway), `backend/app/core/errors.py` (modified, added `LiveCallsBlocked`/`CassetteMissing`/`LLMRequestFailed`), `backend/tests/test_llm_gateway.py` (new, written first, 8 tests), `docs/logs/MUSE_CODE_LOG.md` (modified)
+- What changed: `call_llm()` resolves `LLM_MODE` (default `replay`); `mock` answers locally with zero tokens; `replay` serves bit-identical output from `.cache/llm/<sha256>.json` and raises `CassetteMissing` on a miss (never falls back to network); `live` reuses a cached cassette when present, else POSTs to the Responses API (temperature 0, 2 retries + 120 s timeout, stdlib urllib) and caches the raw body. Responses parse `output_text` + `function_call` items (arguments must be a JSON object); every call with a session appends an `llm_calls` row (model, tokens, cost from the T0.3 price table, latency, cached). `live` raises `LiveCallsBlocked` whenever `PYTEST_CURRENT_TEST` is set.
+- Checks run: `make check-backend` → pass (ruff clean; mypy clean on 23 files; pytest 68/68, incl. 8 new T2.1 tests: replay-identical with network stubbed to fail, live-blocked, missing-cassette, mock, bad-mode, llm_calls rows, cost math, hash stability). No live call was made in this task.
+- Decisions / assumptions: No new dependency — urllib instead of an HTTP client. Cache key covers model+input+tools+temperature. `estimate_cost` returns 0.0 for unknown models. The key is read from `$MODEL_API_KEY` and never appears in errors/logs. The 12-tool-call loop cap belongs to the T2.5 agent loop, not the gateway. `scripts/record_cassettes.py` (the `make record` target) is left for the cassette tasks, not built here.
+- Contract change: none (v0 stands)
+- Requests: none
+- New-work note: Meta-API-only LLM gateway with replay cache 2026-10-29
+- Third-party added: none (stdlib + SQLAlchemy)
+- Credit spend: none (no live calls; replay/mock only)
+- Ready for human commit: yes — suggested message: `T2.1: add LLM gateway with replay mode`

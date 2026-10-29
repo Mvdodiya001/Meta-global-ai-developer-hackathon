@@ -1,20 +1,29 @@
 import type { Finding } from '../api/types'
 import { AiDraftBadge } from './badges/AiDraftBadge'
+import { LawyerReviewedBadge } from './badges/LawyerReviewedBadge'
 import { StatusBadge } from './badges/StatusBadge'
 
 type FindingCardProps = {
   finding: Finding
+  lawyerReviewed?: boolean
 }
 
-export function FindingCard({ finding }: FindingCardProps) {
+export function FindingCard({ finding, lawyerReviewed = false }: FindingCardProps) {
   return (
-    <article className="ct-panel space-y-3 p-4" aria-labelledby={`finding-${finding.id}`}>
+    <article
+      className="ct-panel space-y-3 p-4"
+      aria-label={`Finding ${finding.id}`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <h2 id={`finding-${finding.id}`} className="text-lg font-semibold">
           Finding {finding.id}
         </h2>
         <StatusBadge status={finding.status} state={finding.state} />
-        <AiDraftBadge label={finding.ai_draft_label} />
+        {lawyerReviewed ? (
+          <LawyerReviewedBadge />
+        ) : (
+          <AiDraftBadge label={finding.ai_draft_label} />
+        )}
       </div>
       <dl className="grid gap-2 text-sm sm:grid-cols-2">
         <div>

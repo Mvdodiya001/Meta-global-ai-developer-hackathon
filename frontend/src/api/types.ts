@@ -10,6 +10,9 @@ export type AuditTrail = components['schemas']['AuditTrail']
 export type SourceVersionList = components['schemas']['SourceVersionList']
 export type ImpactReport = components['schemas']['ImpactReport']
 export type Matter = components['schemas']['Matter']
+export type ToolCall = components['schemas']['ToolCall']
+export type RunEvents = components['schemas']['RunEvents']
+export type ClaimCreated = components['schemas']['ClaimCreated']
 
 export type TrustClass =
   | 'document_extracted'

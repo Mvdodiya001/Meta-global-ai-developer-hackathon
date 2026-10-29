@@ -10,6 +10,7 @@ import sourceVersionsJson from '../../../../openapi/examples/source_versions.jso
 
 import type {
   AuditTrail,
+  ClaimCreated,
   Clause,
   DiffResult,
   Fact,
@@ -18,7 +19,9 @@ import type {
   ImpactReport,
   Matter,
   SourceVersionList,
+  ToolCall,
 } from '../types'
+import { DEMO_RUN_EVENTS } from './runTrace'
 
 /** Example payloads from `openapi/examples/` (contract v0). */
 export const mockData = {
@@ -67,4 +70,38 @@ export async function fetchMockImpact(): Promise<ImpactReport> {
 
 export async function fetchMockMatter(): Promise<Matter> {
   return mockData.matter
+}
+
+export async function fetchMockRunEvents(_runId: string): Promise<ToolCall[]> {
+  return DEMO_RUN_EVENTS
+}
+
+export async function fetchMockCreateClaim(): Promise<ClaimCreated> {
+  return { claim_id: 'C-001', run_id: 'RUN-01' }
+}
+
+export async function pollMockRunEvents(
+  runId: string,
+  onEvent: (events: ToolCall[]) => void,
+  signal?: AbortSignal,
+): Promise<ToolCall[]> {
+  const all = await fetchMockRunEvents(runId)
+  let index = 0
+  return new Promise((resolve, reject) => {
+    const tick = () => {
+      if (signal?.aborted) {
+        reject(new DOMException('Aborted', 'AbortError'))
+        return
+      }
+      index += 1
+      const slice = all.slice(0, index)
+      onEvent(slice)
+      if (index >= all.length) {
+        resolve(all)
+        return
+      }
+      window.setTimeout(tick, 350)
+    }
+    tick()
+  })
 }
