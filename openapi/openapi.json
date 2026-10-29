@@ -1,0 +1,2673 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ClauseTrace",
+    "version": "v0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "description": "Liveness probe (DATA_MODEL_API \u00a77).",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/matters/{id}": {
+      "get": {
+        "summary": "Get Matter",
+        "description": "Matter plus context panel (F18).",
+        "operationId": "get_matter_api_matters__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Matter"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/matters/{id}/documents": {
+      "get": {
+        "summary": "List Documents",
+        "description": "Document list for a matter (F3).",
+        "operationId": "list_documents_api_matters__id__documents_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/clauses": {
+      "get": {
+        "summary": "List Clauses",
+        "description": "Stub: clause list example (T0.7).",
+        "operationId": "list_clauses_api_documents__id__clauses_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClauseList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/extract": {
+      "post": {
+        "summary": "Extract Document",
+        "description": "Extraction result stub: clauses plus candidate facts (F3).",
+        "operationId": "extract_document_api_documents__id__extract_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/matters/{id}/facts": {
+      "get": {
+        "summary": "List Facts",
+        "description": "Stub: facts with trust classes example (T0.7).",
+        "operationId": "list_facts_api_matters__id__facts_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/facts/{id}/approve": {
+      "post": {
+        "summary": "Approve Fact",
+        "description": "Lawyer approve stub (F15).",
+        "operationId": "approve_fact_api_facts__id__approve_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactAction"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/facts/{id}/challenge": {
+      "post": {
+        "summary": "Challenge Fact",
+        "description": "Lawyer challenge stub (F15).",
+        "operationId": "challenge_fact_api_facts__id__challenge_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactAction"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/facts/{id}/reject": {
+      "post": {
+        "summary": "Reject Fact",
+        "description": "Lawyer reject stub (F15).",
+        "operationId": "reject_fact_api_facts__id__reject_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactAction"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claims": {
+      "post": {
+        "summary": "Create Claim",
+        "description": "Structure-claim stub (F4, F5).",
+        "operationId": "create_claim_api_claims_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{id}": {
+      "get": {
+        "summary": "Get Run",
+        "description": "Run status stub (F5).",
+        "operationId": "get_run_api_runs__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{id}/events": {
+      "get": {
+        "summary": "Get Run Events",
+        "description": "Tool-call trace stub; SSE streaming lands after v0 (F5).",
+        "operationId": "get_run_events_api_runs__id__events_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunEvents"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claims/{id}/current": {
+      "get": {
+        "summary": "Get Current Finding",
+        "description": "Stub: finding with proof example (T0.7).",
+        "operationId": "get_current_finding_api_claims__id__current_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Finding"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claims/{id}/history": {
+      "get": {
+        "summary": "Get Finding History",
+        "description": "All finding versions stub (F12).",
+        "operationId": "get_finding_history_api_claims__id__history_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingHistory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/findings/{id}": {
+      "get": {
+        "summary": "Get Finding",
+        "description": "Proof, traces and reports stub (F9).",
+        "operationId": "get_finding_api_findings__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Finding"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/findings/{id}/review": {
+      "post": {
+        "summary": "Review Finding",
+        "description": "Lawyer review stub (F16).",
+        "operationId": "review_finding_api_findings__id__review_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources": {
+      "get": {
+        "summary": "List Sources",
+        "description": "Source registry stub (F1).",
+        "operationId": "list_sources_api_sources_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources/{id}/versions": {
+      "get": {
+        "summary": "List Source Versions",
+        "description": "Version registry stub (F1).",
+        "operationId": "list_source_versions_api_sources__id__versions_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceVersionList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/source-versions/{id}/diff": {
+      "get": {
+        "summary": "Diff Versions",
+        "description": "Side-by-side diff stub (F11).",
+        "operationId": "diff_versions_api_source_versions__id__diff_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "against",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Against"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiffResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources/{id}/ingest": {
+      "post": {
+        "summary": "Ingest Source",
+        "description": "Ingest stub: new version plus impact report handle (F11).",
+        "operationId": "ingest_source_api_sources__id__ingest_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/impact/{id}": {
+      "get": {
+        "summary": "Get Impact",
+        "description": "Stub: impact report example (T0.7).",
+        "operationId": "get_impact_api_impact__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImpactReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/impact/{id}/reverify": {
+      "post": {
+        "summary": "Reverify Impact",
+        "description": "Re-run stub for stale findings (F12).",
+        "operationId": "reverify_impact_api_impact__id__reverify_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverifyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graph": {
+      "get": {
+        "summary": "Get Graph",
+        "description": "Stub: graph slice example (T0.7).",
+        "operationId": "get_graph_api_graph_get",
+        "parameters": [
+          {
+            "name": "matter_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Matter Id"
+            }
+          },
+          {
+            "name": "focus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Focus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphSlice"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audit": {
+      "get": {
+        "summary": "Get Audit",
+        "description": "Stub: audit rows example (T0.7).",
+        "operationId": "get_audit_api_audit_get",
+        "parameters": [
+          {
+            "name": "matter_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Matter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditTrail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/proofs/verify": {
+      "post": {
+        "summary": "Verify Proof",
+        "description": "Tamper-demo checker stub (G8).",
+        "operationId": "verify_proof_api_proofs_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProofVerifyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/counterfactual": {
+      "post": {
+        "summary": "Counterfactual",
+        "description": "What-if stub; the traversal itself is stretch (F19).",
+        "operationId": "counterfactual_api_counterfactual_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CounterfactualResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/reset": {
+      "post": {
+        "summary": "Demo Reset",
+        "description": "Seed reset; only if `DEMO_MODE=1` (DATA_MODEL_API \u00a77).",
+        "operationId": "demo_reset_api_demo_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/scenario/{name}": {
+      "post": {
+        "summary": "Demo Scenario",
+        "description": "Scenario seed; only if `DEMO_MODE=1` (DATA_MODEL_API \u00a77).",
+        "operationId": "demo_scenario_api_demo_scenario__name__post",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AffectedFinding": {
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "finding_id": {
+            "type": "string",
+            "title": "Finding Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "claim_id",
+          "finding_id",
+          "state"
+        ],
+        "title": "AffectedFinding",
+        "description": "One finding flagged by the impact engine (F11)."
+      },
+      "AuditRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "ts": {
+            "type": "string",
+            "title": "Ts"
+          },
+          "actor_type": {
+            "type": "string",
+            "title": "Actor Type"
+          },
+          "actor_id": {
+            "type": "string",
+            "title": "Actor Id"
+          },
+          "event": {
+            "type": "string",
+            "title": "Event"
+          },
+          "object_type": {
+            "type": "string",
+            "title": "Object Type"
+          },
+          "object_id": {
+            "type": "string",
+            "title": "Object Id"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "ts",
+          "actor_type",
+          "actor_id",
+          "event",
+          "object_type",
+          "object_id",
+          "details"
+        ],
+        "title": "AuditRow",
+        "description": "One append-only audit row (F14)."
+      },
+      "AuditTrail": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/AuditRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rows"
+        ],
+        "title": "AuditTrail",
+        "description": "Stub: audit rows example (T0.7)."
+      },
+      "CheckerReport": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "cited_source_versions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cited Source Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid",
+          "errors",
+          "cited_source_versions"
+        ],
+        "title": "CheckerReport",
+        "description": "Deterministic checker verdict (F9)."
+      },
+      "Citation": {
+        "properties": {
+          "source_version_id": {
+            "type": "string",
+            "title": "Source Version Id"
+          },
+          "provision_id": {
+            "type": "string",
+            "title": "Provision Id"
+          },
+          "span": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Span"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_version_id",
+          "provision_id",
+          "span",
+          "sha256"
+        ],
+        "title": "Citation",
+        "description": "A (source_version_id, provision_id, span, sha256) citation."
+      },
+      "ClaimCreated": {
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "claim_id",
+          "run_id"
+        ],
+        "title": "ClaimCreated",
+        "description": "Structured claim plus run handle (F4, F5)."
+      },
+      "Clause": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "document_version_id": {
+            "type": "string",
+            "title": "Document Version Id"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "heading": {
+            "type": "string",
+            "title": "Heading"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "span_start": {
+            "type": "integer",
+            "title": "Span Start"
+          },
+          "span_end": {
+            "type": "integer",
+            "title": "Span End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "document_version_id",
+          "ref",
+          "heading",
+          "text",
+          "span_start",
+          "span_end"
+        ],
+        "title": "Clause",
+        "description": "One extracted clause (F3)."
+      },
+      "ClauseList": {
+        "properties": {
+          "clauses": {
+            "items": {
+              "$ref": "#/components/schemas/Clause"
+            },
+            "type": "array",
+            "title": "Clauses"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clauses"
+        ],
+        "title": "ClauseList",
+        "description": "Stub: clause list example (T0.7)."
+      },
+      "CounterfactualResult": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "type": "array",
+            "title": "Nodes",
+            "default": []
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            },
+            "type": "array",
+            "title": "Edges",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "note"
+        ],
+        "title": "CounterfactualResult",
+        "description": "Read-only what-if traversal (F19, stretch)."
+      },
+      "DiffResult": {
+        "properties": {
+          "against": {
+            "type": "string",
+            "title": "Against"
+          },
+          "current": {
+            "type": "string",
+            "title": "Current"
+          },
+          "changed_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Changed Keys"
+          },
+          "before": {
+            "items": {
+              "$ref": "#/components/schemas/Provision"
+            },
+            "type": "array",
+            "title": "Before"
+          },
+          "after": {
+            "items": {
+              "$ref": "#/components/schemas/Provision"
+            },
+            "type": "array",
+            "title": "After"
+          }
+        },
+        "type": "object",
+        "required": [
+          "against",
+          "current",
+          "changed_keys",
+          "before",
+          "after"
+        ],
+        "title": "DiffResult",
+        "description": "Side-by-side diff data between two versions (F11)."
+      },
+      "Document": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "matter_id": {
+            "type": "string",
+            "title": "Matter Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "matter_id",
+          "title",
+          "kind"
+        ],
+        "title": "Document",
+        "description": "A contract document (F3)."
+      },
+      "DocumentList": {
+        "properties": {
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            },
+            "type": "array",
+            "title": "Documents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "documents"
+        ],
+        "title": "DocumentList",
+        "description": "Clause-list parent response (F3)."
+      },
+      "ExtractResult": {
+        "properties": {
+          "clauses": {
+            "items": {
+              "$ref": "#/components/schemas/Clause"
+            },
+            "type": "array",
+            "title": "Clauses"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "array",
+            "title": "Facts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clauses",
+          "facts"
+        ],
+        "title": "ExtractResult",
+        "description": "Extraction result: clauses plus candidate facts (F3)."
+      },
+      "Fact": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "matter_id": {
+            "type": "string",
+            "title": "Matter Id"
+          },
+          "clause_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clause Id"
+          },
+          "statement": {
+            "type": "string",
+            "title": "Statement"
+          },
+          "structured": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Structured"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "trust_class": {
+            "type": "string",
+            "title": "Trust Class"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "matter_id",
+          "clause_id",
+          "statement",
+          "structured",
+          "origin",
+          "trust_class",
+          "created_at"
+        ],
+        "title": "Fact",
+        "description": "A premise candidate with trust class (F8)."
+      },
+      "FactAction": {
+        "properties": {
+          "fact_id": {
+            "type": "string",
+            "title": "Fact Id"
+          },
+          "trust_class": {
+            "type": "string",
+            "title": "Trust Class"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fact_id",
+          "trust_class"
+        ],
+        "title": "FactAction",
+        "description": "Lawyer trust action result (F15)."
+      },
+      "FactList": {
+        "properties": {
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "array",
+            "title": "Facts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "facts"
+        ],
+        "title": "FactList",
+        "description": "Stub: facts with trust classes example (T0.7)."
+      },
+      "Finding": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "version_no": {
+            "type": "integer",
+            "title": "Version No"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "confidence_band": {
+            "type": "string",
+            "title": "Confidence Band"
+          },
+          "proof": {
+            "$ref": "#/components/schemas/Proof"
+          },
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "source_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Version Ids"
+          },
+          "premise_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Premise Ids"
+          },
+          "rule_card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rule Card Ids"
+          },
+          "checker_report": {
+            "$ref": "#/components/schemas/CheckerReport"
+          },
+          "challenger_report": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Challenger Report"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "supersedes_finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Finding Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "ai_draft_label": {
+            "type": "string",
+            "title": "Ai Draft Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "claim_id",
+          "version_no",
+          "status",
+          "confidence_band",
+          "proof",
+          "as_of",
+          "source_version_ids",
+          "premise_ids",
+          "rule_card_ids",
+          "checker_report",
+          "run_id",
+          "created_at",
+          "state",
+          "ai_draft_label"
+        ],
+        "title": "Finding",
+        "description": "A finding with proof, traces and reports (F7, F9)."
+      },
+      "FindingHistory": {
+        "properties": {
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "type": "array",
+            "title": "Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "versions"
+        ],
+        "title": "FindingHistory",
+        "description": "All finding versions for a claim (F12)."
+      },
+      "GraphEdge": {
+        "properties": {
+          "src": {
+            "type": "string",
+            "title": "Src"
+          },
+          "dst": {
+            "type": "string",
+            "title": "Dst"
+          },
+          "rel": {
+            "type": "string",
+            "title": "Rel"
+          }
+        },
+        "type": "object",
+        "required": [
+          "src",
+          "dst",
+          "rel"
+        ],
+        "title": "GraphEdge",
+        "description": "One React Flow edge (F10)."
+      },
+      "GraphNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "label"
+        ],
+        "title": "GraphNode",
+        "description": "One React Flow node (F10)."
+      },
+      "GraphSlice": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            },
+            "type": "array",
+            "title": "Edges"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "title": "GraphSlice",
+        "description": "Stub: graph slice example (T0.7)."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "Health",
+        "description": "Liveness probe (DATA_MODEL_API \u00a77)."
+      },
+      "ImpactReport": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source_version_id": {
+            "type": "string",
+            "title": "Source Version Id"
+          },
+          "affected": {
+            "items": {
+              "$ref": "#/components/schemas/AffectedFinding"
+            },
+            "type": "array",
+            "title": "Affected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source_version_id",
+          "affected"
+        ],
+        "title": "ImpactReport",
+        "description": "Stub: impact report example (T0.7)."
+      },
+      "IngestResult": {
+        "properties": {
+          "source_version_id": {
+            "type": "string",
+            "title": "Source Version Id"
+          },
+          "impact_report_id": {
+            "type": "string",
+            "title": "Impact Report Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_version_id",
+          "impact_report_id"
+        ],
+        "title": "IngestResult",
+        "description": "New version plus impact report handle (F11)."
+      },
+      "Matter": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "context": {
+            "items": {
+              "$ref": "#/components/schemas/MatterContext"
+            },
+            "type": "array",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "client_name",
+          "title",
+          "context"
+        ],
+        "title": "Matter",
+        "description": "Matter plus context panel (F18)."
+      },
+      "MatterContext": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "matter_id": {
+            "type": "string",
+            "title": "Matter Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "due_at": {
+            "type": "string",
+            "title": "Due At"
+          },
+          "source_label": {
+            "type": "string",
+            "title": "Source Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "matter_id",
+          "kind",
+          "title",
+          "due_at",
+          "source_label"
+        ],
+        "title": "MatterContext",
+        "description": "Static demo panel row (F18)."
+      },
+      "Proof": {
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "premises": {
+            "items": {
+              "$ref": "#/components/schemas/ProofPremise"
+            },
+            "type": "array",
+            "title": "Premises"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ProofStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "conclusion": {
+            "type": "string",
+            "title": "Conclusion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "claim_id",
+          "as_of",
+          "premises",
+          "steps",
+          "conclusion"
+        ],
+        "title": "Proof",
+        "description": "A structured proof draft over accepted premises."
+      },
+      "ProofPremise": {
+        "properties": {
+          "fact_id": {
+            "type": "string",
+            "title": "Fact Id"
+          },
+          "statement": {
+            "type": "string",
+            "title": "Statement"
+          },
+          "trust_class": {
+            "type": "string",
+            "title": "Trust Class"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fact_id",
+          "statement",
+          "trust_class"
+        ],
+        "title": "ProofPremise",
+        "description": "A premise cited by a proof."
+      },
+      "ProofStep": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "fact_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fact Id"
+          },
+          "rule_card_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Card Id"
+          },
+          "citation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Citation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provision_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provision Id"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "conclusion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conclusion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "ProofStep",
+        "description": "One checker step (kinds land fully in T3.2)."
+      },
+      "ProofVerifyResult": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "cited_source_versions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cited Source Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid",
+          "errors",
+          "cited_source_versions"
+        ],
+        "title": "ProofVerifyResult",
+        "description": "Tamper-demo checker verdict (G8)."
+      },
+      "Provision": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source_version_id": {
+            "type": "string",
+            "title": "Source Version Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "text_sha256": {
+            "type": "string",
+            "title": "Text Sha256"
+          },
+          "effective_from": {
+            "type": "string",
+            "title": "Effective From"
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source_version_id",
+          "key",
+          "text",
+          "text_sha256",
+          "effective_from"
+        ],
+        "title": "Provision",
+        "description": "One provision inside a source version (F2)."
+      },
+      "ReverifyResult": {
+        "properties": {
+          "superseded": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Superseded"
+          },
+          "current": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Current"
+          }
+        },
+        "type": "object",
+        "required": [
+          "superseded",
+          "current"
+        ],
+        "title": "ReverifyResult",
+        "description": "Re-run outcome for stale findings (F12)."
+      },
+      "ReviewResult": {
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "title": "Finding Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "finding_id",
+          "state"
+        ],
+        "title": "ReviewResult",
+        "description": "Lawyer review outcome (F16)."
+      },
+      "Run": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "trigger": {
+            "type": "string",
+            "title": "Trigger"
+          },
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "trigger",
+          "claim_id",
+          "status"
+        ],
+        "title": "Run",
+        "description": "Agent run status (F5)."
+      },
+      "RunEvents": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "events"
+        ],
+        "title": "RunEvents",
+        "description": "Stub: live tool-call trace example; SSE lands after v0 (F5)."
+      },
+      "Source": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "publisher": {
+            "type": "string",
+            "title": "Publisher"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "title": "Jurisdiction"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "title",
+          "publisher",
+          "url",
+          "jurisdiction"
+        ],
+        "title": "Source",
+        "description": "A legal source in the registry (F1)."
+      },
+      "SourceList": {
+        "properties": {
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sources"
+        ],
+        "title": "SourceList",
+        "description": "Source registry response (F1)."
+      },
+      "SourceVersion": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "version_label": {
+            "type": "string",
+            "title": "Version Label"
+          },
+          "published_on": {
+            "type": "string",
+            "title": "Published On"
+          },
+          "effective_from": {
+            "type": "string",
+            "title": "Effective From"
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Until"
+          },
+          "content_sha256": {
+            "type": "string",
+            "title": "Content Sha256"
+          },
+          "is_simulated": {
+            "type": "boolean",
+            "title": "Is Simulated"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source_id",
+          "version_label",
+          "published_on",
+          "effective_from",
+          "content_sha256",
+          "is_simulated"
+        ],
+        "title": "SourceVersion",
+        "description": "One hashed source snapshot (F1, F11)."
+      },
+      "SourceVersionList": {
+        "properties": {
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/SourceVersion"
+            },
+            "type": "array",
+            "title": "Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "versions"
+        ],
+        "title": "SourceVersionList",
+        "description": "Version registry response (F1)."
+      },
+      "ToolCall": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args"
+          },
+          "result": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Result"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "tool",
+          "args",
+          "result",
+          "ok"
+        ],
+        "title": "ToolCall",
+        "description": "One logged tool call (F5)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

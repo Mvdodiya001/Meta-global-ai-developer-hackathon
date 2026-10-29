@@ -11,7 +11,7 @@ Maintained by the human (or by the assistant from the agent logs). Agents do NOT
 ## Credits
 | Item | Value |
 |------|-------|
-| Meta credits granted | $150 (claim before the hackathon deadline; not yet claimed) |
+| Meta credits granted |  claimed |
 | Spend limit alert set | no |
 | Partner credits (Baseten / Modal / Fireworks) | not requested; open weights is optional and later (T7.5) |
 | Measured cost per extraction call | less then 0.01$ for  contributor  tire which  used  |
@@ -20,7 +20,10 @@ Maintained by the human (or by the assistant from the agent logs). Agents do NOT
 | Spent so far | $0.01 or  less |
 
 ## Completed tasks
-Day 1 · T0.1 · what was done · commit 91fc1f3c5327494199a3cd6005904e3780f24b86
+Day 1 · T0.1 · repo, licence, docs · commit 91fc1f
+Day 1 · T0.2 + T0.3 · Meta credits + hello-world function-call round trip + cost log · commit f01554
+Day 1 · T0.8 · git guards (`make hooks`; plain commit/push blocked) · commit b5d63ec
+Day 1 · T0.4 + T0.6 · backend/frontend scaffold, CI, corpus NOTES · commit 391a51a (pushed)
 
 ## Decisions made
 | Date | Decision | Why | Alternatives rejected |

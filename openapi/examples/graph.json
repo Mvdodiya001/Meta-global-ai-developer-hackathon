@@ -1,0 +1,1 @@
+{"edges": [{"dst": "PRV-SEC-6-V1", "rel": "DERIVED_FROM", "src": "RC-01"}, {"dst": "RC-01", "rel": "DEPENDS_ON", "src": "FND-001"}], "nodes": [{"id": "PRV-SEC-6-V1", "kind": "provision", "label": "Section 6", "state": null}, {"id": "RC-01", "kind": "rule_card", "label": "RC-01", "state": null}, {"id": "FND-001", "kind": "finding", "label": "FND-001", "state": "STALE"}]}

@@ -40,3 +40,21 @@ _(no entries yet)_
 - Third-party added: fastapi 0.162.0 MIT · uvicorn 0.54.0 BSD-3 · sqlalchemy 2.1.6 MIT · pytest 9.2.0 MIT · httpx 0.28.1 BSD-3 · ruff 0.17.3 MIT · mypy 2.4.1 MIT (all via `backend` `dev` extra)
 - Credit spend: none (no model calls; only local pip install)
 - Ready for human commit: yes — suggested message: `T0.4: scaffold backend with FastAPI health check and CI`
+
+## [T0.7] STARTED · 2026-10-29 09:13 IST
+- Task: Contract v0 + stub mode
+- Scope: `openapi/openapi.json` (v0), `openapi/examples/*.json`, Pydantic response models for every DATA_MODEL_API §7 endpoint, `API_STUB=1` mode returning the examples
+
+## [T0.7] DONE · 2026-10-29 09:17 IST
+- Task: Contract v0 + stub mode
+- [CONTRACT v0] initial contract: all DATA_MODEL_API §7 paths with Pydantic response models; stub payloads in `openapi/examples/`
+- Files changed: `backend/app/schemas.py` (new, ~30 response models), `backend/app/stub.py` (new, stub router serving examples), `backend/app/main.py` (modified: `version="v0"`, mount stub when `API_STUB=1` default), `backend/tests/test_contract_v0.py` (new, 30 tests), `openapi/openapi.json` (new, generated, `info.version v0`, 28 paths), `openapi/examples/*.json` (new, 26 payloads), `scripts/export_openapi.py` (new), `docs/logs/MUSE_CODE_LOG.md` (modified)
+- What changed: Every §7 endpoint has a Pydantic response model and a stub handler returning its example file verbatim (ids accepted but ignored in stub). `POST /demo/*` returns 403 unless `DEMO_MODE=1`. `scripts/export_openapi.py` regenerates the contract from the app. Path params use `{id}` to match §7 literally.
+- Checks run: `make check-backend` → pass (ruff clean; mypy clean on 6 files; pytest 30/30). Live: `curl localhost:8001/api/health` → `{"status":"ok"}` and `curl localhost:8001/api/claims/C-001/current` → finding FND-001 (port 8001: 8000 is held by an unrelated root process `memopops.api`, not touched). Test server stopped afterwards. CI workflow not executed (no runner); YAML unchanged from T0.4.
+- Decisions / assumptions: Stub on by default (`API_STUB=1`) until T4.5 replaces handlers; paths stay identical. Provision texts are marked `[STUB — unverified illustrative text]` — real corpus lands in T1.2; no legal text asserted. Proof-step nulls written explicitly so examples equal responses exactly. `runs/{id}/events` returns JSON; SSE lands after v0. `finding.json`/`finding_current.json` share content; history/extract derived from them.
+- Contract change: [CONTRACT v0] new contract, additive from here; Cursor should run `npm run gen:api` against it
+- Requests: [REQ → CU] run `npm run gen:api` now that `[CONTRACT v0]` is landed. [REQ → H] confirm demo error shape `{"error": {...}}` is acceptable for CU's client. Note: `PROGRESS.md`/`HUMAN_LOG.md` show concurrent human edits — outside my lane, no [CONFLICT].
+- New-work note: contract v0 + stub mode 2026-10-29
+- Third-party added: none (fastapi/pytest stack from T0.4)
+- Credit spend: none (no model calls)
+- Ready for human commit: yes — suggested message: `T0.7: add contract v0 with stub mode and examples`

@@ -1,0 +1,1 @@
+{"scenario": "reverify-flow", "steps": ["ingest v2-simulated", "mark FND-001 STALE", "re-verify with a fresh lookup", "record FND-002 CURRENT"]}

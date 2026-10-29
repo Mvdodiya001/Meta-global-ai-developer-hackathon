@@ -1,16 +1,24 @@
 """T0.4: FastAPI application scaffold with liveness probe (DATA_MODEL_API §7)."""
 
+import os
+
 from fastapi import FastAPI
+
+from app import schemas
+from app.stub import router as stub_router
 
 
 def create_app() -> FastAPI:
-    """Build the ClauseTrace FastAPI application (T0.4)."""
-    app = FastAPI(title="ClauseTrace")
+    """Build the ClauseTrace FastAPI application (T0.4, T0.7)."""
+    app = FastAPI(title="ClauseTrace", version="v0")
 
-    @app.get("/api/health")
+    @app.get("/api/health", response_model=schemas.Health)
     def health() -> dict[str, str]:
         """Liveness probe (DATA_MODEL_API §7)."""
         return {"status": "ok"}
+
+    if os.getenv("API_STUB", "1") == "1":
+        app.include_router(stub_router)
 
     return app
 
