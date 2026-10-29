@@ -1,0 +1,12 @@
+id: RC-CT2-LOGRET-01
+provision_id: PRV-DPDP-Rules-2025-r6
+kind: statutory
+claim_type: CT2
+trust_class: ai_inferred
+approved_by: approved-by-human-review
+requires: [one_year_log_retention]
+span_start: 1120
+span_end: 1427
+interpretation: |
+  Logs and personal data that support breach detection, investigation and continued processing must be kept for one year unless another law requires otherwise. A clause meets this card only when it commits to that retention.
+span_text: (e) for enabling the detection of unauthorised access, its investigation, remediation to prevent recurrence and continued processing in the event of such a compromise, retain such logs and personal data for a period of one year, unless compliance with any law for the time being in force requires otherwise;

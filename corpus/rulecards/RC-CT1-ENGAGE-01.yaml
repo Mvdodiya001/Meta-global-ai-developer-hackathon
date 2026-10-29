@@ -1,0 +1,12 @@
+id: RC-CT1-ENGAGE-01
+provision_id: PRV-DPDP-Act-2023-s8-1-2
+kind: statutory
+claim_type: CT1
+trust_class: ai_inferred
+approved_by: approved-by-human-review
+requires: [processor_named, valid_contract]
+span_start: 373
+span_end: 601
+interpretation: |
+  A Data Fiduciary may engage a Data Processor only under a valid contract, and stays responsible for compliance regardless of that contract. A clause meets this card only when it names the processor relationship and rests on a valid contract.
+span_text: (2) A Data Fiduciary may engage, appoint, use or otherwise involve a Data Processor to process personal data on its behalf for any activity related to offering of goods or services to Data Principals only under a valid contract.

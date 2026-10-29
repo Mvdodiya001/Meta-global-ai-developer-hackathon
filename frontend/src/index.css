@@ -1,7 +1,38 @@
+@import '@xyflow/react/dist/style.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ct-bg: 248 250 252;
+  --ct-surface: 255 255 255;
+  --ct-ink: 15 23 42;
+  --ct-muted: 100 116 139;
+  --ct-accent: 30 64 175;
+  --ct-warn: 180 83 9;
+  --ct-danger: 185 28 28;
+  --ct-ok: 21 128 61;
+}
+
+.dark {
+  --ct-bg: 2 6 23;
+  --ct-surface: 15 23 42;
+  --ct-ink: 241 245 249;
+  --ct-muted: 148 163 184;
+  --ct-accent: 147 197 253;
+}
+
 body {
-  @apply min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+  @apply min-h-screen antialiased;
+  background-color: rgb(var(--ct-bg));
+  color: rgb(var(--ct-ink));
+}
+
+.ct-panel {
+  @apply rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900;
+}
+
+.ct-section-title {
+  @apply text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400;
 }

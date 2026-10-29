@@ -1,0 +1,12 @@
+id: RC-CT3-72H-01
+provision_id: PRV-DPDP-Rules-2025-r7
+kind: statutory
+claim_type: CT3
+trust_class: ai_inferred
+approved_by: approved-by-human-review
+requires: [board_intimation_72h]
+span_start: 1081
+span_end: 1241
+interpretation: |
+  Intimation to the Board starts without delay and must add full updated details within seventy-two hours, unless the Board allows longer on a written request. A clause meets this card only when it reflects that two-stage timeline.
+span_text: (b) within seventy-two hours of becoming aware of the breach, or within such longer period as the Board may allow on a request made in writing in this behalf, —

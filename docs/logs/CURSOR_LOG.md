@@ -39,4 +39,19 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 - UI rules checked: disclaimer banner N/A (T5.0); scaffold only
 - New-work note: frontend scaffold 2026-10-29
 - Third-party added: react 18.3.1 MIT · react-dom 18.3.1 MIT · vite 6.x MIT · vitest 3.x MIT · tailwindcss 3.4 MIT · @testing-library/react 16.x MIT · openapi-typescript 7.x MIT (dev, for gen:api)
-- Ready for human commit: yes — suggested message: `T0.4: scaffold frontend with Vite, Tailwind, and Vitest`
+## [T5.0] STARTED · 2026-10-29 18:21 IST
+- Task: UI foundation on mocks
+- Built against: contract v0 · openapi/examples mocks
+
+## [T5.0] DONE · 2026-10-29 18:23 IST
+- Task: UI foundation on mocks
+- Built against: openapi/examples mocks · contract v0 (`npm run gen:api` refreshed)
+- Files changed: `frontend/package.json`, `frontend/package-lock.json`, `frontend/tailwind.config.js`, `frontend/src/index.css`, `frontend/src/main.tsx`, `frontend/src/App.tsx`, `frontend/src/App.test.tsx`, `frontend/src/content/disclaimer.ts`, `frontend/src/api/types.ts`, `frontend/src/api/client.ts`, `frontend/src/api/mocks/index.ts`, `frontend/src/api/schema.d.ts` (regenerated), `frontend/src/components/**`, `frontend/src/pages/ClauseReviewPage.tsx`, `frontend/src/pages/SourceImpactPage.tsx`, `frontend/src/pages/LawyerControlPage.tsx`, `frontend/src/test/setup.ts`, `docs/logs/CURSOR_LOG.md`; removed `frontend/src/pages/HomePage.tsx`
+- What changed: App shell with design tokens, disclaimer banner on every route, and react-router paths for Screens 1–3. Mock API layer imports contract v0 examples; shared components (FindingCard, TrustChip, ProofSyllogism, DiffView, StaleGraph, AuditList, status/AI/lawyer/simulated badges) wired on each screen with demo interactions.
+- Checks run: `make check-frontend` → pass (oxlint 0 issues; vitest 4/4); `npm run build` → pass; `npm run gen:api` → pass
+- Decisions / assumptions: Default data path is bundled examples (set `VITE_USE_LIVE_API=1` for API_STUB backend). React Flow uses `@xyflow/react`; graph is read-only in T5.0. Screen-specific polish (SSE trace, full re-verify) stays in T5.1–T5.3.
+- Requests: none
+- UI rules checked: disclaimer banner present on all three screens · AI-draft and Lawyer-reviewed badges shown · SIMULATED badge on impact screen · status badges use text + icon (not color-only)
+- New-work note: UI foundation + mock screens 2026-10-29
+- Third-party added: react-router-dom 7.x MIT · @xyflow/react 12.x MIT
+- Ready for human commit: yes — suggested message: `T5.0: add layout, routes, and shared UI components on mocks`

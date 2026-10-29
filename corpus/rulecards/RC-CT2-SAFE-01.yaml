@@ -1,0 +1,12 @@
+id: RC-CT2-SAFE-01
+provision_id: PRV-DPDP-Act-2023-s8-4-5
+kind: statutory
+claim_type: CT2
+trust_class: ai_inferred
+approved_by: approved-by-human-review
+requires: [security_safeguards]
+span_start: 180
+span_end: 436
+interpretation: |
+  The Data Fiduciary must put in place technical and organisational measures and must protect personal data, including processor-side processing, with reasonable security safeguards against breach. A clause meets this card only when it commits to such safeguards.
+span_text: (5) A Data Fiduciary shall protect personal data in its possession or under its control, including in respect of any processing undertaken by it or on its behalf by a Data Processor, by taking reasonable security safeguards to prevent personal data breach.

@@ -1,0 +1,12 @@
+id: RC-CT1-CONTRACT-SEC-01
+provision_id: PRV-DPDP-Rules-2025-r6
+kind: statutory
+claim_type: CT1
+trust_class: ai_inferred
+approved_by: approved-by-human-review
+requires: [contract_security_clause]
+span_start: 1429
+span_end: 1606
+interpretation: |
+  The contract between a Data Fiduciary and its Data Processor must itself provide for reasonable security safeguards. A clause meets this card only when the contract text carries such a safeguard provision.
+span_text: (f) appropriate provision in the contract entered into between such Data Fiduciary and such a Data Processor, wherever applicable, for taking reasonable security safeguards; and

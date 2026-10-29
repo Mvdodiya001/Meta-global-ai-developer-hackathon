@@ -92,3 +92,20 @@ _(no entries yet)_
 - Third-party added: none (stdlib hashlib/json; SQLAlchemy from T0.4)
 - Credit spend: none (no model calls)
 - Ready for human commit: yes — suggested message: `T1.2: add source snapshots and provisions`
+
+## [T1.3] STARTED · 2026-10-29 18:17 IST
+- Task: Rule cards (MC authors, H reviews)
+- Scope: `corpus/rulecards/*.yaml` (7 cards, CT1–CT3, verbatim spans), strict stdlib-only loader in `backend/app/services/rulecards.py`, tests first in `backend/tests/test_rulecards.py`. No PyYAML (not installed; new deps need H approval) — loader parses only the documented card shape and rejects everything else
+
+## [T1.3] DONE · 2026-10-29 18:21 IST
+- Task: Rule cards (MC authors, H reviews)
+- Files changed: `corpus/rulecards/` (new, 7 `RC-*.yaml` cards), `backend/app/services/rulecards.py` (new, strict subset-YAML parser + span verifier + DB ingest), `backend/app/core/errors.py` (modified, added `RuleCardError`), `backend/tests/test_rulecards.py` (new, written first, 6 tests), `docs/logs/MUSE_CODE_LOG.md` (modified)
+- What changed: 7 cards covering CT1 (processor contract: s8(1)-(2), Rule 6(1)(f)), CT2 (safeguards: s8(4)-(5), Rule 6(1)(a), Rule 6(1)(e)), CT3 (breach intimation: s8(6), Rule 7(2)(b)). Each cites a verbatim span with explicit offsets; loader rejects bad spans, unknown provisions, and malformed files before writing anything, then upserts idempotently into `rule_cards`. Cards authored `trust_class: ai_inferred`, `approved_by: pending-human-review` until H reads them.
+- Checks run: `make check-backend` → pass (ruff clean; mypy clean on 15 files; pytest 52/52, incl. 6 new T1.3 tests). Independent scratch-DB probe confirmed all 7 spans byte-match their snapshots (probe DB deleted).
+- Decisions / assumptions: CT1–CT3 taxonomy is not defined in docs, so I defined it narrowly from the T0.6 provisions (see loader docstring; CT4 reserved for erasure in T2.3) — confirm or rename on review. No new dependency: PyYAML is not installed and new deps need approval, so the loader parses only the documented card shape (flat keys, `|` blocks, `[a, b]` requires) and rejects the rest; swapping in PyYAML later is trivial. Upsert keeps original `created_at`; replacements via `superseded_by` come later if needed.
+- Contract change: none (v0 stands)
+- Requests: [REQ → H] (1) read each of the 7 cards against the official text (T1.3 Done criterion) and say whether to flip `trust_class` to `lawyer_confirmed` (loader change, my lane) — until then cards stay `ai_inferred`; (2) optional: approve adding PyYAML (MIT) to replace the subset parser; (3) confirm the CT1–CT3 taxonomy or give new names. No new legal sources — all spans from the T0.6 corpus.
+- New-work note: hand-curated rule cards + span-verifying loader 2026-10-29
+- Third-party added: none (stdlib only)
+- Credit spend: none (no model calls)
+- Ready for human commit: yes — suggested message: `T1.3: add rule cards with span verification`

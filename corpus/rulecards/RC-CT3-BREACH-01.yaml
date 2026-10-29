@@ -1,0 +1,12 @@
+id: RC-CT3-BREACH-01
+provision_id: PRV-DPDP-Act-2023-s8-6
+kind: statutory
+claim_type: CT3
+trust_class: ai_inferred
+approved_by: approved-by-human-review
+requires: [breach_intimation_duty]
+span_start: 0
+span_end: 189
+interpretation: |
+  On a personal data breach the Data Fiduciary must intimate the Board and each affected Data Principal in the prescribed form and manner. A clause meets this card only when it assigns that intimation duty.
+span_text: (6) In the event of a personal data breach, the Data Fiduciary shall give the Board and each affected Data Principal, intimation of such breach in such form and manner as may be prescribed.

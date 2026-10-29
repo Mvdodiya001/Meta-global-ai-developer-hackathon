@@ -1,0 +1,73 @@
+import { getApiBase } from './config'
+import {
+  fetchMockAudit,
+  fetchMockClauses,
+  fetchMockDiff,
+  fetchMockFacts,
+  fetchMockFinding,
+  fetchMockGraph,
+  fetchMockImpact,
+  fetchMockMatter,
+  fetchMockSourceVersions,
+} from './mocks'
+import type {
+  AuditTrail,
+  Clause,
+  DiffResult,
+  Fact,
+  Finding,
+  GraphSlice,
+  ImpactReport,
+  Matter,
+  SourceVersionList,
+} from './types'
+
+const useLiveApi = import.meta.env.VITE_USE_LIVE_API === '1'
+
+async function getJson<T>(path: string): Promise<T> {
+  const response = await fetch(`${getApiBase()}${path}`)
+  if (!response.ok) {
+    throw new Error(`API ${path} failed: ${response.status}`)
+  }
+  return response.json() as Promise<T>
+}
+
+/** Client reads openapi examples unless `VITE_USE_LIVE_API=1` (backend with API_STUB=1). */
+export const api = {
+  matter: (_id: string): Promise<Matter> =>
+    useLiveApi ? getJson<Matter>(`/api/matters/${_id}`) : fetchMockMatter(),
+  clauses: (_documentId: string): Promise<Clause[]> =>
+    useLiveApi
+      ? getJson<{ clauses: Clause[] }>(`/api/documents/${_documentId}/clauses`).then(
+          (r) => r.clauses,
+        )
+      : fetchMockClauses(),
+  finding: (_claimId: string): Promise<Finding> =>
+    useLiveApi
+      ? getJson<Finding>(`/api/claims/${_claimId}/current`)
+      : fetchMockFinding(),
+  facts: (_matterId: string): Promise<Fact[]> =>
+    useLiveApi
+      ? getJson<{ facts: Fact[] }>(`/api/matters/${_matterId}/facts`).then((r) => r.facts)
+      : fetchMockFacts(),
+  diff: (sourceId: string, against: string): Promise<DiffResult> =>
+    useLiveApi
+      ? getJson<DiffResult>(
+          `/api/sources/${sourceId}/diff?against=${encodeURIComponent(against)}`,
+        )
+      : fetchMockDiff(),
+  graph: (_findingId: string): Promise<GraphSlice> =>
+    useLiveApi
+      ? getJson<GraphSlice>(`/api/findings/${_findingId}/graph`)
+      : fetchMockGraph(),
+  audit: (_matterId: string): Promise<AuditTrail> =>
+    useLiveApi
+      ? getJson<AuditTrail>(`/api/matters/${_matterId}/audit`)
+      : fetchMockAudit(),
+  sourceVersions: (sourceId: string): Promise<SourceVersionList> =>
+    useLiveApi
+      ? getJson<SourceVersionList>(`/api/sources/${sourceId}/versions`)
+      : fetchMockSourceVersions(),
+  impact: (_reportId: string): Promise<ImpactReport> =>
+    useLiveApi ? getJson<ImpactReport>(`/api/impact/${_reportId}`) : fetchMockImpact(),
+}

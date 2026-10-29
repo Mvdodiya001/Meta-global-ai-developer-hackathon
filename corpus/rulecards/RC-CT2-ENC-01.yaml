@@ -1,0 +1,12 @@
+id: RC-CT2-ENC-01
+provision_id: PRV-DPDP-Rules-2025-r6
+kind: statutory
+claim_type: CT2
+trust_class: ai_inferred
+approved_by: approved-by-human-review
+requires: [encryption_or_equivalent]
+span_start: 334
+span_end: 507
+interpretation: |
+  Reasonable safeguards include, at a minimum, data security measures such as encryption, obfuscation, masking or virtual tokens. A clause meets this card only when it names such a measure.
+span_text: (a) appropriate data security measures, such as securing of personal data through encryption, obfuscation, masking or the use of virtual tokens mapped to that personal data;
