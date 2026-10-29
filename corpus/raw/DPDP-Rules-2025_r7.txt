@@ -1,0 +1,29 @@
+7. Intimation of personal data breach. — (1) On becoming aware of any personal data breach, the Data Fiduciary shall, to the best of its knowledge, intimate to each affected Data Principal, in a concise, clear and plain manner and without delay, through her user account or any mode of communication registered by her with the Data Fiduciary, —
+
+(a) a description of the breach, including its nature, extent and the timing of its occurrence;
+
+(b) the consequences relevant to her, that are likely to arise from the breach;
+
+(c) the measures implemented and being implemented by the Data Fiduciary, if any, to mitigate risk;
+
+(d) the safety measures that she may take to protect her interests; and
+
+(e) business contact information of a person who is able to respond on behalf of the Data Fiduciary, to queries, if any, of the Data Principal.
+
+(2) On becoming aware of any personal data breach, the Data Fiduciary shall intimate to the Board, —
+
+(a) without delay, a description of the breach, including its nature, extent, timing and location of occurrence and the likely impact;
+
+(b) within seventy-two hours of becoming aware of the breach, or within such longer period as the Board may allow on a request made in writing in this behalf, —
+
+(i) updated and detailed information in respect of such description;
+
+(ii) the broad facts related to the events, circumstances and reasons leading to the breach;
+
+(iii) measures implemented or proposed, if any, to mitigate risk;
+
+(iv) any findings regarding the person who caused the breach;
+
+(v) remedial measures taken to prevent recurrence of such breach; and
+
+(vi) a report regarding the intimations given to affected Data Principals.

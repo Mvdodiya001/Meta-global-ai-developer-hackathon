@@ -46,7 +46,7 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
   - Done when: all three behave as described. Check Cursor and Muse Code settings for any auto-commit or attribution option and turn it off.
 
 ## M1 — Sources and corpus (Day 2)
-- [ ] **T1.1 Schema + append-only triggers** (MC) · T — Deps: T0.4
+- [x] **T1.1 Schema + append-only triggers** (MC) · T — Deps: T0.4
   - Tests first: UPDATE/DELETE on `findings`, `source_versions`, `provisions`, `audit_log` raise.
   - Done when: all tables from `DATA_MODEL_API.md` §2 exist; trigger tests pass.
 - [ ] **T1.2 Source snapshots + provisions** (MC) · T — Deps: T0.6, T1.1

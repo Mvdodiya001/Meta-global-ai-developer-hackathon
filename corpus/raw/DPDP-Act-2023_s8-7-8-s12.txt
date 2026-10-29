@@ -1,0 +1,35 @@
+(7) A Data Fiduciary shall, unless retention is necessary for compliance with any law for the time being in force,—
+
+(a) erase personal data, upon the Data Principal withdrawing her consent or as soon as it is reasonable to assume that the specified purpose is no longer being served, whichever is earlier; and
+
+(b) cause its Data Processor to erase any personal data that was made available by the Data Fiduciary for processing to such Data Processor.
+
+Illustrations.
+
+(I) X, an individual, registers herself on an online marketplace operated by Y, an e-commerce service provider. X gives her consent to Y for the processing of her personal data for selling her used car. The online marketplace helps conclude the sale. Y shall no longer retain her personal data.
+
+(II) X, an individual, decides to close her savings account with Y, a bank. Y is required by law applicable to banks to maintain the record of the identity of its clients for a period of ten years beyond closing of accounts. Since retention is necessary for compliance with law, Y shall retain X's personal data for the said period.
+
+(8) The purpose referred to in clause (a) of sub-section (7) shall be deemed to no longer be served, if the Data Principal does not––
+
+(a) approach the Data Fiduciary for the performance of the specified purpose; and
+
+(b) exercise any of her rights in relation to such processing,
+
+for such time period as may be prescribed, and different time periods may be prescribed for different classes of Data Fiduciaries and for different purposes.
+
+(11) For the purposes of this section, it is hereby clarified that a Data Principal shall be considered as not having approached the Data Fiduciary for the performance of the specified purpose, in any period during which she has not initiated contact with the Data Fiduciary for such performance, in person or by way of communication in electronic or physical form.
+
+12. Right to correction and erasure of personal data.
+
+(1) A Data Principal shall have the right to correction, completion, updating and erasure of her personal data for the processing of which she has previously given consent, including consent as referred to in clause (a) of section 7, in accordance with any requirement or procedure under any law for the time being in force.
+
+(2) A Data Fiduciary shall, upon receiving a request for correction, completion or updating from a Data Principal,—
+
+(a) correct the inaccurate or misleading personal data;
+
+(b) complete the incomplete personal data; and
+
+(c) update the personal data.
+
+(3) A Data Principal shall make a request in such manner as may be prescribed to the Data Fiduciary for erasure of her personal data, and upon receipt of such a request, the Data Fiduciary shall erase her personal data unless retention of the same is necessary for the specified purpose or for compliance with any law for the time being in force.

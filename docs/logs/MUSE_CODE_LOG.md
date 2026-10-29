@@ -75,3 +75,20 @@ _(no entries yet)_
 - Third-party added: none (SQLAlchemy 2.1.6 from T0.4)
 - Credit spend: none (no model calls)
 - Ready for human commit: yes — suggested message: `T1.1: add schema with append-only triggers`
+
+## [T1.2] STARTED · 2026-10-29 17:44 IST
+- Task: Source snapshots + provisions
+- Scope: `backend/app/services/sources.py` (hashed ingest, idempotency, lookups), `corpus/raw/` (cleaned provision texts + manifest), tests first in `backend/tests/test_services_sources.py`. Texts from human-verified `corpus/NOTES.md` (T0.6); v2 is labelled simulated; decoy is the Emblems Act source
+
+## [T1.2] DONE · 2026-10-29 17:56 IST
+- Task: Source snapshots + provisions
+- Files changed: `backend/app/services/__init__.py` + `backend/app/services/sources.py` (new, ingest/lookup), `backend/app/core/__init__.py` + `backend/app/core/errors.py` (new, `SourceUnavailable`), `backend/app/db.py` (modified: dropped `foreign_keys=ON`, see decisions), `backend/tests/test_services_sources.py` (new, 6 tests), `corpus/raw/` (new: 12 provision texts + `manifest.json`), `docs/logs/MUSE_CODE_LOG.md` (modified)
+- What changed: `load_corpus()` ingests 4 sources / 5 versions / 16 provisions from `corpus/raw/`: DPDP Act v1 (5 provisions), Rules v1 (4), commencement notification G.S.R. 843(E) v1 (1), Emblems Act decoy v1 (1), plus simulated Act v2 (`is_simulated=true`, `supersedes SV-DPDP-ACT-V1`) amending only s8(6) with a marked `[SIMULATED AMENDMENT v2]` proviso. Snapshot `raw_text` is the join of provision files; `content_sha256`/`text_sha256` are sha256 of stored bytes. Same content re-ingested returns the existing version id with no new rows. Unknown source/version lookups raise `SourceUnavailable`.
+- Checks run: `make check-backend` → pass (ruff clean; mypy clean on 14 files; pytest 46/46, incl. 6 new T1.2 tests). Scratch-DB probe confirmed 5 versions / 16 provisions, v2 differing from v1 only by the simulated marker (probe DB deleted).
+- Decisions / assumptions: Provision texts transcribed verbatim from human-verified `corpus/NOTES.md` (T0.6). **Dropped `PRAGMA foreign_keys=ON`** from the `connect` listener: with SQLAlchemy 2.1.6 / Python 3.12 pysqlite it silently drops the parent INSERT from combined ORM flushes (child then fails FK) — reproduced with zero app code (2 tables + listener + 1 commit) vs clean without it. WAL mode kept. FK validity now enforced at the service layer (`ingest_version` rejects unknown sources; parents always written first). T1.1 trigger guarantees unaffected. No legal text asserted beyond the T0.6 record; v2 text is explicitly fictional.
+- Contract change: none (v0 stands)
+- Requests: none. Note for H: no new third-party sources — all texts from `NOTICE.md`/`corpus/NOTES.md` (T0.6 record).
+- New-work note: source snapshot + provision loading 2026-10-29
+- Third-party added: none (stdlib hashlib/json; SQLAlchemy from T0.4)
+- Credit spend: none (no model calls)
+- Ready for human commit: yes — suggested message: `T1.2: add source snapshots and provisions`

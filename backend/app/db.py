@@ -1,9 +1,17 @@
-"""T1.1: SQLite engine (WAL + foreign keys), schema creation, append-only triggers.
+"""T1.1: SQLite engine (WAL), schema creation, append-only triggers.
 
 Append-only tables (`findings`, `source_versions`, `provisions`, `audit_log`)
 reject every UPDATE and DELETE at the database level (F7, F11, F14); state
 changes are new rows in `finding_events`. Real paths must use `init_db`;
 tests use a `tmp_path` file through the same function.
+
+No `PRAGMA foreign_keys=ON` here on purpose (T1.2): with SQLAlchemy 2.1.6 /
+Python 3.12 pysqlite, enabling it from a `connect` listener breaks combined
+ORM flushes — the parent INSERT is dropped from the flush plan and the child
+fails loudly (reproduced with zero app code: two mapped tables, one listener,
+one commit). WAL mode is unaffected. Foreign-key validity is enforced by the
+service layer instead (parents are written first; lookups raise typed errors
+such as `SourceUnavailable`).
 """
 
 from pathlib import Path
@@ -57,7 +65,6 @@ def get_engine(path: str | Path) -> Engine:
     def _set_pragmas(dbapi_conn: Any, _: Any) -> None:
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA journal_mode=WAL;")
-        cursor.execute("PRAGMA foreign_keys=ON;")
         cursor.close()
 
     return engine
