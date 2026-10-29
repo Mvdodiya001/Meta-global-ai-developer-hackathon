@@ -10,7 +10,8 @@ Before each agent session, commit a checkpoint so `git diff` shows only that ses
 ## Commits
 | Date/time (IST) | Hash | Lane | Tasks covered | Notes (reviewed? check result?) |
 |-----------------|------|------|---------------|---------------------------------|
-| Day 1 | 91fc1f | docs | T0.1 | first commit, docs + licence only |
+| Day 1           | 91fc1f | docs | T0.1 | first commit, docs + licence only |
+| Day 1           | f01554| cost | T0.2  | test  the  cost per  tool  call  and  estimeated  cost  per  call |
 
 ## Decisions and incidents
 | Date | What happened / decided | Action taken |
