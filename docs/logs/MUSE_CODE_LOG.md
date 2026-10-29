@@ -58,3 +58,20 @@ _(no entries yet)_
 - Third-party added: none (fastapi/pytest stack from T0.4)
 - Credit spend: none (no model calls)
 - Ready for human commit: yes — suggested message: `T0.7: add contract v0 with stub mode and examples`
+
+## [T1.1] STARTED · 2026-10-29 15:10 IST
+- Task: Schema + append-only triggers
+- Scope: all DATA_MODEL_API §2 tables in `backend/app/models.py`, SQLite WAL engine + append-only triggers in `backend/app/db.py`, tests first in `backend/tests/test_schema.py`
+
+## [T1.1] DONE · 2026-10-29 15:12 IST
+- Task: Schema + append-only triggers
+- Files changed: `backend/app/models.py` (new, 19 SQLAlchemy 2 tables), `backend/app/db.py` (new, WAL engine + `init_db` + 8 triggers), `backend/tests/test_schema.py` (new, written first, 10 tests), `docs/logs/MUSE_CODE_LOG.md` (modified)
+- What changed: All DATA_MODEL_API §2 tables exist with §2 key fields and FKs (ids are caller-supplied prefixed strings; timestamps are UTC ISO-8601 strings). `init_db(path)` creates the schema and installs BEFORE UPDATE/DELETE triggers aborting with `<table> is append-only` on `findings`, `source_versions`, `provisions`, `audit_log`. Engine sets `PRAGMA journal_mode=WAL` and `foreign_keys=ON` per connection.
+- Checks run: `make check-backend` → pass (ruff clean; mypy clean on 9 files; pytest 40/40, incl. 10 new schema tests). Independent probe on a scratch DB confirmed `journal_mode=wal`, `foreign_keys=1`, and all 8 triggers in `sqlite_master` (probe file deleted afterwards).
+- Decisions / assumptions: No Alembic — `create_all` in `init_db` is enough until T1.4 seeding needs migrations. JSON columns for `*_json` fields; `finding_events` itself has no trigger (state log grows by inserts only, enforced by services later). `Run`/`Review`/`LlmCall` shadow stdlib/sqlalchemy names only as class names, no imports shadowed.
+- Contract change: none (v0 stands; schema is not yet exposed)
+- Requests: none
+- New-work note: SQLite schema + append-only triggers 2026-10-29
+- Third-party added: none (SQLAlchemy 2.1.6 from T0.4)
+- Credit spend: none (no model calls)
+- Ready for human commit: yes — suggested message: `T1.1: add schema with append-only triggers`
