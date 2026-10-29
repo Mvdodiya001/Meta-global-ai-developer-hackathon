@@ -4,26 +4,27 @@ Maintained by the human (or by the assistant from the agent logs). Agents do NOT
 
 ## Current status
 - Day: 1 of 8 (Day 9 = buffer)
-- Milestone: M0 Setup
-- Task in progress: T0.1 Repo and new-work evidence
+- Milestone: M0 Setup (T0.7 done). Next: T5.0 (Cursor) and T1.1 (Muse Code)
+- Task in progress: none (T0.7 committed). Start T5.0 / T1.1
 - Core gate (end of Day 6): not reached
 
 ## Credits
 | Item | Value |
 |------|-------|
-| Meta credits granted |  claimed |
+| Meta credits granted | claimed ($150) |
 | Spend limit alert set | no |
 | Partner credits (Baseten / Modal / Fireworks) | not requested; open weights is optional and later (T7.5) |
-| Measured cost per extraction call | less then 0.01$ for  contributor  tire which  used  |
-| Measured cost per agent run | 0.1$  or  less in  normal  as  well  use  spark not wonder |
+| Measured cost per extraction call | less than $0.01 on muse-spark-1.3-contributor |
+| Measured cost per agent run | $0.10 or less on Spark (not Wonder) |
 | Daily dev budget | ~$4 |
-| Spent so far | $0.01 or  less |
+| Spent so far | $0.01 or less |
 
 ## Completed tasks
-Day 1 · T0.1 · repo, licence, docs · commit 91fc1f
-Day 1 · T0.2 + T0.3 · Meta credits + hello-world function-call round trip + cost log · commit f01554
-Day 1 · T0.8 · git guards (`make hooks`; plain commit/push blocked) · commit b5d63ec
+Day 1 · T0.7 · contract v0 + stub mode · commit 09477b6 (pushed)
 Day 1 · T0.4 + T0.6 · backend/frontend scaffold, CI, corpus NOTES · commit 391a51a (pushed)
+Day 1 · T0.8 · git guards (`make hooks`; plain commit/push blocked) · commit b5d63ec
+Day 1 · T0.2 + T0.3 · Meta credits + hello-world function-call round trip + cost log · commit f01554
+Day 1 · T0.1 · repo, licence, docs · commit 91fc1f
 
 ## Decisions made
 | Date | Decision | Why | Alternatives rejected |
@@ -36,24 +37,26 @@ Day 1 · T0.4 + T0.6 · backend/frontend scaffold, CI, corpus NOTES · commit 39
 | Day 1 | Muse Spark for scans (not Muse Image) | Muse Image generates images; Spark takes image/PDF input | Muse Image for OCR |
 | Day 1 | Amendment demo uses a labelled simulated v2 unless a real change exists | Predictable demo; honest labelling | Unlabelled fake amendment |
 | Day 1 | Start Meta-API-only (Muse Spark). Challenger = second Muse Spark pass. Open weights (Muse Spark Open) only if time and access allow (T7.5) | Partner credits were not requested; the core must not depend on them | Baseten/Modal in the core path |
+| Day 1 | Stub API on by default (`API_STUB=1`) until T4.5 | Lets Cursor build UI on contract v0 without a real backend | Wait for real handlers |
 
 ## Known issues and tech debt
-_(none yet)_
+- `.env.example` is still missing from the repo root.
+- Port 8000 is held by another process (`memopops.api`); stub was checked on 8001.
+- T0.4 CI YAML has not been confirmed green on a GitHub runner.
+- T0.4 + T0.6 were one mixed-lane commit (`391a51a`).
 
 ## Open questions
-- Exact provision keys and commencement dates (T0.6).
-- Open weights (Muse Spark Open) is optional: only if you get partner access and have time (T7.5).
-- Whether a law-literate person can sanity-check the rule cards.
+- Open weights (Muse Spark Open) is optional: only if partner access and time allow (T7.5).
+- Whether a law-literate person can sanity-check the rule cards (T1.3).
 
 ## Next steps
-1. T0.1 Create public repo and make the first commit before any code (docs + licence only).
-2. T0.8 Run `make hooks` (human-only commits, no co-author lines).
-3. T0.2 Claim the Meta credits and set the spend alert.
-4. Start both lanes: MC → T0.3, T0.4, T0.7; CU → T0.4 (frontend), T5.0.
-5. T0.6 Verify corpus from official sources.
+1. Cursor T5.0: run `npm run gen:api` against contract v0, then layout / disclaimer / routes / mock screens.
+2. Muse Code T1.1: schema + append-only triggers.
+3. Add `.env.example` at repo root (`MODEL_API_KEY=` empty).
+4. Confirm GitHub Actions is green on `391a51a` / `09477b6`.
 
 ## Notes for the next session
 - Read `AGENTS.md` and `PLAN.md` first. Muse Code owns backend/corpus/scripts/openapi/Makefile; Cursor owns frontend/README. Agents never commit; the human commits per lane (`git hc`). Track work with `make status`.
-- Watch the hackathon's agent sessions (livestream or recording) and write takeaways here.
 - API: base URL `https://api.meta.ai/v1`, Responses API, key in `.env` as `MODEL_API_KEY`.
 - Optional later: open-weights model id `meta-models/muse-spark-open-1026` (needs a partner host; not needed for the core).
+- Contract is `[CONTRACT v0]`. Cursor must run `npm run gen:api` before T5.0.

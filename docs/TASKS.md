@@ -38,7 +38,7 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
   - Download official DPDP Act 2023, DPDP Rules 2025 and the commencement notification(s) from India Code / MeitY. Record URL + retrieval date in `NOTICE.md`.
   - Pick 5–8 provisions and a decoy source S4. Write `corpus/NOTES.md`: provision key, exact text, commencement/effective dates. Check every section number and date yourself.
   - Done when: the table is complete and every item is traceable to an official page.
-- [ ] **T0.7 Contract v0 + stub mode** (MC) · T/D — Deps: T0.4
+- [x] **T0.7 Contract v0 + stub mode** (MC) · T/D — Deps: T0.4
   - Files: `openapi/openapi.json`, `openapi/examples/*.json`. Pydantic response models for every endpoint in `DATA_MODEL_API.md` §7; stub mode `API_STUB=1` returns the examples (clause list, finding with proof, impact report, graph slice, audit rows, facts with trust classes).
   - Done when: `curl localhost:8000/api/health` and one stubbed endpoint work; `info.version` is `v0`; logged as `[CONTRACT v0]`. Contract v1 (SP1) follows at the end of Day 2.
 - [x] **T0.8 Install git guards** (H) · process — Deps: T0.1
