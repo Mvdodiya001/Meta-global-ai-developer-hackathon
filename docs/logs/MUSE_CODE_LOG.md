@@ -109,3 +109,37 @@ _(no entries yet)_
 - Third-party added: none (stdlib only)
 - Credit spend: none (no model calls)
 - Ready for human commit: yes — suggested message: `T1.3: add rule cards with span verification`
+
+## [T1.4] STARTED · 2026-10-29 18:52 IST
+- Task: Fictional contract + matter seed
+- Scope: `corpus/contracts/master_dpa.md` (12 fictional clauses), `backend/app/services/seed.py` + `scripts/seed_demo.py` + `scripts/reset_demo.sh`, `backend/app/db.py` default DB path helper, test in `backend/tests/test_seed.py`. Demo DB defaults to gitignored `backend/db.sqlite3`
+
+## [T1.4] DONE · 2026-10-29 18:56 IST
+- Task: Fictional contract + matter seed
+- Files changed: `corpus/contracts/master_dpa.md` (new, 12-clause fictional DPA), `backend/app/services/seed.py` (new, contract parser + seeder), `scripts/seed_demo.py` (new, `--db`/`--corpus-root` CLI), `scripts/reset_demo.sh` (new, wipe + reseed with timing), `backend/app/db.py` (modified, `default_db_path()` honoring `$CLAUSETRACE_DB`), `backend/tests/test_seed.py` (new, 2 tests), `docs/logs/MUSE_CODE_LOG.md` (modified); `Makefile` unchanged (existing `seed`/`reset-demo` targets work)
+- What changed: `seed_demo()` parses the DPA markdown (strict `## <ref> <heading>` sections, refs 1–8/9.1/9.2/10/11 enforced), stores one document version with exact clause spans, plus matter MAT-01 (Acme Retail Pvt Ltd, fictional), one hearing (2026-11-15) + one task (2026-11-20) both labelled demo data, and loads the T1.2 corpus + T1.3 cards for a complete demo DB. Re-runs are no-ops for existing rows. Clause 9.2 keeps the demo story (analytics cluster outside India for fraud screening), matching the T0.7 stub.
+- Checks run: `make check-backend` → pass (ruff clean; mypy clean; pytest 54/54, incl. 2 new seed tests asserting 12 clauses, span-exactness, demo labels, idempotency, elapsed < 60 s). `make reset-demo` → done in 1 s; `make seed` → `matter MAT-01, 12 clauses, 5 versions, 7 cards`. Demo DB at gitignored `backend/db.sqlite3` (left seeded; never committed).
+- Decisions / assumptions: Contract text lives in `corpus/contracts/` and is parsed (not embedded), so T2.2 extraction tests against the same file. Core `sa.insert` statements used for writes (avoids the T1.2 ORM multi-row flush quirk entirely). Clause spans cover the body text only; headings stored separately. No real persons, companies, or data — all names fictional.
+- Contract change: none (v0 stands)
+- Requests: none
+- New-work note: fictional DPA + demo matter seed 2026-10-29
+- Third-party added: none (stdlib + SQLAlchemy)
+- Credit spend: none (no model calls)
+- Ready for human commit: yes — suggested message: `T1.4: add fictional DPA and demo seed`
+
+## [T1.5] STARTED · 2026-10-29 19:09 IST
+- Task: Diff + as-of applicability
+- Scope: `backend/app/services/diff.py` (`diff_versions` by key+hash, `in_force` for as-of dates), tests first in `backend/tests/test_diff.py`. Fixture pair is Act v1 → simulated v2 from T1.2
+
+## [T1.5] DONE · 2026-10-29 19:11 IST
+- Task: Diff + as-of applicability
+- Files changed: `backend/app/services/diff.py` (new, `VersionDiff` + `diff_versions` + `in_force`), `backend/tests/test_diff.py` (new, written first, 6 tests), `docs/logs/MUSE_CODE_LOG.md` (modified)
+- What changed: `diff_versions(session, old_id, new_id)` indexes both snapshots by provision key and reports changed (hash or effective-date mismatch), added, removed, unchanged keys; unknown versions raise `SourceUnavailable` via the existing lookup. `in_force(provision, as_of)` compares plain dates as `effective_from <= as_of < effective_until-or-open`. v1→v2 flags exactly `DPDP-Act-2023_s8(6)`; s8(6) is out of force before 2027-05-13 and in force on/after; commencement s1 flips on 2025-11-13; decoy applies in 2000.
+- Checks run: `make check-backend` → pass (ruff clean; mypy clean; pytest 60/60, incl. 6 new T1.5 tests on the real T1.2 fixture pair). Both Done lines pass: diff-by-key-and-hash and in_force before/after commencement for v1→v2.
+- Decisions / assumptions: A key counts as changed on hash OR effective-date change (per §6 step 2); same-key date-only amendments will surface in T4.1 impact. `as_of` accepts a plain date or ISO datetime (first 10 chars compared). No schema or contract change.
+- Contract change: none (v0 stands)
+- Requests: none
+- New-work note: version diff + as-of applicability 2026-10-29
+- Third-party added: none (stdlib dataclasses + SQLAlchemy)
+- Credit spend: none (no model calls)
+- Ready for human commit: yes — suggested message: `T1.5: add version diff and as-of check`

@@ -14,6 +14,7 @@ service layer instead (parents are written first; lookups raise typed errors
 such as `SourceUnavailable`).
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,14 @@ def trigger_ddl(table: str, operation: str) -> sa.TextClause:
         f"BEFORE {operation} ON {table} "
         f"BEGIN SELECT RAISE(ABORT, '{table} is append-only'); END;"
     )
+
+
+def default_db_path() -> Path:
+    """Demo database path: `$CLAUSETRACE_DB`, else gitignored `backend/db.sqlite3` (T1.4)."""
+    override = os.environ.get("CLAUSETRACE_DB")
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parents[1] / "db.sqlite3"
 
 
 def get_engine(path: str | Path) -> Engine:

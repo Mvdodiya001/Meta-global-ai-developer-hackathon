@@ -49,17 +49,17 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
 - [x] **T1.1 Schema + append-only triggers** (MC) · T — Deps: T0.4
   - Tests first: UPDATE/DELETE on `findings`, `source_versions`, `provisions`, `audit_log` raise.
   - Done when: all tables from `DATA_MODEL_API.md` §2 exist; trigger tests pass.
-- [ ] **T1.2 Source snapshots + provisions** (MC) · T — Deps: T0.6, T1.1
+- [x] **T1.2 Source snapshots + provisions** (MC) · T — Deps: T0.6, T1.1
   - Files: `app/services/sources.py`, `corpus/raw/`. Store hashed versions; load cleaned text for the chosen provisions; add simulated v2 (`is_simulated=true`) and decoy.
   - Done when: v1, v2, decoy loaded; sha256 stable; ingest of identical content is idempotent.
-- [ ] **T1.3 Rule cards** (MC, H reviews) · T/I — Deps: T1.2
+- [x] **T1.3 Rule cards** (MC, H reviews) · T/I — Deps: T1.2
   - Files: `corpus/rulecards/*.yaml`, loader. 6–8 cards covering CT1–CT3, each citing a verbatim span.
   - Tests first: a card whose span is not in the snapshot is rejected.
   - Done when: all cards load; every span verifies; H has read each card against the official text.
-- [ ] **T1.4 Fictional contract + matter seed** (MC) · D — Deps: T1.1
+- [x] **T1.4 Fictional contract + matter seed** (MC) · D — Deps: T1.1
   - Write the ~12-clause Master DPA (Acme Retail Pvt Ltd / Nimbus Analytics Pvt Ltd), matter, one hearing date, one task (labelled demo data). `make seed`, `make reset-demo`.
   - Done when: reset-and-seed completes in under 60 s.
-- [ ] **T1.5 Diff + as-of applicability** (MC) · T — Deps: T1.2
+- [x] **T1.5 Diff + as-of applicability** (MC) · T — Deps: T1.2
   - Tests first: diff by provision key and hash; `in_force(as_of)` before/after commencement.
   - Done when: both tests pass for v1→v2.
 
