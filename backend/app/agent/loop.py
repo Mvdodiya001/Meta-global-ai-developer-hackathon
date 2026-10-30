@@ -23,9 +23,26 @@ from sqlalchemy.orm import Session
 from app import models
 from app.agent import llm, prompts, tools
 from app.core.errors import LLMRequestFailed, SourceUnavailable, ToolError
+from app.services.seed import (
+    DEMO_92_AS_OF,
+    DEMO_92_CLAIM_ID,
+    DEMO_92_FACT_ID,
+    DEMO_92_QUESTION,
+    DEMO_92_STATEMENT,
+    ensure_demo_92_claim,
+)
 
 LOOP_MODEL = "muse-spark-1.3-contributor"
 MAX_AGENT_RETRIES = 2
+
+__all__ = [
+    "DEMO_92_AS_OF",
+    "DEMO_92_CLAIM_ID",
+    "DEMO_92_FACT_ID",
+    "DEMO_92_QUESTION",
+    "DEMO_92_STATEMENT",
+    "ensure_demo_92_claim",
+]
 
 
 @dataclass(frozen=True)
@@ -124,54 +141,6 @@ def _finish_run(session: Session, run_id: str, outcome: str) -> None:
 def datetime_now() -> str:
     """Current UTC time in ISO-8601 (T2.5)."""
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-DEMO_92_FACT_ID = "F-LOOP-92"
-DEMO_92_CLAIM_ID = "C-LOOP-92"
-DEMO_92_QUESTION = "Does clause 9.2 require Nimbus to keep transfer logs?"
-DEMO_92_AS_OF = "2026-11-20"
-DEMO_92_STATEMENT = "Clause 9.2 requires Nimbus to keep transfer logs for review."
-
-
-def ensure_demo_92_claim(session: Session) -> str:
-    """Create the fixed clause-9.2 fact and claim when missing (T2.5).
-
-    Record and replay share these exact rows so the loop request hashes
-    match; ids, text and dates are constants, never generated.
-    """
-    clause = session.execute(
-        sa.select(models.Clause).where(models.Clause.ref == "9.2")
-    ).scalars().first()
-    if clause is None:
-        raise ToolError("demo contract has no clause 9.2", code="unknown_clause")
-    if session.get(models.Fact, DEMO_92_FACT_ID) is None:
-        session.add(
-            models.Fact(
-                id=DEMO_92_FACT_ID,
-                matter_id="MAT-01",
-                clause_id=clause.id,
-                statement=DEMO_92_STATEMENT,
-                structured_json={"element": "transfer logs", "clause_ref": "9.2"},
-                origin="extracted",
-                trust_class="document_extracted",
-                created_at="2026-01-01T00:00:00Z",
-            )
-        )
-    if session.get(models.Claim, DEMO_92_CLAIM_ID) is None:
-        session.add(
-            models.Claim(
-                id=DEMO_92_CLAIM_ID,
-                matter_id="MAT-01",
-                clause_id=clause.id,
-                claim_type="CT2",
-                params_json={"element": "transfer logs"},
-                question_text=DEMO_92_QUESTION,
-                as_of=DEMO_92_AS_OF,
-                created_at="2026-01-01T00:00:00Z",
-            )
-        )
-    session.commit()
-    return DEMO_92_CLAIM_ID
 
 
 def run_verify(

@@ -15,6 +15,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import models
+from app.core.errors import ToolError
 from app.db import init_db
 from app.services import rulecards, sources
 
@@ -26,6 +27,54 @@ DOCUMENT_ID = "DOC-01"
 DOC_VERSION_ID = "DOCV-01"
 
 EXPECTED_REFS = ["1", "2", "3", "4", "5", "6", "7", "8", "9.1", "9.2", "10", "11"]
+
+DEMO_92_FACT_ID = "F-LOOP-92"
+DEMO_92_CLAIM_ID = "C-LOOP-92"
+DEMO_92_QUESTION = "Does clause 9.2 require Nimbus to keep transfer logs?"
+DEMO_92_AS_OF = "2026-11-20"
+DEMO_92_STATEMENT = "Clause 9.2 requires Nimbus to keep transfer logs for review."
+
+
+def ensure_demo_92_claim(session: Session) -> str:
+    """Create the fixed clause-9.2 fact and claim when missing (T2.5).
+
+    Record and replay share these exact rows so the loop request hashes
+    match; ids, text and dates are constants, never generated. Called by
+    `seed_demo` so every demo database carries the 9.2 question context.
+    """
+    clause = session.execute(
+        sa.select(models.Clause).where(models.Clause.ref == "9.2")
+    ).scalars().first()
+    if clause is None:
+        raise ToolError("demo contract has no clause 9.2", code="unknown_clause")
+    if session.get(models.Fact, DEMO_92_FACT_ID) is None:
+        session.add(
+            models.Fact(
+                id=DEMO_92_FACT_ID,
+                matter_id="MAT-01",
+                clause_id=clause.id,
+                statement=DEMO_92_STATEMENT,
+                structured_json={"element": "transfer logs", "clause_ref": "9.2"},
+                origin="extracted",
+                trust_class="document_extracted",
+                created_at="2026-01-01T00:00:00Z",
+            )
+        )
+    if session.get(models.Claim, DEMO_92_CLAIM_ID) is None:
+        session.add(
+            models.Claim(
+                id=DEMO_92_CLAIM_ID,
+                matter_id="MAT-01",
+                clause_id=clause.id,
+                claim_type="CT2",
+                params_json={"element": "transfer logs"},
+                question_text=DEMO_92_QUESTION,
+                as_of=DEMO_92_AS_OF,
+                created_at="2026-01-01T00:00:00Z",
+            )
+        )
+    session.commit()
+    return DEMO_92_CLAIM_ID
 
 
 def _utcnow() -> str:
@@ -147,6 +196,7 @@ def seed_demo(
                 )
             )
         session.commit()
+    ensure_demo_92_claim(session)
     clause_count = session.execute(
         sa.select(sa.func.count()).select_from(models.Clause)
     ).scalar()

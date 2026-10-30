@@ -7,7 +7,7 @@ Maintained by the human (or by the assistant from the agent logs). Agents do NOT
 - Milestone: M6 coded (T5.4 wired to v1). M1 and M2 done.
 - Task in progress: none. Next is the core-gate click-through, then the claims-to-loop gap.
 - Core gate (end of Day 6): not reached
-- Contract: v1 in the working tree (T4.5). Stub is still the default (`API_STUB=1`).
+- Contract: v1 (commit 9c65591). Stub is still the default (`API_STUB=1`).
 
 ## Credits
 Logged estimates, not the billing page. Daily budget ~$4. Cap $150.
@@ -23,15 +23,15 @@ Logged estimates, not the billing page. Daily budget ~$4. Cap $150.
 | Logged total | ~$0.88 |
 
 ## Completed tasks
-Day 3 · T5.4 · wire UI to live v1 API · local, not committed
-Day 3 · T6.2 · challenger panel + README note · local, not committed
-Day 3 · T6.1 · challenger second pass · local, not committed
-Day 3 · T5.3 · Screen 3 lawyer control · local, not committed
-Day 3 · T4.1–T4.5 · graph, impact, re-verify, premises, real API, contract v1 · local, not committed
-Day 3 · T3.3 · memory service · local, not committed
-Day 3 · T2.4 + T2.5 · six tools + agent loop (clause 9.2 replay) · local, not committed
-Day 3 · T3.1 + T3.2 · checker core + step kinds · local, not committed
-Day 3 · T2.3 · question → typed claim · local, not committed
+Day 3 · T5.4 · wire UI to live v1 API · commit 9c65591
+Day 3 · T6.2 · challenger panel + README note · commit 9c65591
+Day 3 · T6.1 · challenger second pass · commit 9c65591
+Day 3 · T5.3 · Screen 3 lawyer control · commit 9c65591
+Day 3 · T4.1–T4.5 · graph, impact, re-verify, premises, real API, contract v1 · commit 9c65591
+Day 3 · T3.3 · memory service · commit 9c65591
+Day 3 · T2.4 + T2.5 · six tools + agent loop (clause 9.2 replay) · commit 9c65591
+Day 3 · T3.1 + T3.2 · checker core + step kinds · commit 9c65591
+Day 3 · T2.3 · question → typed claim · commit 9c65591
 Day 3 · T2.2 + T5.2 · extraction cassette + Screen 2 · commit 5c45b05 (pushed)
 Day 3 · T5.1 · Screen 1 clause review + CI path fix · commits 99a4f74 / 1ad7ede
 Day 3 · T2.1 · LLM gateway live/replay/mock · commit 99a4f74
@@ -56,7 +56,7 @@ Day 1 · T0.1 · repo + docs · commit 91fc1f
 - Root `.gitignore` `lib/` hid `frontend/src/lib/` (fixed by moving to `utils/`).
 - T1.3 `claim_type` names still differ from ARCHITECTURE CT1–CT4. Claims follow Architecture.
 - Rule cards still `ai_inferred` until you confirm them.
-- Mixed-lane commits: 7ab269a, 99a4f74, 5c45b05. This next one is mixed too.
+- Mixed-lane commits: 7ab269a, 99a4f74, 5c45b05, 9c65591.
 - Port 8000 was memopops when Screen 1 was opened. Core gate not clicked through on this app.
 - T2.5 `make record` ran more than once (~$0.80 on the old tier). Later calls use muse-spark-1.3-contributor.
 
@@ -64,17 +64,14 @@ Day 1 · T0.1 · repo + docs · commit 91fc1f
 - Confirm T1.3 claim types vs Architecture (or keep the card topic names).
 - Flip rule-card `trust_class` to `lawyer_confirmed` for demo? README must say no lawyer reviewed them.
 - Open weights T7.5 only if partner access.
-- Fill the hash in `HUMAN_LOG.md` after this batch is committed.
 
 ## Next steps
-1. Commit the local T2.3–T5.4 batch with `git hc`. Do not `git add .`. Then put the new hash where this file says `not committed`.
-2. Start the API with `API_STUB=0 LLM_MODE=replay DEMO_MODE=1`, seed, then click `/review`, `/impact`, `/control`.
-3. Muse Code: make `POST /api/claims` run the agent loop.
-4. Do not start T7 until that click-through is green.
+1. Start the API with `API_STUB=0 LLM_MODE=replay DEMO_MODE=1`, seed, then click `/review`, `/impact`, `/control`.
+2. Muse Code: make `POST /api/claims` run the agent loop.
+3. Do not start T7 until that click-through is green.
 
 ## Notes for the next session
 - LLM_MODE default replay. Tests must not use live.
 - `make record` loads `.env`. At most once per task.
 - Contract is v1. Cursor already ran `npm run gen:api`.
 - Do not `git add .`; `lib/` is gitignored.
-- Replace `not committed` in this file with the new hash after `git hc`.

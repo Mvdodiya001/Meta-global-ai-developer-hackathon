@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app import models, schemas
 from app.agent import claims, extract, tools
+from app.agent import loop as loop_agent
 from app.core.errors import (
     CassetteMissing,
     ClaimError,
@@ -35,7 +36,7 @@ from app.core.errors import (
     ToolError,
 )
 from app.db import default_db_path, get_engine
-from app.services import graph, impact, premises, reverify, seed, sources
+from app.services import graph, impact, memory, premises, reverify, seed, sources
 
 router = APIRouter()
 
@@ -137,6 +138,34 @@ def _ai_draft_label(session: Session, finding_id: str) -> str:
     return "AI draft — not yet reviewed"
 
 
+def _challenger_payload(session: Session, finding_id: str) -> dict[str, Any] | None:
+    """Echo the stored second-pass review, if the finding has one (ask-frontend).
+
+    `blocking` is derived from the stored objection severities, the same rule
+    the challenger uses when it builds its verdict.
+    """
+    row = (
+        session.execute(
+            sa.select(models.ChallengerReport)
+            .where(models.ChallengerReport.finding_id == finding_id)
+            .order_by(models.ChallengerReport.created_at.desc())
+        )
+        .scalars()
+        .first()
+    )
+    if row is None:
+        return None
+    objections = list(row.objections_json or [])
+    return {
+        "model": row.model,
+        "blocking": any(
+            isinstance(item, dict) and item.get("severity") == "blocking"
+            for item in objections
+        ),
+        "objections": objections,
+    }
+
+
 def _finding_payload(session: Session, finding: models.Finding) -> dict[str, Any]:
     """Serialize one finding against the v1 Finding schema (T4.5)."""
     proof = finding.proof_json if isinstance(finding.proof_json, dict) else {}
@@ -153,7 +182,7 @@ def _finding_payload(session: Session, finding: models.Finding) -> dict[str, Any
         "premise_ids": list(finding.premise_ids_json or []),
         "rule_card_ids": list(finding.rule_card_ids_json or []),
         "checker_report": dict(report) if isinstance(report, dict) else None,
-        "challenger_report": None,
+        "challenger_report": _challenger_payload(session, str(finding.id)),
         "run_id": finding.run_id or "",
         "created_at": finding.created_at,
         "supersedes_finding_id": finding.supersedes_finding_id,
@@ -452,7 +481,30 @@ async def create_claim(body: schemas.ClaimRequest, session: Session = Depends(db
         )
     )
     session.commit()
-    return {"claim_id": claim_id, "run_id": run_id}
+    loop_result = loop_agent.run_verify(
+        session,
+        claim_id=claim_id,
+        matter_id=_matter_for_document(session, clause),
+        cache_dir=CASSETTES_DIR,
+    )
+    finding_id: str | None = None
+    status: str | None = None
+    if loop_result.accepted and loop_result.proof is not None:
+        finding = memory.decide_finding(
+            session,
+            claim_id=claim_id,
+            proof=loop_result.proof,
+            run_id=loop_result.run_id,
+            challenger_cache_dir=CASSETTES_DIR,
+        )
+        finding_id = str(finding.id)
+        status = str(finding.status)
+    return {
+        "claim_id": claim_id,
+        "run_id": run_id,
+        "finding_id": finding_id,
+        "status": status,
+    }
 
 
 def _matter_for_document(session: Session, clause: models.Clause) -> str:

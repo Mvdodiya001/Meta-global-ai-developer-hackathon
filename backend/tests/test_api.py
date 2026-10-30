@@ -7,10 +7,11 @@ from typing import Any
 
 import httpx
 import pytest
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from app import models
 from app.agent import claims
+from app.agent.loop import LoopResult
 from app.db import init_db
 from app.services import graph, seed
 
@@ -246,9 +247,25 @@ def test_facts_and_trust_actions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     assert post(app, "/api/facts/NOPE/approve", {}).status_code == 404
 
 
+def canned_loop(
+    session: Session, **kwargs: Any
+) -> LoopResult:
+    """A loop that drafts nothing (T4.5 ask-flow)."""
+    _ = (session, kwargs)
+    return LoopResult(
+        run_id="RUN-LOOP",
+        accepted=False,
+        proof=None,
+        report=None,
+        outcome="no_proof",
+        tool_calls=0,
+    )
+
+
 def test_create_claim_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """T4.5: a recorded question structures into a stored claim plus run."""
     app = real_app(tmp_path, monkeypatch, seed_compact)
+    monkeypatch.setattr("app.api.loop_agent.run_verify", canned_loop)
     question = claims.CLAIM_SAMPLES[0]["question"]
     created = post(
         app,
@@ -256,6 +273,7 @@ def test_create_claim_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         {"clause_id": "CL-01", "question": question, "as_of": "2026-11-20"},
     )
     assert created.status_code == 200, created.text
+    assert created.json()["finding_id"] is None
     run_id = created.json()["run_id"]
     run = get(app, f"/api/runs/{run_id}")
     assert run.json()["status"] == "running"
@@ -266,6 +284,82 @@ def test_create_claim_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         400,
         422,
     )
+
+
+def test_demo_question_end_to_end(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ask-flow: the demo question replays to a stored FOLLOWS finding."""
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    created = post(
+        app,
+        "/api/claims",
+        {
+            "clause_id": "CL-10",
+            "question": seed.DEMO_92_QUESTION,
+            "as_of": seed.DEMO_92_AS_OF,
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["finding_id"] is not None
+    assert body["status"] == "FOLLOWS"
+    current = get(app, f"/api/claims/{body['claim_id']}/current")
+    assert current.json()["id"] == body["finding_id"]
+    assert current.json()["status"] == "FOLLOWS"
+
+
+def test_user_date_question_end_to_end(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ask-frontend: the 2025-10-17 ask replays to a stored FOLLOWS finding."""
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    created = post(
+        app,
+        "/api/claims",
+        {
+            "clause_id": "CL-10",
+            "question": seed.DEMO_92_QUESTION,
+            "as_of": "2025-10-17",
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["finding_id"] is not None
+    assert body["status"] == "FOLLOWS"
+    current = get(app, f"/api/claims/{body['claim_id']}/current")
+    assert current.json()["id"] == body["finding_id"]
+    assert current.json()["status"] == "FOLLOWS"
+
+
+def test_challenger_report_returned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ask-frontend: CHALLENGER=on stores the review and the payload echoes it."""
+    monkeypatch.setenv("CHALLENGER", "on")
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    created = post(
+        app,
+        "/api/claims",
+        {
+            "clause_id": "CL-10",
+            "question": seed.DEMO_92_QUESTION,
+            "as_of": seed.DEMO_92_AS_OF,
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["finding_id"] is not None
+    current = get(app, f"/api/claims/{body['claim_id']}/current")
+    report = current.json()["challenger_report"]
+    assert report is not None
+    assert report["model"] == "muse-spark-1.2"
+    assert isinstance(report["blocking"], bool)
+    assert isinstance(report["objections"], list)
+    if report["blocking"]:
+        assert current.json()["status"] == "REQUIRES_REVIEW"
+    else:
+        assert current.json()["status"] == "FOLLOWS"
 
 
 def test_current_history_review(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -399,7 +493,8 @@ def test_extract_persists_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     clauses = get(app, "/api/documents/DOC-01/clauses").json()["clauses"]
     assert len(clauses) == 12
     facts = get(app, "/api/matters/MAT-01/facts").json()["facts"]
-    assert len(facts) == 12
+    assert len(facts) == 13
+    assert "F-LOOP-92" in {fact["id"] for fact in facts}
 
 
 def test_demo_scenario(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

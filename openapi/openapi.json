@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClauseTrace",
-    "version": "v1"
+    "version": "v2"
   },
   "paths": {
     "/api/health": {
@@ -1431,6 +1431,28 @@
           "run_id": {
             "type": "string",
             "title": "Run Id"
+          },
+          "finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
           }
         },
         "type": "object",
@@ -1439,7 +1461,7 @@
           "run_id"
         ],
         "title": "ClaimCreated",
-        "description": "Structured claim plus run handle (F4, F5)."
+        "description": "Structured claim plus run handle, loop finding when accepted (F4, F5)."
       },
       "ClaimRequest": {
         "properties": {

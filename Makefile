@@ -7,7 +7,7 @@ setup:
 	cd frontend && npm install
 
 dev:
-	@echo "Run in two terminals: (1) cd backend && .venv/bin/uvicorn app.main:app --port 8000 --reload  (2) cd frontend && npm run dev"
+	@echo "Run in two terminals: (1) cd backend && set -a; [ -f ../.env ] && . ../.env; set +a; .venv/bin/uvicorn app.main:app --port 8000 --reload  (2) cd frontend && npm run dev"
 
 check-backend:
 	cd backend && .venv/bin/ruff check . && .venv/bin/mypy . && .venv/bin/pytest -q

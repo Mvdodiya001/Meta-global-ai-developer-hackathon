@@ -99,10 +99,12 @@ class ExtractResult(BaseModel):
 
 
 class ClaimCreated(BaseModel):
-    """Structured claim plus run handle (F4, F5)."""
+    """Structured claim plus run handle, loop finding when accepted (F4, F5)."""
 
     claim_id: str
     run_id: str
+    finding_id: str | None = None
+    status: str | None = None
 
 
 class ToolCall(BaseModel):

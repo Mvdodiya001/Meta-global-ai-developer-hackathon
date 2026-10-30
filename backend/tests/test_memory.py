@@ -442,3 +442,62 @@ def test_unknown_claim_raises(tmp_path: Path) -> None:
     with pytest.raises(MemoryServiceError):
         decide(session, claim_id="C-NOPE")
     session.close()
+
+
+def test_decide_persists_challenger_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ask-frontend: a run challenger pass is stored against the finding."""
+    from app.agent import challenger as challenger_agent
+
+    session = make_session(tmp_path)
+    seed(session)
+    fresh_lookup(session)
+    canned = challenger_agent.ChallengerReport(
+        objections=[{"severity": "note", "reason": "Recheck the log window."}],
+        blocking=False,
+        note=True,
+        model="muse-spark-1.2",
+        request_sha="deadbeef",
+        cached=False,
+    )
+    monkeypatch.setattr(
+        challenger_agent, "review_claim", lambda **kwargs: canned
+    )
+    finding = decide(session, draft=citing_proof(), challenger=True)
+    assert finding.status == "FOLLOWS"
+    rows = (
+        session.execute(
+            sa.select(models.ChallengerReport).where(
+                models.ChallengerReport.finding_id == finding.id
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(rows) == 1
+    assert rows[0].claim_id == "C-01"
+    assert rows[0].model == "muse-spark-1.2"
+    assert rows[0].objections_json == [
+        {"severity": "note", "reason": "Recheck the log window."}
+    ]
+    session.close()
+
+
+def test_decide_without_challenger_stores_no_report(tmp_path: Path) -> None:
+    """Ask-frontend: no challenger pass means no stored report row."""
+    session = make_session(tmp_path)
+    seed(session)
+    fresh_lookup(session)
+    decide(session, draft=citing_proof())
+    rows = (
+        session.execute(
+            sa.select(models.ChallengerReport).where(
+                models.ChallengerReport.claim_id == "C-01"
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert rows == []
+    session.close()

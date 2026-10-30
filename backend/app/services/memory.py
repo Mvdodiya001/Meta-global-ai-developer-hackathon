@@ -221,8 +221,13 @@ def _store_decision(
     run_id: str,
     fact_ids: list[str],
     card_ids: list[str],
+    challenge: challenger_agent.ChallengerReport | None = None,
 ) -> models.Finding:
-    """Write finding, event, edges and audit rows for a decision (T3.3)."""
+    """Write finding, event, edges and audit rows for a decision (T3.3).
+
+    A run challenger pass is stored as one append-only `challenger_reports`
+    row so the finding payload can echo it (ask-frontend).
+    """
     prior = list(
         session.execute(
             sa.select(models.Finding)
@@ -309,6 +314,17 @@ def _store_decision(
             },
         )
     )
+    if challenge is not None:
+        session.add(
+            models.ChallengerReport(
+                id=_new_id("CR"),
+                claim_id=claim.id,
+                finding_id=finding_id,
+                model=challenge.model,
+                objections_json=[dict(item) for item in challenge.objections],
+                created_at=_utcnow(),
+            )
+        )
     session.commit()
     return finding
 
@@ -358,6 +374,7 @@ def decide_finding(
     run_challenger = (
         challenger if challenger is not None else os.getenv("CHALLENGER", "off") == "on"
     )
+    challenge: challenger_agent.ChallengerReport | None = None
     if run_challenger:
         challenge = challenger_agent.review_claim(
             question=str(claim.question_text),
@@ -428,4 +445,5 @@ def decide_finding(
         run_id,
         sorted(facts),
         sorted(cards),
+        challenge,
     )

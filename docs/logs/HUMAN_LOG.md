@@ -25,8 +25,8 @@ Before each agent session, commit a checkpoint so `git diff` shows only that ses
 | Day 3 | 1ad7ede | CU | T5.1 | CI: move findingTraces off gitignored `lib/` |
 | Day 3 | 5c45b05 | MC | T2.2 | clause extraction + cassette; pushed; mixed with T5.2 |
 | Day 3 | 5c45b05 | CU | T5.2 | Screen 2 impact + re-verify split; same commit, pushed |
-| Day 3 | not committed | MC | T2.3, T3.1, T3.2, T2.4, T2.5, T3.3, T4.1–T4.5, T6.1 | claims, checker, six tools, loop, memory, graph, impact, re-verify, premises, API v1, challenger. Fill hash after `git hc` |
-| Day 3 | not committed | CU | T5.3, T6.2, T5.4 | Screen 3, challenger panel, live v1 wire. Same local batch |
+| Day 3 | 9c65591 | MC | T2.3, T3.1, T3.2, T2.4, T2.5, T3.3, T4.1–T4.5, T6.1 | claims, checker, six tools, loop, memory, graph, impact, re-verify, premises, API v1, challenger |
+| Day 3 | 9c65591 | CU | T5.3, T6.2, T5.4 | Screen 3, challenger panel, live v1 wire; same commit |
 
 ## Decisions and incidents
 | Date | What happened / decided | Action taken |
@@ -42,7 +42,7 @@ Before each agent session, commit a checkpoint so `git diff` shows only that ses
 | Day 3 | T2.2 + T5.2 pushed as 5c45b05 | mixed message left as pushed |
 | Day 3 | Gateway default moved to muse-spark-1.3-contributor | old cassettes replaced; loop had already spent ~$0.80 |
 | Day 3 | `make record` loads `.env` and fails fast with no key | key not printed |
-| Day 3 | Contract v0 → v1 in the working tree | real router when `API_STUB=0`; stub stays the default |
+| Day 3 | Contract v0 → v1 in 9c65591 | real router when `API_STUB=0`; stub stays the default |
 | Day 3 | `POST /api/claims` does not start the agent loop | Screen 1 cannot finish a finding; core gate not green |
 | Day 3 | Template is `env.example`, not `.env.example` | no secret in that file; `.env` stays gitignored |
 | Day 3 | Logged model spend about $0.88 | billing page not re-checked |
@@ -50,8 +50,8 @@ Before each agent session, commit a checkpoint so `git diff` shows only that ses
 ## Sync points
 | ID | Date reached | Verified by | Notes |
 |----|--------------|-------------|-------|
-| SP1 contract v1 | 2026-10-30 | T4.5 log | `openapi` info.version v1 in the working tree; not committed |
-| SP2 vertical slice | 2026-10-30 | T2.5 log | clause 9.2 proof accepted in replay tests; `python -m app.cli` not checked |
-| SP3 impact API | 2026-10-30 | T4.5 log | impact ids `IMP-{version}` from STALE events; not committed |
+| SP1 contract v1 | 2026-10-30 | T4.5 log | `openapi` info.version v1; commit 9c65591 |
+| SP2 vertical slice | 2026-10-30 | T2.5 log | clause 9.2 proof accepted in replay tests; commit 9c65591; `python -m app.cli` not checked |
+| SP3 impact API | 2026-10-30 | T4.5 log | impact ids `IMP-{version}` from STALE events; commit 9c65591 |
 | SP4 core gate | | | not reached. Claims route does not run the loop. Browser not verified on this app |
 | SP5 freeze | | | |

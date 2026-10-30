@@ -45,8 +45,8 @@ def client_post(path: str, body: object) -> httpx.Response:
 
 
 def test_contract_version_is_v1() -> None:
-    """T4.5: [CONTRACT v0 → v1] — the real router replaced the stub."""
-    assert load_openapi()["info"]["version"] == "v1"
+    """Ask-flow: [CONTRACT v1 → v2] — ClaimCreated carries the loop finding."""
+    assert load_openapi()["info"]["version"] == "v2"
 
 
 def test_spec_paths_present() -> None:

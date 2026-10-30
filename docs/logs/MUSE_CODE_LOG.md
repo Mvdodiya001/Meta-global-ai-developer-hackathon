@@ -414,3 +414,62 @@ _(no entries yet)_
 - Third-party added: none.
 - Credit spend: ~$0 (one small 1.2 call; 1.2 has no price-table entry so it logs $0).
 - Ready for human commit: yes — suggested message: `T6.1: add challenger second pass with recorded objection`
+
+## [ask-flow] STARTED · 2026-10-30 22:56 IST
+- Task: user-directed — demo question needs a replay cassette; POST /api/claims must start the agent loop after typing (a cassette alone produces no finding)
+- Scope: move demo 9.2 constants into `services/seed.py` (loop re-exports; `seed_demo` ensures F-LOOP-92/C-LOOP-92); POST /api/claims runs loop + decide and returns finding_id/status (contract additive → v2); record one structuring cassette for the demo question; API end-to-end test; regen openapi [CONTRACT v1 → v2]
+
+## [ask-flow] DONE · 2026-10-31 00:13 IST
+- [CONTRACT v1 → v2] POST /api/claims now runs the agent loop and returns the decided finding; Cursor: run `npm run gen:api`.
+- Files changed: `backend/app/services/seed.py` (modified: demo 9.2 constants + `ensure_demo_92_claim` moved here from loop.py; `seed_demo` ensures them so every demo DB carries the 9.2 context); `backend/app/agent/loop.py` (modified: re-exports the seed constants); `backend/app/schemas.py` (modified: `ClaimCreated` gains nullable `finding_id`/`status`); `backend/app/api.py` (modified: POST /claims runs loop + `memory.decide_finding` on accept, returns finding); `backend/app/main.py` (modified: version v2); `scripts/record_cassettes.py` (modified: `record_demo_claim` + `record_ask_flow`); `openapi/openapi.json` (modified: regenerated v2, 28 paths); `openapi/examples/claim_created.json` (modified: v2 shape); `backend/tests/test_api.py` (modified: canned loop for the typing test, new end-to-end demo test, facts 13 with seeded F-LOOP-92); `backend/tests/test_contract_v0.py` (modified: version pin v2).
+- What changed: asking the demo question now yields a stored FOLLOWS finding in one call — structure (replay) → loop (replay) → decide (deterministic). The demo structuring cassette is new; the ask-flow loop needed its own turns because live-typed params (`keep transfer logs`) differ from the hand-fixed T2.5 ones (`transfer logs`) — the prompt carries params, so hashes diverge. Found via a failed record: the model wandered on a dirty default DB (stray extraction facts changed the prompt), which also proved cassettes are content-pinned; fixed with `make reset-demo` first, then recorded clean.
+- Checks run: `make check-backend` → ruff clean, mypy clean (52 files), pytest 199/199, zero skipped (all replays run, incl. the new end-to-end). `make record` → ask-flow loop accepted in 5 calls, finding FOLLOWS. Junk confusion-run cassettes (16) removed by content signature; re-ran green.
+- Decisions/assumptions: claim-id-independent loop requests let one recording serve every endpoint-created claim (the draft's embedded claim id is the model's, ignored by decide — logged, not fixed, since checker never checks it); loop failures surface as 502 with the claim still stored; non-accepting loops return null finding fields; C-REC-ASK recording id is fixed so re-records replay the loop from cache.
+- Contract change: [CONTRACT v1 → v2] — only additive optional fields on ClaimCreated; stub examples updated to the v2 shape.
+- Requests: none.
+- New-work note: ask-flow end-to-end 2026-10-31.
+- Third-party added: none.
+- Credit spend: ~$0.01 (1 structuring + 5 loop turns on contributor tier).
+- Ready for human commit: yes — suggested message: `Wire agent loop into POST claims and contract v2`
+
+## [ask-502] DONE · 2026-10-31 00:21 IST
+- Files changed: `Makefile` (modified: `dev` hint sources `../.env` so uvicorn gets the key); `docs/logs/MUSE_CODE_LOG.md` (modified).
+- What changed: nothing in the endpoint — the 502s are the gateway failing loudly by design. Reproduced both: (1) any question without a recorded cassette in replay mode → 502 `MODEL_UNAVAILABLE: no cassette for request …`; (2) `LLM_MODE=live` without the key exported in the server shell → 502 `MODEL_UNAVAILABLE: MODEL_API_KEY is missing`. The demo question itself returns 200 FOLLOWS on a clean seed. The response body always carries the exact `code`/`message` — read it, not just the status line.
+- Checks run: live endpoint probes — demo question 200 FOLLOWS; unrecorded question 502 no-cassette; live-without-key 502 missing-key; `make check-backend` → ruff clean, mypy clean, pytest 199/199.
+- Decisions/assumptions: replay stays strict (fail loudly, no fallback); only the 8 recorded questions work keyless; any other question needs `LLM_MODE=live` with the key in the server env (use the updated `make dev` command).
+- Contract change: none.
+- Requests: none.
+- New-work note: none.
+- Third-party added: none.
+- Credit spend: $0.
+- Ready for human commit: yes — suggested message: `Load .env in dev server hint`
+
+## [ask-frontend] STARTED · 2026-10-31 00:22 IST
+
+## [ask-frontend] DONE · 2026-10-31 00:37 IST
+- Scope: frontend ask-502 (`POST /api/claims` 502 on the 2025-10-17 ask) + challenger panel "No challenger report on this finding yet". No frontend edits (Cursor lane); backend-only fix. Frontend is NOT at fault (details below).
+- Diagnosis (read-only frontend inspection):
+  - 502: `ClauseReviewPage.tsx` sends exactly what the user typed (`question` + `as_of`, default `2025-10-01`). Replay cassettes are content-pinned by request hash (model+input incl. as_of). Recorded triple used `2026-11-20`; the typed `2025-10-17` had no structure/loop cassettes, so strict replay raised `LLMRequestFailed` -> 502. Correct frontend behavior; backend coverage gap.
+  - Challenger: the panel renders `finding.challenger_report`. Backend hardcoded `"challenger_report": None` in `_finding_payload` and never wrote the `challenger_reports` table (a second `review_claim` gap: the endpoint's `decide_finding` call omitted `challenger_cache_dir`, so it read the default `.cache/llm` dir instead of `corpus/cassettes` and could never replay). So the panel could never show data even on success. Correct frontend rendering; backend persistence/wiring gap.
+- Files changed (this turn only):
+  - `backend/app/services/memory.py`: `decide_finding` keeps the run `ChallengerReport`; `_store_decision(..., challenge=None)` inserts one append-only `challenger_reports` row (claim/finding/model/objections). UNKNOWN paths pass nothing.
+  - `backend/app/api.py`: new `_challenger_payload` echoes the stored review (`model`, `blocking` derived from objection severities, `objections`) or None; endpoint `decide_finding` now passes `challenger_cache_dir=CASSETTES_DIR`.
+  - `backend/tests/test_memory.py`: `test_decide_persists_challenger_report` (monkeypatched review, no LLM), `test_decide_without_challenger_stores_no_report`.
+  - `backend/tests/test_api.py`: `test_user_date_question_end_to_end` (2025-10-17 -> 200 FOLLOWS), `test_challenger_report_returned` (CHALLENGER=on -> payload echoes `muse-spark-1.2` endorsement, status FOLLOWS).
+  - `scripts/record_cassettes.py`: `record_ask_flow` parameterized (`as_of`/`claim_id`/`run_id`, `record_review`); main records canonical chain + review, then the 2025-10-17 chain (`C-REC-ASK-1017`).
+  - `corpus/cassettes/`: 14 new cassettes (structure-1017 x1, loop-1017 turns x12, ask-flow review x1). The user's exact missing hash `2d021202...` is now recorded.
+- Checks run (real results): new tests failed first (incl. reproducing the user's 502s), then `make check-backend` green — ruff clean, mypy clean (52 files), pytest 203/203 (199 prior + 4 new). One `make record` run: canonical loop accepted (5 calls, cache), review recorded blocking=False/0 objections, 1017 loop accepted (12 live calls) -> FOLLOWS, tampered-proof review cache-hit blocking=True.
+- Decisions/assumptions: recording pinned to the user's typed date (arbitrary dates still need a live key); `blocking` derived from severities (same rule as challenger) so no schema change and no dev-DB reset needed; no contract change ([CONTRACT v2] field already declared, now populated).
+- Requests: [REQ -> H] (1) For a zero-key first-run demo, ask Cursor to default the as-of picker to a recorded date (`2026-11-20` or `2025-10-17`); any other date needs `MODEL_API_KEY` + live mode. (2) Demo server needs `CHALLENGER=on` for real challenger reports, else the panel keeps showing the mock/none state.
+- Credit spend: 14 new cassettes this run; dev-DB live-call ledger totals $0.013414 across 18 uncached calls (inside daily $4 budget).
+- Ready for human commit: yes. Suggested message: "Record 2025-10-17 ask chain and return stored challenger reports on findings"
+
+## [record-fix] DONE · 2026-10-31 01:14 IST
+- Scope: user's `make record` failed at `record_loop` with `budget_exhausted after 12 tool calls (accepted=False)`. Backend lane only; no frontend involvement.
+- Root cause (verified, not guessed): the dev DB had drifted since the clean record. A lawyer-review Approve had copied fact F-LOOP-92 into `F-fa0a3f806d0c` (`lawyer_confirmed`, via `premises._copy_fact` — correct T4.4 behavior, not a bug). The loop's turn-1 prompt embeds `_fact_lines` (every MAT-01 fact), so turn-1 hashed differently -> all turns missed cache -> 12 live model calls -> model failed to converge -> `SystemExit`. That run also saved 12 junk cassettes (00:52-01:01) encoding the failed path, which made even replay fail deterministically afterward. Failing input verified by reading the recorded turn-1 text (two near-identical premises).
+- Fix (mine): deleted exactly the 12 content-identified junk cassettes (`grep -l F-fa0a3f806d0c`, count now 32 = 18 canonical + 14 ask-frontend); `make reset-demo` (wipes dev sqlite, reseeds canonical rows); `make record` green with $0 spend (extraction/claims skips, loop 6-turn accept, ask-flow 5-turn FOLLOWS + review endorsement cache-hit, 1017 chain 12-turn FOLLOWS, tampered-proof review cache-hit).
+- My code (ask-frontend) is untouched and exonerated: the failure used only pre-existing `record_loop` + drifted DB rows. My two replay probes were read-only plus log rows (Run/ToolCall/LlmCall, hash-neutral), wiped by the reset.
+- Checks: `make check-backend` green — ruff clean, mypy clean (52 files), pytest 203/203.
+- Standing rule for human/demo: interactive demo use (Ask, and especially lawyer Approve which mints new `F-*` facts) changes prompt hashes. Always run `make reset-demo` before `make record`; never record on a clicked-around DB. No `make record` needed at all right now — every chain is recorded.
+- Spend: the failed run burned 12 live calls = $0.010667 (`RUN-458718727d71`); cleanup/record runs spent $0. Cumulative dev-DB live ledger was wiped by the reset.
+- Ready for human commit: yes (log only; cassettes are untracked, DB is gitignored). Suggested message: "Remove failed-path loop cassettes orphaned by drifted demo DB".
