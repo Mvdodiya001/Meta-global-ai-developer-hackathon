@@ -8,9 +8,14 @@ import {
   fetchMockGraph,
   fetchMockImpact,
   fetchMockMatter,
+  fetchMockAfterFinding,
   fetchMockCreateClaim,
+  fetchMockIngest,
+  fetchMockReverify,
+  fetchMockReverifyAudit,
   fetchMockRunEvents,
   fetchMockSourceVersions,
+  fetchMockSources,
   pollMockRunEvents,
 } from './mocks'
 import type {
@@ -22,7 +27,10 @@ import type {
   Finding,
   GraphSlice,
   ImpactReport,
+  IngestResult,
   Matter,
+  ReverifyResult,
+  SourceList,
   SourceVersionList,
   ToolCall,
 } from './types'
@@ -72,11 +80,11 @@ export const api = {
       ? getJson<DiffResult>(
           `/api/sources/${sourceId}/diff?against=${encodeURIComponent(against)}`,
         )
-      : fetchMockDiff(),
-  graph: (_findingId: string): Promise<GraphSlice> =>
+      : fetchMockDiff(sourceId, against),
+  graph: (_findingId: string, sourceId = 'SRC-DPDP-ACT'): Promise<GraphSlice> =>
     useLiveApi
       ? getJson<GraphSlice>(`/api/findings/${_findingId}/graph`)
-      : fetchMockGraph(),
+      : fetchMockGraph(sourceId),
   audit: (_matterId: string): Promise<AuditTrail> =>
     useLiveApi
       ? getJson<AuditTrail>(`/api/matters/${_matterId}/audit`)
@@ -84,9 +92,29 @@ export const api = {
   sourceVersions: (sourceId: string): Promise<SourceVersionList> =>
     useLiveApi
       ? getJson<SourceVersionList>(`/api/sources/${sourceId}/versions`)
-      : fetchMockSourceVersions(),
-  impact: (_reportId: string): Promise<ImpactReport> =>
-    useLiveApi ? getJson<ImpactReport>(`/api/impact/${_reportId}`) : fetchMockImpact(),
+      : fetchMockSourceVersions(sourceId),
+  impact: (reportId: string): Promise<ImpactReport> =>
+    useLiveApi
+      ? getJson<ImpactReport>(`/api/impact/${reportId}`)
+      : fetchMockImpact(reportId),
+  sources: (): Promise<SourceList> =>
+    useLiveApi ? getJson<SourceList>('/api/sources') : fetchMockSources(),
+  ingest: (sourceId: string): Promise<IngestResult> =>
+    useLiveApi
+      ? postJson<IngestResult>(`/api/sources/${sourceId}/ingest`, { fixture: true })
+      : fetchMockIngest(sourceId),
+  reverify: (reportId: string): Promise<ReverifyResult> =>
+    useLiveApi
+      ? postJson<ReverifyResult>(`/api/impact/${reportId}/reverify`, {})
+      : fetchMockReverify(),
+  afterFinding: (): Promise<Finding> =>
+    useLiveApi
+      ? getJson<Finding>('/api/findings/FND-002')
+      : fetchMockAfterFinding(),
+  reverifyAudit: (): Promise<AuditTrail> =>
+    useLiveApi
+      ? getJson<AuditTrail>('/api/matters/MAT-01/audit')
+      : fetchMockReverifyAudit(),
   createClaim: (_body: {
     clause_id: string
     question: string

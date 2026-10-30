@@ -32,6 +32,12 @@ const STATUS_META: Record<
     className:
       'border-orange-400 bg-orange-50 text-orange-950 dark:border-orange-600 dark:bg-orange-950/40 dark:text-orange-100',
   },
+  SUPERSEDED: {
+    label: 'Superseded',
+    icon: '↩',
+    className:
+      'border-slate-400 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100',
+  },
 }
 
 type StatusBadgeProps = {
@@ -40,7 +46,7 @@ type StatusBadgeProps = {
 }
 
 export function StatusBadge({ status, state }: StatusBadgeProps) {
-  const key = state === 'STALE' ? 'STALE' : status
+  const key = state === 'STALE' || state === 'SUPERSEDED' ? state : status
   const meta = STATUS_META[key] ?? {
     label: status,
     icon: '•',

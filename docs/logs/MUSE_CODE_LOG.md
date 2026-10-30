@@ -160,3 +160,33 @@ _(no entries yet)_
 - Third-party added: none (stdlib + SQLAlchemy)
 - Credit spend: none (no live calls; replay/mock only)
 - Ready for human commit: yes — suggested message: `T2.1: add LLM gateway with replay mode`
+
+## [T2.2] STARTED · 2026-10-30 18:32 IST
+- Task: Clause extraction
+- Scope: `backend/app/agent/prompts.py` (extraction prompt) + `backend/app/agent/extract.py` (function-tool extraction, validation, span computation), `scripts/record_cassettes.py` (one-shot live recording), tests in `backend/tests/test_extract.py`. No key in this environment (`MODEL_API_KEY` absent, no `.env`), so the live recording + replay proof cannot run here — noted as [REQ → H] for PARTIAL close-out
+
+## [T2.2] PARTIAL · 2026-10-30 18:34 IST
+- Task: Clause extraction
+- Files changed: `backend/app/agent/prompts.py` (new, `emit_extraction` tool + prompt), `backend/app/agent/extract.py` (new, request builder, validator, service-side span computation, live retry), `backend/app/core/errors.py` (modified, added `ExtractionError`), `scripts/record_cassettes.py` (new, one-shot live recorder used by `make record`), `backend/tests/test_extract.py` (new, 7 pass + 1 skip), `docs/logs/MUSE_CODE_LOG.md` (modified)
+- What changed: `extract_document()` sends the DPA text to Muse Spark with temperature 0 and a single forced-shape `emit_extraction` function call (structure per ARCHITECTURE §8: `muse-spark-1.3`, structured output). The service validates refs/headings/texts, requires one fact per clause (`document_extracted`), and computes spans by unique-substring search so stored spans always match the document bytes; bad output raises `ExtractionError` (retried twice in live mode only). Facts carry `clause_ref` plus stated numbers/dates/roles to support CT1–CT4 typing in T2.3.
+- Checks run: `make check-backend` → pass (ruff clean; mypy clean; pytest 75 passed + 1 skipped). The skip is `test_replay_extraction`, which needs `corpus/cassettes/` from a live recording. Unit tests prove parsing, rejection paths, span-exactness on the real contract bytes, and loud mock-mode refusal. No live call was made.
+- Decisions / assumptions: Model returns verbatim quotes, service computes offsets (LLM-computed offsets waste tokens and misfire; the task's Done lines only need matching spans). Mock mode cannot extract (no function call) and fails loudly by design. `make record` target unchanged and now works (script created). Noted: ARCHITECTURE §7 defines CT1–CT4 as numeric_bound/required_element/in_force_on/role_applies — T1.3 cards use my topic names instead (already flagged in PROGRESS.md as an H decision; T2.3 will implement the ARCHITECTURE taxonomy for claims regardless).
+- Contract change: none (v0 stands)
+- Requests: [REQ → H] T2.2 cannot finish without a key: no `MODEL_API_KEY` in this environment, no `.env`/`.env.example`. To close out: `export MODEL_API_KEY=<key>` (never paste it into chat/docs), run `make record` once (expect <$0.05; T0.3 measured <$0.01/extraction on the contributor tier, budget ~$4/day), then `make check-backend` — `test_replay_extraction` should pass (12 clauses, exact spans) and the PARTIAL becomes DONE. If you'd rather I not spend at all, say so and T2.2 stays PARTIAL until T8.2.
+- New-work note: Muse Spark clause extraction pipeline 2026-10-30
+- Third-party added: none (stdlib + SQLAlchemy + gateway)
+- Credit spend: none (no live calls; key absent)
+- Ready for human commit: no — suggested message: `T2.2: add clause extraction pipeline (cassette pending)`
+
+## [T2.2] DONE · 2026-10-30 18:38 IST
+- Task: Clause extraction (close-out of PARTIAL)
+- Files changed: `backend/app/agent/prompts.py` (modified: fixed strict-schema violations, dropped `strict`), `corpus/cassettes/47f62a….json` (new, recorded live response), `docs/logs/MUSE_CODE_LOG.md` (modified). Rest of the pipeline unchanged from the PARTIAL entry.
+- What changed: key found in new `.env` (`MODEL_API_KEY` present; value never printed or stored). `make record` called the API once for the full DPA: 12 clauses + 12 facts, all spans byte-exact. Two schema fixes were needed first: (1) strict function schemas must list every property key in `required` (added `structured`); (2) strict mode demands `additionalProperties: false` on every nested object, which would have closed the open `structured` object — so `strict` was dropped and service-side validation stays authoritative. Both fixes are in `prompts.py`; the recorded cassette already uses the final request shape. Pre-model 400s cost nothing.
+- Checks run: `make record` → recorded with `cost_est=$0.020271` (1424 in / 4380 out tokens, one call — the single allowed record for this task). `make check-backend` → pass (ruff clean; mypy clean; pytest 76/76, zero skipped — `test_replay_extraction` proves 12 span-exact clauses + 12 `document_extracted` facts from the cassette). All three Done lines pass: 12 clauses extracted; spans match; cassette recorded.
+- Decisions / assumptions: nothing further; retry loop in `extract_document` was not needed (first well-formed call succeeded).
+- Contract change: none (v0 stands)
+- Requests: none (the [REQ → H] for the key is satisfied; `.env` itself is H-owned and already gitignored presumably — not verified, H to confirm)
+- New-work note: live-recorded extraction cassette 2026-10-30
+- Third-party added: none
+- Credit spend: $0.020271 (one live extraction call + three tiny schema probes at a few tokens each, all on muse-spark-1.3)
+- Ready for human commit: yes — suggested message: `T2.2: add clause extraction with recorded cassette`

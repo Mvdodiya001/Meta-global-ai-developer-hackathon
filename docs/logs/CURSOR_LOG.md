@@ -89,3 +89,20 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 - New-work note: none
 - Third-party added: none
 - Ready for human commit: yes — suggested message: `T5.1: move finding traces off gitignored lib path`
+
+## [T5.2] STARTED · 2026-10-30 18:29 IST
+- Task: Screen 2 source change and impact
+- Built against: contract v0 · openapi/examples mocks
+
+## [T5.2] DONE · 2026-10-30 18:32 IST
+- Task: Screen 2 source change and impact
+- Built against: contract v0 · openapi/examples + frontend impact demo overlay
+- Files changed: `frontend/src/pages/SourceImpactPage.tsx`, `frontend/src/pages/SourceImpactPage.test.tsx` (new), `frontend/src/components/impact/VersionPicker.tsx` (new), `frontend/src/components/impact/AffectedFindings.tsx` (new), `frontend/src/components/impact/BeforeAfterSplit.tsx` (new), `frontend/src/components/StaleGraph.tsx`, `frontend/src/components/badges/StatusBadge.tsx`, `frontend/src/api/client.ts`, `frontend/src/api/types.ts`, `frontend/src/api/mocks/index.ts`, `frontend/src/api/mocks/impactDemo.ts` (new), `docs/logs/CURSOR_LOG.md`
+- What changed: Screen 2 now has source + version pickers, SIMULATED badge when the selected version is simulated, ingest, side-by-side diff, React Flow graph with a 3-of-8 stale summary, affected-findings list, Re-verify, before/after finding split, and audit trail. Decoy source ingest flags no findings. Re-verify keeps FND-001 (FOLLOWS) and adds FND-002 (UNKNOWN).
+- Checks run: `make check-frontend` → pass (oxlint 0 issues; vitest 13/13); `npm run build` → pass; `git check-ignore` on new files → not ignored
+- Decisions / assumptions: Contract v0 examples only flag one finding; demo overlay in `impactDemo.ts` supplies 8 findings / 3 stale for the demo script. Did not change `openapi/examples/`. Live API still uses `VITE_USE_LIVE_API=1`.
+- Requests: none
+- UI rules checked: disclaimer via layout on `/impact` · SIMULATED badge on v2 · status text+icon · stale count plus STALE label (not colour-only)
+- New-work note: Screen 2 source change and impact mock flow 2026-10-30
+- Third-party added: none
+- Ready for human commit: yes — suggested message: `T5.2: build source-change impact screen with re-verify split`

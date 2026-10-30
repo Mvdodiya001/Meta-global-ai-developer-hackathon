@@ -19,3 +19,7 @@ class CassetteMissing(Exception):
 
 class LLMRequestFailed(Exception):
     """A live model request failed or its response did not parse (T2.1)."""
+
+
+class ExtractionError(Exception):
+    """Model output is not a valid clause extraction (T2.2, F3)."""

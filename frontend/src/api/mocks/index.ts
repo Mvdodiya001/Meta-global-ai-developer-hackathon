@@ -3,9 +3,10 @@ import clausesJson from '../../../../openapi/examples/clauses.json'
 import diffJson from '../../../../openapi/examples/diff.json'
 import factsJson from '../../../../openapi/examples/facts.json'
 import findingJson from '../../../../openapi/examples/finding_current.json'
-import graphJson from '../../../../openapi/examples/graph.json'
-import impactJson from '../../../../openapi/examples/impact.json'
+import ingestJson from '../../../../openapi/examples/ingest_result.json'
 import matterJson from '../../../../openapi/examples/matter.json'
+import reverifyJson from '../../../../openapi/examples/reverify_result.json'
+import sourcesJson from '../../../../openapi/examples/sources.json'
 import sourceVersionsJson from '../../../../openapi/examples/source_versions.json'
 
 import type {
@@ -17,10 +18,22 @@ import type {
   Finding,
   GraphSlice,
   ImpactReport,
+  IngestResult,
   Matter,
+  ReverifyResult,
+  SourceList,
   SourceVersionList,
   ToolCall,
 } from '../types'
+import {
+  afterFindingFrom,
+  decoyImpact,
+  decoyVersions,
+  demoCurrentGraph,
+  demoImpact,
+  demoStaleGraph,
+  reverifyAudit,
+} from './impactDemo'
 import { DEMO_RUN_EVENTS } from './runTrace'
 
 /** Example payloads from `openapi/examples/` (contract v0). */
@@ -30,10 +43,12 @@ export const mockData = {
   finding: findingJson as Finding,
   facts: factsJson as { facts: Fact[] },
   diff: diffJson as DiffResult,
-  graph: graphJson as GraphSlice,
   audit: auditJson as AuditTrail,
   sourceVersions: sourceVersionsJson as SourceVersionList,
-  impact: impactJson as ImpactReport,
+  impact: demoImpact,
+  sources: sourcesJson as SourceList,
+  ingest: ingestJson as IngestResult,
+  reverify: reverifyJson as ReverifyResult,
 }
 
 export async function fetchMockClauses(): Promise<Clause[]> {
@@ -48,24 +63,63 @@ export async function fetchMockFacts(): Promise<Fact[]> {
   return mockData.facts.facts
 }
 
-export async function fetchMockDiff(): Promise<DiffResult> {
+export async function fetchMockDiff(
+  _sourceId: string,
+  against: string,
+): Promise<DiffResult> {
+  if (against === 'SV-DECOY-1' || _sourceId === 'SRC-DECOY') {
+    const sample = mockData.diff.before[0]
+    return {
+      ...mockData.diff,
+      against: 'SV-DECOY-1',
+      current: 'SV-DECOY-1',
+      changed_keys: [],
+      before: sample ? [sample] : [],
+      after: sample ? [sample] : [],
+    }
+  }
   return mockData.diff
 }
 
-export async function fetchMockGraph(): Promise<GraphSlice> {
-  return mockData.graph
+export async function fetchMockGraph(sourceId = 'SRC-DPDP-ACT'): Promise<GraphSlice> {
+  return sourceId === 'SRC-DECOY' ? demoCurrentGraph : demoStaleGraph
 }
 
 export async function fetchMockAudit(): Promise<AuditTrail> {
   return mockData.audit
 }
 
-export async function fetchMockSourceVersions(): Promise<SourceVersionList> {
-  return mockData.sourceVersions
+export async function fetchMockSourceVersions(
+  sourceId: string,
+): Promise<SourceVersionList> {
+  return sourceId === 'SRC-DECOY' ? decoyVersions : mockData.sourceVersions
 }
 
-export async function fetchMockImpact(): Promise<ImpactReport> {
-  return mockData.impact
+export async function fetchMockImpact(reportId: string): Promise<ImpactReport> {
+  return reportId === 'IMP-DECOY' ? decoyImpact : mockData.impact
+}
+
+export async function fetchMockSources(): Promise<SourceList> {
+  return mockData.sources
+}
+
+export async function fetchMockIngest(sourceId: string): Promise<IngestResult> {
+  if (sourceId === 'SRC-DECOY') {
+    return { source_version_id: 'SV-DECOY-1', impact_report_id: 'IMP-DECOY' }
+  }
+  return mockData.ingest
+}
+
+export async function fetchMockReverify(): Promise<ReverifyResult> {
+  return mockData.reverify
+}
+
+export async function fetchMockAfterFinding(): Promise<Finding> {
+  return afterFindingFrom(mockData.finding)
+}
+
+export async function fetchMockReverifyAudit(): Promise<AuditTrail> {
+  return reverifyAudit(mockData.audit)
 }
 
 export async function fetchMockMatter(): Promise<Matter> {
