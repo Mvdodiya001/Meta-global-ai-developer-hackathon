@@ -1,11 +1,12 @@
 """T0.7: contract v0 tests — version pin, example validity, stub parity."""
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Any, cast
 
+import httpx
 import pytest
-from fastapi.testclient import TestClient
 
 from app.main import app
 
@@ -24,9 +25,28 @@ def example(name: str) -> object:
     return json.loads((EXAMPLES / name).read_text())
 
 
-def test_contract_version_is_v0() -> None:
-    """T0.7: Done when `info.version` is `v0`."""
-    assert load_openapi()["info"]["version"] == "v0"
+async def _request(method: str, path: str, body: object = None) -> httpx.Response:
+    """In-process ASGI request (no starlette TestClient deprecation)."""
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        if method == "get":
+            return await client.get(path)
+        return await client.post(path, json=body)
+
+
+def client_get(path: str) -> httpx.Response:
+    """Synchronous wrapper for GET (T0.7)."""
+    return asyncio.run(_request("get", path))
+
+
+def client_post(path: str, body: object) -> httpx.Response:
+    """Synchronous wrapper for POST (T0.7)."""
+    return asyncio.run(_request("post", path, body))
+
+
+def test_contract_version_is_v1() -> None:
+    """T4.5: [CONTRACT v0 → v1] — the real router replaced the stub."""
+    assert load_openapi()["info"]["version"] == "v1"
 
 
 def test_spec_paths_present() -> None:
@@ -113,7 +133,7 @@ POST_CASES = [
 @pytest.mark.parametrize(("path", "filename"), GET_CASES)
 def test_stub_get_returns_example(path: str, filename: str) -> None:
     """T0.7: stub mode returns the checked-in examples."""
-    response = TestClient(app).get(path)
+    response = client_get(path)
     assert response.status_code == 200, path
     assert response.json() == example(filename)
 
@@ -121,6 +141,6 @@ def test_stub_get_returns_example(path: str, filename: str) -> None:
 @pytest.mark.parametrize(("path", "body", "filename"), POST_CASES)
 def test_stub_post_returns_example(path: str, body: dict, filename: str) -> None:
     """T0.7: stub mode returns the checked-in examples for writes."""
-    response = TestClient(app).post(path, json=body)
+    response = client_post(path, body)
     assert response.status_code == 200, path
     assert response.json() == example(filename)

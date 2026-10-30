@@ -14,12 +14,17 @@ import type {
   ClaimCreated,
   Clause,
   DiffResult,
+  DocumentList,
   Fact,
+  FactAction,
   Finding,
   GraphSlice,
   ImpactReport,
   IngestResult,
   Matter,
+  Proof,
+  ProofVerifyBody,
+  ProofVerifyResult,
   ReverifyResult,
   SourceList,
   SourceVersionList,
@@ -34,9 +39,10 @@ import {
   demoStaleGraph,
   reverifyAudit,
 } from './impactDemo'
+import { approveFact, challengeFact, verifyProof } from './lawyerControl'
 import { DEMO_RUN_EVENTS } from './runTrace'
 
-/** Example payloads from `openapi/examples/` (contract v0). */
+/** Example payloads from `openapi/examples/` (contract v1 compatible stubs). */
 export const mockData = {
   matter: matterJson as Matter,
   clauses: clausesJson as { clauses: Clause[] },
@@ -96,7 +102,27 @@ export async function fetchMockSourceVersions(
 }
 
 export async function fetchMockImpact(reportId: string): Promise<ImpactReport> {
-  return reportId === 'IMP-DECOY' ? decoyImpact : mockData.impact
+  return reportId.includes('DECOY') ? decoyImpact : mockData.impact
+}
+
+export async function fetchMockDocuments(matterId: string): Promise<DocumentList> {
+  return {
+    documents: [
+      {
+        id: 'DOC-01',
+        matter_id: matterId,
+        title: mockData.matter.title,
+        kind: 'dpa',
+      },
+    ],
+  }
+}
+
+export async function fetchMockFindingById(id: string): Promise<Finding> {
+  if (id === 'FND-002') {
+    return fetchMockAfterFinding()
+  }
+  return fetchMockFinding()
 }
 
 export async function fetchMockSources(): Promise<SourceList> {
@@ -132,6 +158,20 @@ export async function fetchMockRunEvents(_runId: string): Promise<ToolCall[]> {
 
 export async function fetchMockCreateClaim(): Promise<ClaimCreated> {
   return { claim_id: 'C-001', run_id: 'RUN-01' }
+}
+
+export async function fetchMockApproveFact(factId: string): Promise<FactAction> {
+  const fact = mockData.facts.facts.find((row) => row.id === factId) ?? mockData.facts.facts[0]
+  return approveFact(fact)
+}
+
+export async function fetchMockChallengeFact(factId: string): Promise<FactAction> {
+  const fact = mockData.facts.facts.find((row) => row.id === factId) ?? mockData.facts.facts[0]
+  return challengeFact(fact)
+}
+
+export async function fetchMockVerifyProof(body: ProofVerifyBody): Promise<ProofVerifyResult> {
+  return verifyProof(mockData.finding.proof, body.proof as Proof)
 }
 
 export async function pollMockRunEvents(

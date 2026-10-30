@@ -24,7 +24,7 @@ reset-demo:
 	sh scripts/reset_demo.sh
 
 record:
-	cd backend && LLM_MODE=live .venv/bin/python ../scripts/record_cassettes.py
+	cd backend && set -a; [ -f ../.env ] && . ../.env; set +a; LLM_MODE=live .venv/bin/python ../scripts/record_cassettes.py
 
 # One-time, run by the human: installs git guards (human-only commits/pushes, no co-author lines).
 hooks:

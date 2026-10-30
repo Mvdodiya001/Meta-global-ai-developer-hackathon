@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { api } from '../api/client'
+import { DEMO_MATTER_ID, DEMO_SOURCE_ID } from '../api/config'
 import type {
   AuditTrail,
   DiffResult,
   Finding,
   GraphSlice,
   ImpactReport,
+  IngestVersionBody,
   SourceList,
   SourceVersion,
 } from '../api/types'
@@ -17,11 +19,25 @@ import { AffectedFindings } from '../components/impact/AffectedFindings'
 import { BeforeAfterSplit } from '../components/impact/BeforeAfterSplit'
 import { VersionPicker } from '../components/impact/VersionPicker'
 
+function ingestBody(version: SourceVersion, diff: DiffResult): IngestVersionBody {
+  return {
+    version_label: version.version_label,
+    published_on: version.published_on,
+    effective_from: version.effective_from,
+    provisions: diff.after.map((row) => ({
+      key: row.key,
+      text: row.text,
+      effective_from: row.effective_from,
+      effective_until: row.effective_until ?? null,
+    })),
+  }
+}
+
 export function SourceImpactPage() {
   const [sources, setSources] = useState<SourceList['sources']>([])
   const [versions, setVersions] = useState<SourceVersion[]>([])
-  const [sourceId, setSourceId] = useState('SRC-DPDP-ACT')
-  const [versionId, setVersionId] = useState('SV-02')
+  const [sourceId, setSourceId] = useState(DEMO_SOURCE_ID)
+  const [versionId, setVersionId] = useState('')
   const [diff, setDiff] = useState<DiffResult | null>(null)
   const [graph, setGraph] = useState<GraphSlice | null>(null)
   const [audit, setAudit] = useState<AuditTrail | null>(null)
@@ -37,47 +53,57 @@ export function SourceImpactPage() {
       list.versions.find((version) => version.is_simulated)?.id ??
       list.versions[0]?.id ??
       ''
-    const [d, g] = await Promise.all([
-      api.diff(nextSource, preferred),
-      api.graph('FND-001', nextSource),
+    const current = list.versions.find((version) => version.id === preferred)
+    const againstId =
+      current?.supersedes_id ??
+      list.versions.find((version) => version.id !== preferred)?.id ??
+      preferred
+    const [nextDiff, nextGraph, trail, report] = await Promise.all([
+      preferred ? api.diff(preferred, againstId, nextSource) : Promise.resolve(null),
+      api.graph(DEMO_MATTER_ID, nextSource),
+      api.audit(DEMO_MATTER_ID),
+      preferred ? api.impact(`IMP-${preferred}`) : Promise.resolve(null),
     ])
     setVersions(list.versions)
     setVersionId(preferred)
-    setDiff(d)
-    setGraph(g)
+    setDiff(nextDiff)
+    setGraph(nextGraph)
+    setAudit(trail)
+    setImpact(report)
     setAfter(null)
     setReverified(false)
+    const firstId = report?.affected[0]?.finding_id
+    setBefore(firstId ? await api.findingById(firstId) : null)
   }, [])
 
   useEffect(() => {
-    void Promise.all([
-      api.sources(),
-      api.finding('C-001'),
-      api.audit('MAT-01'),
-      api.impact('IMP-01'),
-    ]).then(([sourceList, finding, trail, report]) => {
+    void api.sources().then((sourceList) => {
       setSources(sourceList.sources)
-      setBefore(finding)
-      setAudit(trail)
-      setImpact(report)
+      const initial =
+        sourceList.sources.find((row) => row.id === DEMO_SOURCE_ID)?.id ??
+        sourceList.sources[0]?.id
+      if (initial) {
+        setSourceId(initial)
+        void loadSource(initial)
+      }
     })
-    void loadSource('SRC-DPDP-ACT', 'SV-02')
   }, [loadSource])
 
   async function handleSourceChange(next: string) {
     setSourceId(next)
     await loadSource(next)
-    if (next === 'SRC-DECOY') {
-      setImpact({ id: 'IMP-DECOY', source_version_id: 'SV-DECOY-1', affected: [] })
-    }
   }
 
   async function handleIngest() {
-    const result = await api.ingest(sourceId)
+    const selected = versions.find((version) => version.id === versionId)
+    if (!selected || !diff) {
+      return
+    }
+    const result = await api.ingest(sourceId, ingestBody(selected, diff))
     const [report, slice, trail] = await Promise.all([
       api.impact(result.impact_report_id),
-      api.graph('FND-001', sourceId),
-      api.audit('MAT-01'),
+      api.graph(DEMO_MATTER_ID, sourceId),
+      api.audit(DEMO_MATTER_ID),
     ])
     setImpact(report)
     setGraph(slice)
@@ -90,10 +116,11 @@ export function SourceImpactPage() {
     if (!impact) {
       return
     }
-    await api.reverify(impact.id)
+    const result = await api.reverify(impact.id)
+    const nextId = result.current[0]
     const [nextFinding, trail] = await Promise.all([
-      api.afterFinding(),
-      api.reverifyAudit(),
+      nextId ? api.findingById(nextId) : Promise.resolve(null),
+      api.audit(DEMO_MATTER_ID),
     ])
     setAfter(nextFinding)
     setAudit(trail)

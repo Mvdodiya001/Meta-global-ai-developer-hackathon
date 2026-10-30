@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClauseTrace",
-    "version": "v0"
+    "version": "v1"
   },
   "paths": {
     "/api/health": {
@@ -107,7 +107,7 @@
     "/api/documents/{id}/clauses": {
       "get": {
         "summary": "List Clauses",
-        "description": "Stub: clause list example (T0.7).",
+        "description": "Clauses of the latest document version (F3).",
         "operationId": "list_clauses_api_documents__id__clauses_get",
         "parameters": [
           {
@@ -144,68 +144,10 @@
         }
       }
     },
-    "/api/documents/{id}/extract": {
-      "post": {
-        "summary": "Extract Document",
-        "description": "Extraction result stub: clauses plus candidate facts (F3).",
-        "operationId": "extract_document_api_documents__id__extract_post",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Payload"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExtractResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/matters/{id}/facts": {
       "get": {
         "summary": "List Facts",
-        "description": "Stub: facts with trust classes example (T0.7).",
+        "description": "Facts with trust classes (F8).",
         "operationId": "list_facts_api_matters__id__facts_get",
         "parameters": [
           {
@@ -245,7 +187,7 @@
     "/api/facts/{id}/approve": {
       "post": {
         "summary": "Approve Fact",
-        "description": "Lawyer approve stub (F15).",
+        "description": "Lawyer approve: new lawyer_confirmed row (F15).",
         "operationId": "approve_fact_api_facts__id__approve_post",
         "parameters": [
           {
@@ -264,14 +206,13 @@
               "schema": {
                 "anyOf": [
                   {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/FactActionBody"
                   },
                   {
                     "type": "null"
                   }
                 ],
-                "title": "Payload"
+                "title": "Body"
               }
             }
           }
@@ -303,7 +244,7 @@
     "/api/facts/{id}/challenge": {
       "post": {
         "summary": "Challenge Fact",
-        "description": "Lawyer challenge stub (F15).",
+        "description": "Lawyer challenge: new disputed row, dependents staled (F15).",
         "operationId": "challenge_fact_api_facts__id__challenge_post",
         "parameters": [
           {
@@ -322,14 +263,13 @@
               "schema": {
                 "anyOf": [
                   {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/FactActionBody"
                   },
                   {
                     "type": "null"
                   }
                 ],
-                "title": "Payload"
+                "title": "Body"
               }
             }
           }
@@ -361,7 +301,7 @@
     "/api/facts/{id}/reject": {
       "post": {
         "summary": "Reject Fact",
-        "description": "Lawyer reject stub (F15).",
+        "description": "Lawyer reject: new disputed row, dependents staled (F15).",
         "operationId": "reject_fact_api_facts__id__reject_post",
         "parameters": [
           {
@@ -380,14 +320,13 @@
               "schema": {
                 "anyOf": [
                   {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/FactActionBody"
                   },
                   {
                     "type": "null"
                   }
                 ],
-                "title": "Payload"
+                "title": "Body"
               }
             }
           }
@@ -416,28 +355,78 @@
         }
       }
     },
-    "/api/claims": {
+    "/api/documents/{id}/extract": {
       "post": {
-        "summary": "Create Claim",
-        "description": "Structure-claim stub (F4, F5).",
-        "operationId": "create_claim_api_claims_post",
+        "summary": "Extract Document",
+        "description": "Run extraction and persist a new version with clauses + facts (F3).",
+        "operationId": "extract_document_api_documents__id__extract_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "anyOf": [
                   {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "type": "object",
+                    "additionalProperties": true
                   },
                   {
                     "type": "null"
                   }
                 ],
-                "title": "Payload"
+                "title": "Body"
               }
             }
           }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claims": {
+      "post": {
+        "summary": "Create Claim",
+        "description": "Structure a question, store the claim and open a run (F4, F5).",
+        "operationId": "create_claim_api_claims_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimRequest"
+              }
+            }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -466,7 +455,7 @@
     "/api/runs/{id}": {
       "get": {
         "summary": "Get Run",
-        "description": "Run status stub (F5).",
+        "description": "Run status (F5).",
         "operationId": "get_run_api_runs__id__get",
         "parameters": [
           {
@@ -506,7 +495,7 @@
     "/api/runs/{id}/events": {
       "get": {
         "summary": "Get Run Events",
-        "description": "Tool-call trace stub; SSE streaming lands after v0 (F5).",
+        "description": "Tool-call trace for a run (F5).",
         "operationId": "get_run_events_api_runs__id__events_get",
         "parameters": [
           {
@@ -546,7 +535,7 @@
     "/api/claims/{id}/current": {
       "get": {
         "summary": "Get Current Finding",
-        "description": "Stub: finding with proof example (T0.7).",
+        "description": "Current (latest-version) finding for a claim (F7).",
         "operationId": "get_current_finding_api_claims__id__current_get",
         "parameters": [
           {
@@ -586,7 +575,7 @@
     "/api/claims/{id}/history": {
       "get": {
         "summary": "Get Finding History",
-        "description": "All finding versions stub (F12).",
+        "description": "All finding versions for a claim, newest first (F12).",
         "operationId": "get_finding_history_api_claims__id__history_get",
         "parameters": [
           {
@@ -626,7 +615,7 @@
     "/api/findings/{id}": {
       "get": {
         "summary": "Get Finding",
-        "description": "Proof, traces and reports stub (F9).",
+        "description": "Proof, traces and reports for one finding (F9).",
         "operationId": "get_finding_api_findings__id__get",
         "parameters": [
           {
@@ -666,7 +655,7 @@
     "/api/findings/{id}/review": {
       "post": {
         "summary": "Review Finding",
-        "description": "Lawyer review stub (F16).",
+        "description": "Lawyer review: approve/reject records an event; annotate only notes (F16).",
         "operationId": "review_finding_api_findings__id__review_post",
         "parameters": [
           {
@@ -680,19 +669,11 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Payload"
+                "$ref": "#/components/schemas/ReviewBody"
               }
             }
           }
@@ -724,7 +705,7 @@
     "/api/sources": {
       "get": {
         "summary": "List Sources",
-        "description": "Source registry stub (F1).",
+        "description": "Source registry (F1).",
         "operationId": "list_sources_api_sources_get",
         "responses": {
           "200": {
@@ -743,7 +724,7 @@
     "/api/sources/{id}/versions": {
       "get": {
         "summary": "List Source Versions",
-        "description": "Version registry stub (F1).",
+        "description": "Version registry for one source (F1).",
         "operationId": "list_source_versions_api_sources__id__versions_get",
         "parameters": [
           {
@@ -783,7 +764,7 @@
     "/api/source-versions/{id}/diff": {
       "get": {
         "summary": "Diff Versions",
-        "description": "Side-by-side diff stub (F11).",
+        "description": "Side-by-side diff data between two versions (F11).",
         "operationId": "diff_versions_api_source_versions__id__diff_get",
         "parameters": [
           {
@@ -832,7 +813,7 @@
     "/api/sources/{id}/ingest": {
       "post": {
         "summary": "Ingest Source",
-        "description": "Ingest stub: new version plus impact report handle (F11).",
+        "description": "Store an inline new version and report its impact (F11).",
         "operationId": "ingest_source_api_sources__id__ingest_post",
         "parameters": [
           {
@@ -851,14 +832,13 @@
               "schema": {
                 "anyOf": [
                   {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/IngestBody"
                   },
                   {
                     "type": "null"
                   }
                 ],
-                "title": "Payload"
+                "title": "Body"
               }
             }
           }
@@ -890,7 +870,7 @@
     "/api/impact/{id}": {
       "get": {
         "summary": "Get Impact",
-        "description": "Stub: impact report example (T0.7).",
+        "description": "Impact report: findings with STALE events from one version (F11).",
         "operationId": "get_impact_api_impact__id__get",
         "parameters": [
           {
@@ -930,7 +910,7 @@
     "/api/impact/{id}/reverify": {
       "post": {
         "summary": "Reverify Impact",
-        "description": "Re-run stub for stale findings (F12).",
+        "description": "Re-run stale findings for one version with fresh lookups (F12).",
         "operationId": "reverify_impact_api_impact__id__reverify_post",
         "parameters": [
           {
@@ -949,14 +929,13 @@
               "schema": {
                 "anyOf": [
                   {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/ReverifyBody"
                   },
                   {
                     "type": "null"
                   }
                 ],
-                "title": "Payload"
+                "title": "Body"
               }
             }
           }
@@ -988,7 +967,7 @@
     "/api/graph": {
       "get": {
         "summary": "Get Graph",
-        "description": "Stub: graph slice example (T0.7).",
+        "description": "Nodes + edges for React Flow, optionally focused (F10).",
         "operationId": "get_graph_api_graph_get",
         "parameters": [
           {
@@ -1051,7 +1030,7 @@
     "/api/audit": {
       "get": {
         "summary": "Get Audit",
-        "description": "Stub: audit rows example (T0.7).",
+        "description": "Audit trail, optionally scoped to a matter (F14).",
         "operationId": "get_audit_api_audit_get",
         "parameters": [
           {
@@ -1098,25 +1077,17 @@
     "/api/proofs/verify": {
       "post": {
         "summary": "Verify Proof",
-        "description": "Tamper-demo checker stub (G8).",
+        "description": "Tamper demo: run the checker on an edited proof (G8).",
         "operationId": "verify_proof_api_proofs_verify_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Payload"
+                "$ref": "#/components/schemas/ProofVerifyBody"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -1145,7 +1116,7 @@
     "/api/counterfactual": {
       "post": {
         "summary": "Counterfactual",
-        "description": "What-if stub; the traversal itself is stretch (F19).",
+        "description": "What-if traversal is stretch; report it as unavailable (F19).",
         "operationId": "counterfactual_api_counterfactual_post",
         "requestBody": {
           "content": {
@@ -1160,7 +1131,7 @@
                     "type": "null"
                   }
                 ],
-                "title": "Payload"
+                "title": "Body"
               }
             }
           }
@@ -1192,7 +1163,7 @@
     "/api/demo/reset": {
       "post": {
         "summary": "Demo Reset",
-        "description": "Seed reset; only if `DEMO_MODE=1` (DATA_MODEL_API \u00a77).",
+        "description": "Reseed the demo database; only if `DEMO_MODE=1` (DATA_MODEL_API \u00a77).",
         "operationId": "demo_reset_api_demo_reset_post",
         "requestBody": {
           "content": {
@@ -1207,7 +1178,7 @@
                     "type": "null"
                   }
                 ],
-                "title": "Payload"
+                "title": "Body"
               }
             }
           }
@@ -1217,7 +1188,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Demo Reset Api Demo Reset Post"
+                }
               }
             }
           },
@@ -1237,7 +1210,7 @@
     "/api/demo/scenario/{name}": {
       "post": {
         "summary": "Demo Scenario",
-        "description": "Scenario seed; only if `DEMO_MODE=1` (DATA_MODEL_API \u00a77).",
+        "description": "Named demo setup; only if `DEMO_MODE=1` (DATA_MODEL_API \u00a77).",
         "operationId": "demo_scenario_api_demo_scenario__name__post",
         "parameters": [
           {
@@ -1263,7 +1236,7 @@
                     "type": "null"
                   }
                 ],
-                "title": "Payload"
+                "title": "Body"
               }
             }
           }
@@ -1273,7 +1246,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Demo Scenario Api Demo Scenario  Name  Post"
+                }
               }
             }
           },
@@ -1465,6 +1440,30 @@
         ],
         "title": "ClaimCreated",
         "description": "Structured claim plus run handle (F4, F5)."
+      },
+      "ClaimRequest": {
+        "properties": {
+          "clause_id": {
+            "type": "string",
+            "title": "Clause Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clause_id",
+          "question",
+          "as_of"
+        ],
+        "title": "ClaimRequest",
+        "description": "Structure-claim request body (F4)."
       },
       "Clause": {
         "properties": {
@@ -1763,6 +1762,46 @@
         "title": "FactAction",
         "description": "Lawyer trust action result (F15)."
       },
+      "FactActionBody": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "reviewer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "title": "FactActionBody",
+        "description": "Lawyer trust-action request body (F15)."
+      },
       "FactList": {
         "properties": {
           "facts": {
@@ -1831,7 +1870,14 @@
             "title": "Rule Card Ids"
           },
           "checker_report": {
-            "$ref": "#/components/schemas/CheckerReport"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CheckerReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "challenger_report": {
             "anyOf": [
@@ -1885,7 +1931,6 @@
           "source_version_ids",
           "premise_ids",
           "rule_card_ids",
-          "checker_report",
           "run_id",
           "created_at",
           "state",
@@ -2049,6 +2094,45 @@
         "title": "ImpactReport",
         "description": "Stub: impact report example (T0.7)."
       },
+      "IngestBody": {
+        "properties": {
+          "version": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IngestVersionBody"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fixture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixture"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "title": "IngestBody",
+        "description": "Ingest request body (F11)."
+      },
       "IngestResult": {
         "properties": {
           "source_version_id": {
@@ -2067,6 +2151,39 @@
         ],
         "title": "IngestResult",
         "description": "New version plus impact report handle (F11)."
+      },
+      "IngestVersionBody": {
+        "properties": {
+          "version_label": {
+            "type": "string",
+            "title": "Version Label"
+          },
+          "published_on": {
+            "type": "string",
+            "title": "Published On"
+          },
+          "effective_from": {
+            "type": "string",
+            "title": "Effective From"
+          },
+          "provisions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Provisions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version_label",
+          "published_on",
+          "effective_from",
+          "provisions"
+        ],
+        "title": "IngestVersionBody",
+        "description": "Inline new-version payload for ingest (F11)."
       },
       "Matter": {
         "properties": {
@@ -2282,6 +2399,26 @@
         "title": "ProofStep",
         "description": "One checker step (kinds land fully in T3.2)."
       },
+      "ProofVerifyBody": {
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "proof": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Proof"
+          }
+        },
+        "type": "object",
+        "required": [
+          "claim_id",
+          "proof"
+        ],
+        "title": "ProofVerifyBody",
+        "description": "Tamper-demo checker request body (G8)."
+      },
       "ProofVerifyResult": {
         "properties": {
           "valid": {
@@ -2363,6 +2500,22 @@
         "title": "Provision",
         "description": "One provision inside a source version (F2)."
       },
+      "ReverifyBody": {
+        "properties": {
+          "proofs": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Proofs",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "ReverifyBody",
+        "description": "Re-verify request body; proofs keyed by stale finding id (F12)."
+      },
       "ReverifyResult": {
         "properties": {
           "superseded": {
@@ -2387,6 +2540,42 @@
         ],
         "title": "ReverifyResult",
         "description": "Re-run outcome for stale findings (F12)."
+      },
+      "ReviewBody": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "reviewer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "title": "ReviewBody",
+        "description": "Finding review request body (F16)."
       },
       "ReviewResult": {
         "properties": {

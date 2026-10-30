@@ -17,6 +17,12 @@ export type SourceList = components['schemas']['SourceList']
 export type SourceVersion = components['schemas']['SourceVersion']
 export type IngestResult = components['schemas']['IngestResult']
 export type ReverifyResult = components['schemas']['ReverifyResult']
+export type FactAction = components['schemas']['FactAction']
+export type ProofVerifyResult = components['schemas']['ProofVerifyResult']
+export type ProofVerifyBody = components['schemas']['ProofVerifyBody']
+export type DocumentList = components['schemas']['DocumentList']
+export type IngestVersionBody = components['schemas']['IngestVersionBody']
+export type Run = components['schemas']['Run']
 
 export type TrustClass =
   | 'document_extracted'

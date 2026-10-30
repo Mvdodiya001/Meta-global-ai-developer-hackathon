@@ -44,10 +44,12 @@ export function FindingCard({ finding, lawyerReviewed = false }: FindingCardProp
         </div>
       </dl>
       <p className="text-sm text-slate-600 dark:text-slate-400">
-        Checker: {finding.checker_report.valid ? 'valid proof' : 'invalid proof'}
-        {finding.checker_report.errors.length > 0
-          ? ` (${finding.checker_report.errors.length} issues)`
-          : ''}
+        Checker:{' '}
+        {finding.checker_report == null
+          ? 'not computed'
+          : finding.checker_report.valid
+            ? 'valid proof'
+            : `invalid proof${finding.checker_report.errors.length > 0 ? ` (${finding.checker_report.errors.length} issues)` : ''}`}
       </p>
     </article>
   )

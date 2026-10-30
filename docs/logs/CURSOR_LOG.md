@@ -106,3 +106,56 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 - New-work note: Screen 2 source change and impact mock flow 2026-10-30
 - Third-party added: none
 - Ready for human commit: yes — suggested message: `T5.2: build source-change impact screen with re-verify split`
+
+## [T5.3] STARTED · 2026-10-30 22:36 IST
+- Task: Screen 3 lawyer control
+- Built against: contract v1 (will run npm run gen:api) · openapi/examples mocks
+
+## [T5.3] DONE · 2026-10-30 22:39 IST
+- Task: Screen 3 lawyer control
+- Built against: contract v1 (`npm run gen:api` run) · openapi/examples + frontend lawyer-control mocks
+- Files changed: `frontend/src/api/schema.d.ts` (regenerated v1), `frontend/src/api/types.ts`, `frontend/src/api/client.ts`, `frontend/src/api/mocks/index.ts`, `frontend/src/api/mocks/lawyerControl.ts` (new), `frontend/src/pages/LawyerControlPage.tsx`, `frontend/src/pages/LawyerControlPage.test.tsx` (new), `frontend/src/components/lawyer/*` (new), `frontend/src/components/FindingCard.tsx`, `docs/logs/CURSOR_LOG.md`
+- What changed: Regenerated types for [CONTRACT v0 → v1] (nullable `checker_report`). Screen 3 now has fact trust chips with Approve/Challenge, dependent recompute to UNKNOWN, as-of date vs commencement in-force flip, out-of-corpus UNKNOWN demo (no invented citations), and a proof JSON editor that POSTs `/proofs/verify` and shows PREMISE_MISMATCH on tamper.
+- Checks run: `make check-frontend` → pass (oxlint 0 issues; vitest 18/18); `npm run build` → pass; `npm run gen:api` → pass
+- Decisions / assumptions: Commencement date taken from stub SV-01 `effective_from` 2025-10-01. Tamper mock compares premise statements to the stored finding proof. Live path uses `VITE_USE_LIVE_API=1` for approve/challenge/verify.
+- Requests: none
+- UI rules checked: disclaimer via layout on `/control` · AI-draft + Lawyer-reviewed badges · status text+icon · UNKNOWN is first-class
+- New-work note: Screen 3 lawyer control mock flow 2026-10-30
+- Third-party added: none
+- Ready for human commit: yes — suggested message: `T5.3: build lawyer control screen with proof tamper demo`
+
+## [T6.2] STARTED · 2026-10-30 22:53 IST
+- Task: Challenger in UI + README note
+- Built against: contract v1 · openapi/examples mocks
+
+## [T6.2] DONE · 2026-10-30 22:54 IST
+- Task: Challenger in UI + README note
+- Built against: contract v1 · openapi/examples mocks (no new contract; T6.1 did not bump version)
+- Files changed: `frontend/src/components/ChallengerPanel.tsx` (new), `frontend/src/components/ChallengerPanel.test.tsx` (new), `frontend/src/api/mocks/challenger.ts` (new), `frontend/src/api/mocks/challenger.test.ts` (new), `frontend/src/pages/ClauseReviewPage.tsx`, `frontend/src/pages/ClauseReviewPage.test.tsx`, `frontend/src/pages/LawyerControlPage.tsx`, `frontend/src/pages/LawyerControlPage.test.tsx`, `README.md`, `docs/logs/CURSOR_LOG.md`
+- What changed: Challenger panel on clause review (toggle + demo run) and lawyer control (after a rejected proof). Blocking objections show Requires review with severity as text, not colour-only. README states muse-spark-1.2 is only the challenger, `CHALLENGER=on|off`, and `CHALLENGER_PROVIDER=meta`.
+- Checks run: `make check-frontend` → pass (oxlint 0 issues; vitest 23/23); `npm run build` → pass
+- Decisions / assumptions: Contract still v1 so `gen:api` was not re-run. Demo objections follow the T6.1 recorded second-pass shape (blocking + quote + reason). Default panel is on in the UI; backend default remains `CHALLENGER=off`.
+- Requests: [REQ → H] consider adding `CHALLENGER=off` and `CHALLENGER_PROVIDER=meta` to `env.example`
+- UI rules checked: disclaimer via layout · status text+icon for REQUIRES_REVIEW · no claim that the challenger proves the law
+- New-work note: Challenger panel + README model note 2026-10-30
+- Third-party added: none
+- Ready for human commit: yes — suggested message: `T6.2: add challenger panel and README model note`
+
+## [T5.4] STARTED · 2026-10-30 23:00 IST
+- Task: Wire to real API, remove mocks from demo path
+- Built against: contract v1 (T4.5; T6.1 did not bump)
+
+## [T5.4] DONE · 2026-10-30 23:03 IST
+- Task: Wire to real API, remove mocks from demo path
+- Built against: contract v1 (no gen:api; T6.1 did not bump)
+- Files changed: `frontend/src/api/client.ts`, `frontend/src/api/config.ts`, `frontend/src/api/types.ts`, `frontend/src/api/client.test.ts` (new), `frontend/src/api/mocks/index.ts`, `frontend/src/pages/ClauseReviewPage.tsx`, `frontend/src/pages/SourceImpactPage.tsx`, `frontend/src/pages/LawyerControlPage.tsx`, `frontend/src/components/lawyer/FactTrustList.tsx`, `frontend/src/components/clause-review/ToolTracePanel.tsx`, `frontend/vite.config.ts`, `README.md`, `docs/logs/CURSOR_LOG.md`
+- What changed: Demo/dev now call the live v1 API by default. Bundled `openapi/examples` mocks stay for Vitest (`MODE=test`) or `VITE_USE_MOCKS=1`. Live paths match T4.5: clauses via document `DOC-01`, `GET /api/source-versions/{id}/diff?against=`, `GET /api/graph?matter_id=`, `GET /api/audit?matter_id=`, inline ingest (no `fixture:true`), poll `GET /runs/{id}/events` + run status, 404 current-finding handled. Vite proxies `/api` to port 8000. README demo path is `API_STUB=0` + `LLM_MODE=replay`.
+- Checks run: `make check-frontend` → pass (oxlint 0; vitest 24/24); `npm run build` → pass. Browser: `/review`, `/impact`, `/control` render with disclaimer; matter/sources did not load because the process on :8000 is not the v1 app (`/api/health` 404). Did not start or restart the backend (would open the database).
+- Decisions / assumptions: Default client is live; tests keep mocks. Impact ids are `IMP-{versionId}`. Ingest posts the selected version's `diff.after` provisions (duplicate content is idempotent on the API). Screen 3 as-of / out-of-corpus panels stay client overlays (no as-of query endpoint). Challenger "Run challenger (demo)" still injects the T6.2 overlay so existing tests hold; live `challenger_report` on a finding is shown when present.
+- Contract change: none (v1)
+- Requests: [REQ → MC] `POST /api/claims` structures a claim and opens a run but does not start the T2.5 agent loop, so `GET /claims/{id}/current` 404s and the run stays `running`. Screen 1 cannot finish a finding until that loop is invoked from the API. [REQ → MC] no CORS middleware; Vite proxy covers `npm run dev`, a raw `VITE_API_BASE=http://localhost:8000` browser origin will fail. [REQ → H] `seed_demo` does not extract facts, so Screen 3 is empty until `POST /api/documents/DOC-01/extract`. Restart whatever is on :8000 with `API_STUB=0 LLM_MODE=replay DEMO_MODE=1`.
+- UI rules checked: disclaimer on `/review`, `/impact`, `/control` · AI-draft / status text+icon unchanged · SIMULATED still from `is_simulated` · no legal-advice copy
+- New-work note: Demo UI talks to the live v1 API 2026-10-30
+- Third-party added: none
+- Credit spend: $0 (no model calls)
+- Ready for human commit: yes — suggested message: `T5.4: wire demo UI to the live v1 API`

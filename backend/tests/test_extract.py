@@ -47,7 +47,7 @@ def synthetic_arguments() -> dict:
 def test_extraction_request_shape() -> None:
     """T2.2: the model is asked for structured output with temp 0."""
     request = extract.extraction_request("some contract text")
-    assert request["model"] == "muse-spark-1.3"
+    assert request["model"] == "muse-spark-1.3-contributor"
     assert request["temperature"] == 0
     assert request["tool_choice"] == "auto"
     assert request["parallel_tool_calls"] is False

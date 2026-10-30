@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.agent import llm, prompts
 from app.core.errors import ExtractionError
 
-EXTRACTION_MODEL = "muse-spark-1.3"
+EXTRACTION_MODEL = "muse-spark-1.3-contributor"
 MAX_EXTRACTION_RETRIES = 2
 
 

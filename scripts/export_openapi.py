@@ -11,7 +11,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.main import app  # noqa: E402
+import os  # noqa: E402
+
+os.environ["API_STUB"] = "0"
+
+from app.main import create_app  # noqa: E402
+
+app = create_app()
 
 
 def main() -> None:

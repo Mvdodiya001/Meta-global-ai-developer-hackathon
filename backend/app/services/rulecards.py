@@ -30,6 +30,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.core.errors import RuleCardError
+from app.services import graph
 
 DEFAULT_CARDS_DIR = Path(__file__).resolve().parents[3] / "corpus" / "rulecards"
 
@@ -195,6 +196,7 @@ def ingest_cards(session: Session, cards: list[dict[str, Any]]) -> list[str]:
         row.approved_by = card["approved_by"]
         row.superseded_by = None
         ids.append(str(row.id))
+    graph.ensure_card_edges(session)
     session.commit()
     return ids
 

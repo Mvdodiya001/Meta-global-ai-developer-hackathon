@@ -190,13 +190,67 @@ class Finding(BaseModel):
     source_version_ids: list[str]
     premise_ids: list[str]
     rule_card_ids: list[str]
-    checker_report: CheckerReport
+    checker_report: CheckerReport | None = None
     challenger_report: dict[str, Any] | None = None
     run_id: str
     created_at: str
     supersedes_finding_id: str | None = None
     state: str
     ai_draft_label: str
+
+
+class ClaimRequest(BaseModel):
+    """Structure-claim request body (F4)."""
+
+    clause_id: str
+    question: str
+    as_of: str
+
+
+class FactActionBody(BaseModel):
+    """Lawyer trust-action request body (F15)."""
+
+    reason: str | None = None
+    reviewer: str | None = None
+    note: str | None = None
+
+
+class ReviewBody(BaseModel):
+    """Finding review request body (F16)."""
+
+    action: str
+    note: str | None = None
+    reviewer: str | None = None
+
+
+class IngestVersionBody(BaseModel):
+    """Inline new-version payload for ingest (F11)."""
+
+    version_label: str
+    published_on: str
+    effective_from: str
+    provisions: list[dict[str, Any]]
+
+
+class IngestBody(BaseModel):
+    """Ingest request body (F11)."""
+
+    version: IngestVersionBody | None = None
+    fixture: str | None = None
+    url: str | None = None
+
+
+class ReverifyBody(BaseModel):
+    """Re-verify request body; proofs keyed by stale finding id (F12)."""
+
+    proofs: dict[str, dict[str, Any]] = {}
+
+
+class ProofVerifyBody(BaseModel):
+    """Tamper-demo checker request body (G8)."""
+
+    claim_id: str
+    proof: dict[str, Any]
 
 
 class FindingHistory(BaseModel):

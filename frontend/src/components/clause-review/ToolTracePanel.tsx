@@ -24,7 +24,7 @@ export function ToolTracePanel({ events, running, runId }: ToolTracePanelProps) 
       </div>
       {events.length === 0 ? (
         <p className="text-sm text-slate-500">
-          Submit a question to watch the six bounded tools (mock polling).
+          Submit a question to watch the six bounded tools.
         </p>
       ) : (
         <ol className="space-y-2">

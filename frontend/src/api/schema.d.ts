@@ -73,31 +73,11 @@ export interface paths {
         };
         /**
          * List Clauses
-         * @description Stub: clause list example (T0.7).
+         * @description Clauses of the latest document version (F3).
          */
         get: operations["list_clauses_api_documents__id__clauses_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/documents/{id}/extract": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Extract Document
-         * @description Extraction result stub: clauses plus candidate facts (F3).
-         */
-        post: operations["extract_document_api_documents__id__extract_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -113,7 +93,7 @@ export interface paths {
         };
         /**
          * List Facts
-         * @description Stub: facts with trust classes example (T0.7).
+         * @description Facts with trust classes (F8).
          */
         get: operations["list_facts_api_matters__id__facts_get"];
         put?: never;
@@ -135,7 +115,7 @@ export interface paths {
         put?: never;
         /**
          * Approve Fact
-         * @description Lawyer approve stub (F15).
+         * @description Lawyer approve: new lawyer_confirmed row (F15).
          */
         post: operations["approve_fact_api_facts__id__approve_post"];
         delete?: never;
@@ -155,7 +135,7 @@ export interface paths {
         put?: never;
         /**
          * Challenge Fact
-         * @description Lawyer challenge stub (F15).
+         * @description Lawyer challenge: new disputed row, dependents staled (F15).
          */
         post: operations["challenge_fact_api_facts__id__challenge_post"];
         delete?: never;
@@ -175,9 +155,29 @@ export interface paths {
         put?: never;
         /**
          * Reject Fact
-         * @description Lawyer reject stub (F15).
+         * @description Lawyer reject: new disputed row, dependents staled (F15).
          */
         post: operations["reject_fact_api_facts__id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract Document
+         * @description Run extraction and persist a new version with clauses + facts (F3).
+         */
+        post: operations["extract_document_api_documents__id__extract_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -195,7 +195,7 @@ export interface paths {
         put?: never;
         /**
          * Create Claim
-         * @description Structure-claim stub (F4, F5).
+         * @description Structure a question, store the claim and open a run (F4, F5).
          */
         post: operations["create_claim_api_claims_post"];
         delete?: never;
@@ -213,7 +213,7 @@ export interface paths {
         };
         /**
          * Get Run
-         * @description Run status stub (F5).
+         * @description Run status (F5).
          */
         get: operations["get_run_api_runs__id__get"];
         put?: never;
@@ -233,7 +233,7 @@ export interface paths {
         };
         /**
          * Get Run Events
-         * @description Tool-call trace stub; SSE streaming lands after v0 (F5).
+         * @description Tool-call trace for a run (F5).
          */
         get: operations["get_run_events_api_runs__id__events_get"];
         put?: never;
@@ -253,7 +253,7 @@ export interface paths {
         };
         /**
          * Get Current Finding
-         * @description Stub: finding with proof example (T0.7).
+         * @description Current (latest-version) finding for a claim (F7).
          */
         get: operations["get_current_finding_api_claims__id__current_get"];
         put?: never;
@@ -273,7 +273,7 @@ export interface paths {
         };
         /**
          * Get Finding History
-         * @description All finding versions stub (F12).
+         * @description All finding versions for a claim, newest first (F12).
          */
         get: operations["get_finding_history_api_claims__id__history_get"];
         put?: never;
@@ -293,7 +293,7 @@ export interface paths {
         };
         /**
          * Get Finding
-         * @description Proof, traces and reports stub (F9).
+         * @description Proof, traces and reports for one finding (F9).
          */
         get: operations["get_finding_api_findings__id__get"];
         put?: never;
@@ -315,7 +315,7 @@ export interface paths {
         put?: never;
         /**
          * Review Finding
-         * @description Lawyer review stub (F16).
+         * @description Lawyer review: approve/reject records an event; annotate only notes (F16).
          */
         post: operations["review_finding_api_findings__id__review_post"];
         delete?: never;
@@ -333,7 +333,7 @@ export interface paths {
         };
         /**
          * List Sources
-         * @description Source registry stub (F1).
+         * @description Source registry (F1).
          */
         get: operations["list_sources_api_sources_get"];
         put?: never;
@@ -353,7 +353,7 @@ export interface paths {
         };
         /**
          * List Source Versions
-         * @description Version registry stub (F1).
+         * @description Version registry for one source (F1).
          */
         get: operations["list_source_versions_api_sources__id__versions_get"];
         put?: never;
@@ -373,7 +373,7 @@ export interface paths {
         };
         /**
          * Diff Versions
-         * @description Side-by-side diff stub (F11).
+         * @description Side-by-side diff data between two versions (F11).
          */
         get: operations["diff_versions_api_source_versions__id__diff_get"];
         put?: never;
@@ -395,7 +395,7 @@ export interface paths {
         put?: never;
         /**
          * Ingest Source
-         * @description Ingest stub: new version plus impact report handle (F11).
+         * @description Store an inline new version and report its impact (F11).
          */
         post: operations["ingest_source_api_sources__id__ingest_post"];
         delete?: never;
@@ -413,7 +413,7 @@ export interface paths {
         };
         /**
          * Get Impact
-         * @description Stub: impact report example (T0.7).
+         * @description Impact report: findings with STALE events from one version (F11).
          */
         get: operations["get_impact_api_impact__id__get"];
         put?: never;
@@ -435,7 +435,7 @@ export interface paths {
         put?: never;
         /**
          * Reverify Impact
-         * @description Re-run stub for stale findings (F12).
+         * @description Re-run stale findings for one version with fresh lookups (F12).
          */
         post: operations["reverify_impact_api_impact__id__reverify_post"];
         delete?: never;
@@ -453,7 +453,7 @@ export interface paths {
         };
         /**
          * Get Graph
-         * @description Stub: graph slice example (T0.7).
+         * @description Nodes + edges for React Flow, optionally focused (F10).
          */
         get: operations["get_graph_api_graph_get"];
         put?: never;
@@ -473,7 +473,7 @@ export interface paths {
         };
         /**
          * Get Audit
-         * @description Stub: audit rows example (T0.7).
+         * @description Audit trail, optionally scoped to a matter (F14).
          */
         get: operations["get_audit_api_audit_get"];
         put?: never;
@@ -495,7 +495,7 @@ export interface paths {
         put?: never;
         /**
          * Verify Proof
-         * @description Tamper-demo checker stub (G8).
+         * @description Tamper demo: run the checker on an edited proof (G8).
          */
         post: operations["verify_proof_api_proofs_verify_post"];
         delete?: never;
@@ -515,7 +515,7 @@ export interface paths {
         put?: never;
         /**
          * Counterfactual
-         * @description What-if stub; the traversal itself is stretch (F19).
+         * @description What-if traversal is stretch; report it as unavailable (F19).
          */
         post: operations["counterfactual_api_counterfactual_post"];
         delete?: never;
@@ -535,7 +535,7 @@ export interface paths {
         put?: never;
         /**
          * Demo Reset
-         * @description Seed reset; only if `DEMO_MODE=1` (DATA_MODEL_API §7).
+         * @description Reseed the demo database; only if `DEMO_MODE=1` (DATA_MODEL_API §7).
          */
         post: operations["demo_reset_api_demo_reset_post"];
         delete?: never;
@@ -555,7 +555,7 @@ export interface paths {
         put?: never;
         /**
          * Demo Scenario
-         * @description Scenario seed; only if `DEMO_MODE=1` (DATA_MODEL_API §7).
+         * @description Named demo setup; only if `DEMO_MODE=1` (DATA_MODEL_API §7).
          */
         post: operations["demo_scenario_api_demo_scenario__name__post"];
         delete?: never;
@@ -649,6 +649,18 @@ export interface components {
             claim_id: string;
             /** Run Id */
             run_id: string;
+        };
+        /**
+         * ClaimRequest
+         * @description Structure-claim request body (F4).
+         */
+        ClaimRequest: {
+            /** Clause Id */
+            clause_id: string;
+            /** Question */
+            question: string;
+            /** As Of */
+            as_of: string;
         };
         /**
          * Clause
@@ -783,6 +795,18 @@ export interface components {
             supersedes_id?: string | null;
         };
         /**
+         * FactActionBody
+         * @description Lawyer trust-action request body (F15).
+         */
+        FactActionBody: {
+            /** Reason */
+            reason?: string | null;
+            /** Reviewer */
+            reviewer?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
          * FactList
          * @description Stub: facts with trust classes example (T0.7).
          */
@@ -814,7 +838,7 @@ export interface components {
             premise_ids: string[];
             /** Rule Card Ids */
             rule_card_ids: string[];
-            checker_report: components["schemas"]["CheckerReport"];
+            checker_report?: components["schemas"]["CheckerReport"] | null;
             /** Challenger Report */
             challenger_report?: {
                 [key: string]: unknown;
@@ -900,6 +924,17 @@ export interface components {
             affected: components["schemas"]["AffectedFinding"][];
         };
         /**
+         * IngestBody
+         * @description Ingest request body (F11).
+         */
+        IngestBody: {
+            version?: components["schemas"]["IngestVersionBody"] | null;
+            /** Fixture */
+            fixture?: string | null;
+            /** Url */
+            url?: string | null;
+        };
+        /**
          * IngestResult
          * @description New version plus impact report handle (F11).
          */
@@ -908,6 +943,22 @@ export interface components {
             source_version_id: string;
             /** Impact Report Id */
             impact_report_id: string;
+        };
+        /**
+         * IngestVersionBody
+         * @description Inline new-version payload for ingest (F11).
+         */
+        IngestVersionBody: {
+            /** Version Label */
+            version_label: string;
+            /** Published On */
+            published_on: string;
+            /** Effective From */
+            effective_from: string;
+            /** Provisions */
+            provisions: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * Matter
@@ -989,6 +1040,18 @@ export interface components {
             conclusion?: string | null;
         };
         /**
+         * ProofVerifyBody
+         * @description Tamper-demo checker request body (G8).
+         */
+        ProofVerifyBody: {
+            /** Claim Id */
+            claim_id: string;
+            /** Proof */
+            proof: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * ProofVerifyResult
          * @description Tamper-demo checker verdict (G8).
          */
@@ -1023,6 +1086,21 @@ export interface components {
             effective_until?: string | null;
         };
         /**
+         * ReverifyBody
+         * @description Re-verify request body; proofs keyed by stale finding id (F12).
+         */
+        ReverifyBody: {
+            /**
+             * Proofs
+             * @default {}
+             */
+            proofs: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        /**
          * ReverifyResult
          * @description Re-run outcome for stale findings (F12).
          */
@@ -1031,6 +1109,18 @@ export interface components {
             superseded: string[];
             /** Current */
             current: string[];
+        };
+        /**
+         * ReviewBody
+         * @description Finding review request body (F16).
+         */
+        ReviewBody: {
+            /** Action */
+            action: string;
+            /** Note */
+            note?: string | null;
+            /** Reviewer */
+            reviewer?: string | null;
         };
         /**
          * ReviewResult
@@ -1277,43 +1367,6 @@ export interface operations {
             };
         };
     };
-    extract_document_api_documents__id__extract_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | null;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExtractResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_facts_api_matters__id__facts_get: {
         parameters: {
             query?: never;
@@ -1356,9 +1409,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | null;
+                "application/json": components["schemas"]["FactActionBody"] | null;
             };
         };
         responses: {
@@ -1393,9 +1444,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | null;
+                "application/json": components["schemas"]["FactActionBody"] | null;
             };
         };
         responses: {
@@ -1430,9 +1479,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | null;
+                "application/json": components["schemas"]["FactActionBody"] | null;
             };
         };
         responses: {
@@ -1456,11 +1503,13 @@ export interface operations {
             };
         };
     };
-    create_claim_api_claims_post: {
+    extract_document_api_documents__id__extract_post: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: {
@@ -1468,6 +1517,39 @@ export interface operations {
                 "application/json": {
                     [key: string]: unknown;
                 } | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_claim_api_claims_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimRequest"];
             };
         };
         responses: {
@@ -1655,11 +1737,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | null;
+                "application/json": components["schemas"]["ReviewBody"];
             };
         };
         responses: {
@@ -1778,9 +1858,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | null;
+                "application/json": components["schemas"]["IngestBody"] | null;
             };
         };
         responses: {
@@ -1846,9 +1924,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | null;
+                "application/json": components["schemas"]["ReverifyBody"] | null;
             };
         };
         responses: {
@@ -1942,11 +2018,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | null;
+                "application/json": components["schemas"]["ProofVerifyBody"];
             };
         };
         responses: {

@@ -67,25 +67,25 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
 - [x] **T2.1 LLM gateway** (MC) · M/T — Deps: T0.3
   - `live|replay|mock` modes, request-hash cache, `llm_calls` logging, caps.
   - Tests first: replay returns identical output; live blocked under pytest.
-- [ ] **T2.2 Clause extraction** (MC) · M — Deps: T2.1, T1.4
+- [x] **T2.2 Clause extraction** (MC) · M — Deps: T2.1, T1.4
   - Muse Spark structured output → clauses + candidate facts (`document_extracted`) with spans.
   - Done when: all 12 clauses extracted; spans match the contract text; cassette recorded.
-- [ ] **T2.3 Question → typed claim** (MC) · M — Deps: T2.1
+- [x] **T2.3 Question → typed claim** (MC) · M — Deps: T2.1
   - CT1–CT4; anything else returns UNKNOWN with explanation.
   - Done when: 3 supported and 2 unsupported sample questions behave correctly.
-- [ ] **T3.1 Checker core** (MC) · T — Deps: T1.3
+- [x] **T3.1 Checker core** (MC) · T — Deps: T1.3
   - Tests first: schema/order, admission rules (rejects `ai_inferred`, `disputed`), span substring + hash, `tests/test_checker_isolation.py` (AST scan).
   - Done when: all pass.
-- [ ] **T3.2 Checker step kinds** (MC) · T — Deps: T3.1, T1.5
+- [x] **T3.2 Checker step kinds** (MC) · T — Deps: T3.1, T1.5
   - `cite_fact`, `cite_rule`, `in_force`, `compare`, `contains_element`, `role_applies`, `conclude`; CLI `python -m checker verify proof.json`.
   - Tests first: valid proof passes; tampered premise, wrong value, out-of-force provision, superseded version each fail with a specific code.
-- [ ] **T2.4 Six tools** (MC) · T/M — Deps: T1.2, T3.2
+- [x] **T2.4 Six tools** (MC) · T/M — Deps: T1.2, T3.2
   - Schemas exactly as `DATA_MODEL_API.md` §4; matter scoping; limits; logging to `tool_calls`.
   - Tests first: cross-matter access rejected; 13th call rejected; unknown tool rejected.
-- [ ] **T2.5 Agent loop** (MC) · M — Deps: T2.2–T2.4
+- [x] **T2.5 Agent loop** (MC) · M — Deps: T2.2–T2.4
   - Responses-API function calling, proof-drafting prompt, tool trace stored.
   - Done when: agent produces a proof for clause 9.2 that `verify_derivation` accepts (live once, then cassette).
-- [ ] **T3.3 Memory service** (MC) · T — Deps: T2.5
+- [x] **T3.3 Memory service** (MC) · T — Deps: T2.5
   - Status decision + confidence band, finding write, edges, audit, re-query check.
   - Tests first: model cannot set status; stale-version proof rejected; each status path (FOLLOWS, RULED_OUT, UNKNOWN, REQUIRES_REVIEW).
 - [x] **T5.0 UI foundation on mocks** (CU) · D — Deps: T0.4 (parallel, Days 1–2)
@@ -94,28 +94,28 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
 - ✅ **Milestone: vertical slice (end of Day 4):** CLI `python -m app.cli verify --clause 9.2 --question "..."` stores a checked finding with traces.
 
 ## M4 — Graph and impact (Day 5)
-- [ ] **T4.1 Edges + reverse traversal** (MC) · T — Deps: T3.3
+- [x] **T4.1 Edges + reverse traversal** (MC) · T — Deps: T3.3
   - Tests first: changed provision → only dependent findings; decoy → none; unrelated provision → none.
-- [ ] **T4.2 Impact engine** (MC) · T/D — Deps: T4.1, T1.5
+- [x] **T4.2 Impact engine** (MC) · T/D — Deps: T4.1, T1.5
   - Ingest → diff → `AFFECTS` → `STALE` events → impact report. Done when: fixture flags exactly the expected findings (G3), in under 2 s (G5).
-- [ ] **T4.3 Re-verify + re-query enforcement** (MC) · T — Deps: T4.2
+- [x] **T4.3 Re-verify + re-query enforcement** (MC) · T — Deps: T4.2
   - New finding supersedes old; old kept; unchanged outcome audited; rejection if no fresh lookup.
-- [ ] **T4.4 Premise challenge/approve** (MC) · D — Deps: T4.1
+- [x] **T4.4 Premise challenge/approve** (MC) · D — Deps: T4.1
   - Flow C; trust-class change creates a new fact row; recompute dependents.
-- [ ] **T4.5 API endpoints + contract** (MC) · T — Deps: T4.2–T4.4
+- [x] **T4.5 API endpoints + contract** (MC) · T — Deps: T4.2–T4.4
   - All endpoints from `DATA_MODEL_API.md` §7; regenerate `openapi/openapi.json`; log `[CONTRACT vN → vN+1]` in `MUSE_CODE_LOG.md` so CU regenerates types.
 
 ## M5/M6 — UI (built on mocks from Day 3, wired on Day 6) and challenger
 - [x] **T5.1 Screen 1: clause review** (CU, Days 3–4, on mocks) · D — Deps: T5.0
   - Clause list, ask box, live tool trace (SSE or polling), finding card, syllogism, source trace, premise trace, "what would change my answer", AI-draft/Lawyer-reviewed badge.
-- [ ] **T5.2 Screen 2: source change and impact** (CU, Days 4–5, on mocks) · D — Deps: T5.0
+- [x] **T5.2 Screen 2: source change and impact** (CU, Days 4–5, on mocks) · D — Deps: T5.0
   - Version picker, side-by-side diff, React Flow graph with stale highlight, before/after split, Re-verify button, audit panel, SIMULATED badge.
-- [ ] **T5.3 Screen 3: lawyer control** (CU, Day 5, on mocks) · D/I — Deps: T5.0
+- [x] **T5.3 Screen 3: lawyer control** (CU, Day 5, on mocks) · D/I — Deps: T5.0
   - Facts with trust chips, approve/challenge, recompute, unknown demo, as-of date control, proof editor for the tamper demo (`POST /proofs/verify`).
-- [ ] **T6.1 Challenger (Muse Spark second pass)** (MC) · M — Deps: T3.3
+- [x] **T6.1 Challenger (Muse Spark second pass)** (MC) · M — Deps: T3.3
   - `muse-spark-1.2` with a different prompt returns structured objections; flag `CHALLENGER=on`; provider switch `CHALLENGER_PROVIDER=meta` (default); cassette. Done when: an objection forces REQUIRES_REVIEW in a test.
-- [ ] **T6.2 Challenger in UI + README note** (CU) · M — Deps: T6.1, T5.1
-- [ ] **T5.4 Wire to real API, remove mocks from demo path** (CU, Day 6) · D — Deps: T5.1–T5.3, T4.5
+- [x] **T6.2 Challenger in UI + README note** (CU) · M — Deps: T6.1, T5.1
+- [x] **T5.4 Wire to real API, remove mocks from demo path** (CU, Day 6) · D — Deps: T5.1–T5.3, T4.5
 - ✅ **Core gate (end of Day 6):** the full demo path runs end to end on real API in replay mode. If not green: stop all stretch work, fix core on Day 7.
 
 ## M7 — Stretch (only if the core gate is green; pick ONE on Day 7 morning)

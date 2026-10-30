@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { api } from '../api/client'
+import { DEMO_DOCUMENT_ID, DEMO_MATTER_ID } from '../api/config'
+import {
+  DEMO_CHALLENGER_REPORT,
+  parseChallengerReport,
+  type ChallengerReportView,
+} from '../api/mocks/challenger'
 import { DEFAULT_VERIFY_QUESTION } from '../api/mocks/runTrace'
 import type { Clause, Fact, Finding, Matter, ToolCall } from '../api/types'
 import { AskBox } from '../components/clause-review/AskBox'
@@ -9,6 +15,7 @@ import { PremiseTrace } from '../components/clause-review/PremiseTrace'
 import { SourceTrace } from '../components/clause-review/SourceTrace'
 import { ToolTracePanel } from '../components/clause-review/ToolTracePanel'
 import { WhatWouldChangePanel } from '../components/clause-review/WhatWouldChangePanel'
+import { ChallengerPanel } from '../components/ChallengerPanel'
 import { FindingCard } from '../components/FindingCard'
 import { ProofSyllogism } from '../components/ProofSyllogism'
 import {
@@ -31,20 +38,28 @@ export function ClauseReviewPage() {
   const [traceEvents, setTraceEvents] = useState<ToolCall[]>([])
   const [finding, setFinding] = useState<Finding | null>(null)
   const [lawyerReviewed, setLawyerReviewed] = useState(false)
+  const [challengerOn, setChallengerOn] = useState(true)
+  const [challengerReport, setChallengerReport] = useState<ChallengerReportView | null>(
+    null,
+  )
+  const [notice, setNotice] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    void Promise.all([
-      api.matter('MAT-01'),
-      api.clauses('DOCV-01'),
-      api.facts('MAT-01'),
-    ]).then(([m, c, f]) => {
+    void (async () => {
+      const docs = await api.documents(DEMO_MATTER_ID)
+      const documentId = docs.documents[0]?.id ?? DEMO_DOCUMENT_ID
+      const [m, c, f] = await Promise.all([
+        api.matter(DEMO_MATTER_ID),
+        api.clauses(documentId),
+        api.facts(DEMO_MATTER_ID),
+      ])
       setMatter(m)
       setClauses(c)
       setFacts(f)
       const clause92 = c.find((clause) => clause.ref === '9.2')
       setSelectedClauseId(clause92?.id ?? c[0]?.id ?? null)
-    })
+    })()
   }, [])
 
   const runVerification = useCallback(async () => {
@@ -59,23 +74,33 @@ export function ClauseReviewPage() {
     setTraceEvents([])
     setFinding(null)
     setLawyerReviewed(false)
+    setChallengerReport(null)
+    setNotice(null)
 
-    const created = await api.createClaim({
-      clause_id: selectedClauseId,
-      question,
-      as_of: asOf,
-    })
-    setRunId(created.run_id)
+    try {
+      const created = await api.createClaim({
+        clause_id: selectedClauseId,
+        question,
+        as_of: asOf,
+      })
+      setRunId(created.run_id)
 
-    await api.pollRunEvents(
-      created.run_id,
-      setTraceEvents,
-      controller.signal,
-    )
+      await api.pollRunEvents(created.run_id, setTraceEvents, controller.signal)
 
-    const result = await api.finding(created.claim_id)
-    setFinding(result)
-    setPhase('done')
+      const result = await api.currentFinding(created.claim_id)
+      setFinding(result)
+      setChallengerReport(result ? parseChallengerReport(result.challenger_report) : null)
+      if (!result) {
+        setNotice('No finding yet. The verification run is still open.')
+      }
+      setPhase('done')
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return
+      }
+      setPhase('idle')
+      setNotice(err instanceof Error ? err.message : 'Verification failed')
+    }
   }, [asOf, phase, question, selectedClauseId])
 
   useEffect(() => {
@@ -120,6 +145,8 @@ export function ClauseReviewPage() {
 
       <ToolTracePanel events={traceEvents} running={phase === 'running'} runId={runId} />
 
+      {notice ? <p className="text-sm text-slate-600 dark:text-slate-400">{notice}</p> : null}
+
       {finding ? (
         <>
           <FindingCard finding={finding} lawyerReviewed={lawyerReviewed} />
@@ -138,6 +165,28 @@ export function ClauseReviewPage() {
           <WhatWouldChangePanel hints={sensitivity} />
         </>
       ) : null}
+
+      <ChallengerPanel
+        enabled={challengerOn}
+        report={challengerReport}
+        onToggle={setChallengerOn}
+        onRun={() => {
+          setChallengerReport(DEMO_CHALLENGER_REPORT)
+          setFinding((current) =>
+            current
+              ? {
+                  ...current,
+                  status: 'REQUIRES_REVIEW',
+                  challenger_report: {
+                    model: DEMO_CHALLENGER_REPORT.model,
+                    blocking: DEMO_CHALLENGER_REPORT.blocking,
+                    objections: DEMO_CHALLENGER_REPORT.objections,
+                  },
+                }
+              : current,
+          )
+        }}
+      />
     </div>
   )
 }

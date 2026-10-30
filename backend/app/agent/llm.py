@@ -26,7 +26,7 @@ from app.core.errors import CassetteMissing, LiveCallsBlocked, LLMRequestFailed
 
 API_URL = "https://api.meta.ai/v1"
 RESPONSES_PATH = "/responses"
-DEFAULT_MODEL = "muse-spark-1.3"
+DEFAULT_MODEL = "muse-spark-1.3-contributor"
 
 MODES = ("live", "replay", "mock")
 MAX_RETRIES = 2

@@ -23,3 +23,24 @@ class LLMRequestFailed(Exception):
 
 class ExtractionError(Exception):
     """Model output is not a valid clause extraction (T2.2, F3)."""
+
+
+class ClaimError(Exception):
+    """A question cannot be typed as a closed claim (T2.3, F4)."""
+
+
+class MemoryServiceError(Exception):
+    """The memory service cannot decide a claim as asked (T3.3, F7)."""
+
+
+class ChallengerError(Exception):
+    """A challenger review failed or is misconfigured (T6.1, F17)."""
+
+
+class ToolError(Exception):
+    """A tool call was rejected or failed validation (T2.4, F5)."""
+
+    def __init__(self, message: str, code: str = "tool_rejected") -> None:
+        """Keep the machine-readable code next to the message (T2.4)."""
+        super().__init__(message)
+        self.code = code

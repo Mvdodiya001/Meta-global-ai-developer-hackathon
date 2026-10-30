@@ -1,0 +1,134 @@
+{
+  "request": {
+    "model": "muse-spark-1.3-contributor",
+    "input": "Type the user question about the data-processing agreement below as exactly one closed claim type, or UNKNOWN. Call emit_claim exactly once. Type by what the question ASKS, not by what the answer might be. Today is 2026-11-20; resolve relative dates against it.\n\nClause inventory (ref + heading):\n1 Parties\n2 Definitions\n3 Scope of processing\n4 Purpose limitation\n5 Data categories\n6 Security safeguards\n7 Processor engagement\n8 Sub-processors\n9.1 Cross-border transfers, general\n9.2 Cross-border transfer for fraud screening\n10 Breach intimation\n11 Retention and erasure\n\nUser question: Is Nimbus a Data Processor under this agreement?\n\nClosed types:\nCT1 numeric_bound: the question compares a stated number (with unit) against a required bound. params: {\"subject\", \"value\" (number), \"unit\"}.\nCT2 required_element: the question asks whether the agreement requires a specific element or duty. params: {\"element\"}.\nCT3 in_force_on: the question asks whether a duty applies on a date. params: {\"date\" (YYYY-MM-DD), \"subject\"}; copy the date from the question, never invent one.\nCT4 role_applies: the question asks whether a party holds a role under the agreement. params: {\"party\", \"role\"}.\nUNKNOWN: opinion, summary, or anything no closed type can test. params: {} and a one-sentence explanation of why no type fits.",
+    "tools": [
+      {
+        "type": "function",
+        "name": "emit_claim",
+        "description": "Type one user question about the agreement as CT1 numeric_bound, CT2 required_element, CT3 in_force_on, CT4 role_applies, or UNKNOWN with an explanation when no type fits.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "claim_type": {
+              "type": "string"
+            },
+            "params": {
+              "type": "object"
+            },
+            "question_text": {
+              "type": "string"
+            },
+            "explanation": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "claim_type",
+            "params",
+            "question_text"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "parallel_tool_calls": false,
+    "temperature": 0
+  },
+  "response": {
+    "top_logprobs": 0,
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "service_tier": "auto",
+    "model": "muse-spark-1.3-contributor",
+    "reasoning": {
+      "effort": "high"
+    },
+    "background": false,
+    "tools": [
+      {
+        "type": "function",
+        "name": "emit_claim",
+        "description": "Type one user question about the agreement as CT1 numeric_bound, CT2 required_element, CT3 in_force_on, CT4 role_applies, or UNKNOWN with an explanation when no type fits.",
+        "parameters": {
+          "additionalProperties": false,
+          "properties": {
+            "claim_type": {
+              "type": "string"
+            },
+            "explanation": {
+              "type": "string"
+            },
+            "params": {
+              "type": "object"
+            },
+            "question_text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "claim_type",
+            "params",
+            "question_text"
+          ],
+          "type": "object"
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "truncation": "disabled",
+    "id": "resp_6ae4b04c467bf687cd1942e6",
+    "object": "response",
+    "status": "completed",
+    "created_at": 1793372236.0,
+    "completed_at": 1793372236.0,
+    "error": null,
+    "incomplete_details": null,
+    "output": [
+      {
+        "type": "reasoning",
+        "id": "rs_6ae4b04c467bf687cd1942e6:rs_a20d975c-3dfd-49a6-bed2-201de701fee6",
+        "summary": [],
+        "status": "completed"
+      },
+      {
+        "type": "message",
+        "id": "rs_f69fe386-58b5-4630-8667-6c65f1f7ae4f",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "output_text",
+            "text": "I'll classify this role question under the closed claim types.",
+            "annotations": [],
+            "logprobs": []
+          }
+        ],
+        "phase": "commentary",
+        "status": "completed"
+      },
+      {
+        "type": "function_call",
+        "id": "fc_f513457d-9a54-4c6e-b134-877ee5dac4b8",
+        "call_id": "call_f513457d-9a54-4c6e-b134-877ee5dac4b8",
+        "name": "emit_claim",
+        "arguments": "{\"claim_type\":\"CT4\",\"params\":{\"party\":\"Nimbus\",\"role\":\"Data Processor\"},\"question_text\":\"Is Nimbus a Data Processor under this agreement?\"}",
+        "status": "completed"
+      }
+    ],
+    "instructions": null,
+    "usage": {
+      "input_tokens": 908,
+      "input_tokens_details": {
+        "cached_tokens": 625
+      },
+      "output_tokens": 1099,
+      "output_tokens_details": {
+        "reasoning_tokens": 979
+      },
+      "total_tokens": 2007
+    },
+    "parallel_tool_calls": false,
+    "store": true
+  }
+}

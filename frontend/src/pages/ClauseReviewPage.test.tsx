@@ -33,6 +33,24 @@ describe('ClauseReviewPage', () => {
     expect(await screen.findByRole('heading', { name: /Finding FND-001/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /Source trace/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /What would change my answer/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Challenger/i })).toBeInTheDocument()
+  })
+
+  it('runs the demo challenger and forces requires review', async () => {
+    render(
+      <MemoryRouter>
+        <ClauseReviewPage />
+      </MemoryRouter>,
+    )
+    fireEvent.click(await screen.findByRole('button', { name: /run verification/i }))
+    await vi.runAllTimersAsync()
+    await screen.findByRole('heading', { name: /Finding FND-001/i })
+
+    fireEvent.click(screen.getByRole('button', { name: /run challenger/i }))
+    expect(screen.getByRole('article', { name: /Finding FND-001/i })).toHaveTextContent(
+      'Requires review',
+    )
+    expect(screen.getByText(/Blocking objection forces Requires review/i)).toBeInTheDocument()
   })
 
   it('can show lawyer-reviewed badge after demo action', async () => {
