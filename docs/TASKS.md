@@ -64,7 +64,7 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
   - Done when: both tests pass for v1→v2.
 
 ## M2/M3 — Extraction, checker, agent (Days 3–4)
-- [ ] **T2.1 LLM gateway** (MC) · M/T — Deps: T0.3
+- [x] **T2.1 LLM gateway** (MC) · M/T — Deps: T0.3
   - `live|replay|mock` modes, request-hash cache, `llm_calls` logging, caps.
   - Tests first: replay returns identical output; live blocked under pytest.
 - [ ] **T2.2 Clause extraction** (MC) · M — Deps: T2.1, T1.4
@@ -88,7 +88,7 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
 - [ ] **T3.3 Memory service** (MC) · T — Deps: T2.5
   - Status decision + confidence band, finding write, edges, audit, re-query check.
   - Tests first: model cannot set status; stale-version proof rejected; each status path (FOLLOWS, RULED_OUT, UNKNOWN, REQUIRES_REVIEW).
-- [ ] **T5.0 UI foundation on mocks** (CU) · D — Deps: T0.4 (parallel, Days 1–2)
+- [x] **T5.0 UI foundation on mocks** (CU) · D — Deps: T0.4 (parallel, Days 1–2)
   - Layout, design tokens, disclaimer banner, routes for Screens 1–3, mock handlers fed from `openapi/examples/` (or `API_STUB=1` once T0.7 exists). Shared components on mock data: FindingCard, TrustChip, ProofSyllogism, DiffView, StaleGraph, AuditList, badges (AI draft / Lawyer-reviewed / SIMULATED).
   - Done when: all three screens render with mock data; banner on every screen; `make check-frontend` green.
 - ✅ **Milestone: vertical slice (end of Day 4):** CLI `python -m app.cli verify --clause 9.2 --question "..."` stores a checked finding with traces.

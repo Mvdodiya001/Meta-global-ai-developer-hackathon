@@ -9,19 +9,18 @@ Judges: this file shows what is new. Fill the "Dates" and "Commit range" columns
 ## Components built during the hackathon
 | Component | Dates | Commit range | Built with |
 |-----------|-------|--------------|------------|
-| Repo, CI, scaffold | _(fill)_ | _(fill)_ | Muse Code / Cursor |
-| Schema + append-only triggers | _(fill)_ | _(fill)_ | Muse Code |
-| Source snapshots, provisions, rule cards | _(fill)_ | _(fill)_ | Muse Code |
-| Fictional contract + seed data (written for this project) | _(fill)_ | _(fill)_ | Human + Muse Spark |
-| LLM gateway (live/replay/mock) | _(fill)_ | _(fill)_ | Muse Code |
-| Clause extraction, claim structuring | _(fill)_ | _(fill)_ | Muse Code |
-| Deterministic proof checker | _(fill)_ | _(fill)_ | Muse Code |
-| Six bounded tools + agent loop | _(fill)_ | _(fill)_ | Muse Code |
-| Memory service (status, confidence, audit) | _(fill)_ | _(fill)_ | Muse Code |
-| Dependency graph + impact engine + re-verify | _(fill)_ | _(fill)_ | Muse Code |
-| UI screens 1–3 | _(fill)_ | _(fill)_ | Cursor |
-| Challenger (Muse Spark second pass) | _(fill)_ | _(fill)_ | Muse Code |
-| Scenario tests, deploy | _(fill)_ | _(fill)_ | Muse Code |
-
+| Repo, CI, scaffold | 2026-10-29 | `91fc1f`–`391a51a` | Muse Code / Cursor |
+| Schema + append-only triggers | 2026-10-29 | `d1efba8` | Muse Code |
+| Source snapshots, provisions, rule cards | 2026-10-29 | `72e78e8`–`7ab269a` | Muse Code |
+| Fictional contract + seed data (written for this project) | 2026-10-29 | `010a2c9` | Muse Code (fictional DPA; not Spark) |
+| LLM gateway (live/replay/mock) | 2026-10-29 | `99a4f74` | Muse Code |
+| Clause extraction, claim structuring | — | not built | — |
+| Deterministic proof checker | — | not built | — |
+| Six bounded tools + agent loop | — | not built | — |
+| Memory service (status, confidence, audit) | — | not built | — |
+| Dependency graph + impact engine + re-verify | — | not built | — |
+| UI screens 1–3 | 2026-10-29 | `7ab269a`–`1ad7ede` | Cursor (foundation + Screen 1; Screens 2–3 not built) |
+| Challenger (Muse Spark second pass) | — | not built | — |
+| Scenario tests, deploy | — | not built | — |
 ## Third-party material (not new work)
 Open-source libraries and official legal texts are listed with licences and URLs in `NOTICE.md`.
