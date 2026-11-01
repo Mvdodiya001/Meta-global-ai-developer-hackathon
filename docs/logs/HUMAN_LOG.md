@@ -27,6 +27,8 @@ Before each agent session, commit a checkpoint so `git diff` shows only that ses
 | Day 3 | 5c45b05 | CU | T5.2 | Screen 2 impact + re-verify split; same commit, pushed |
 | Day 3 | 9c65591 | MC | T2.3, T3.1, T3.2, T2.4, T2.5, T3.3, T4.1–T4.5, T6.1 | claims, checker, six tools, loop, memory, graph, impact, re-verify, premises, API v1, challenger |
 | Day 3 | 9c65591 | CU | T5.3, T6.2, T5.4 | Screen 3, challenger panel, live v1 wire; same commit |
+| 2026-11-02 | 82fc307 | MC | G8 seed + ask replay claim-id bind | Screen 1 FOLLOWS in browser |
+| 2026-11-02 | 82fc307 | CU | Screen 1 defaults, session claim_id, proxy 8001 | vitest 27/27 earlier |
 
 ## Decisions and incidents
 | Date | What happened / decided | Action taken |

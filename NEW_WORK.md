@@ -20,6 +20,7 @@ Judges: this file shows what is new. Fill the "Dates" and "Commit range" columns
 | UI screens 1–3 | 2026-10-29 to 2026-10-30 | `7ab269a`–`9c65591` | Cursor |
 | Challenger (Muse Spark second pass + panel) | 2026-10-30 | `9c65591` | Muse Code / Cursor |
 | Live API wire for the demo path | 2026-10-30 | `9c65591` | Cursor |
+| Seed extraction + ask-flow replay after 13 premises | 2026-11-02 | 82fc307 | Muse Code / Cursor |
 | Scenario tests, deploy | — | not built | — |
 ## Third-party material (not new work)
 Open-source libraries and official legal texts are listed with licences and URLs in `NOTICE.md`.
