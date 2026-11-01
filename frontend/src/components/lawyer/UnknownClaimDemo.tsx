@@ -4,6 +4,7 @@ import { FindingCard } from '../FindingCard'
 type UnknownClaimDemoProps = {
   question: string
   finding: Finding | null
+  disabled?: boolean
   onQuestionChange: (value: string) => void
   onAsk: () => void
 }
@@ -11,6 +12,7 @@ type UnknownClaimDemoProps = {
 export function UnknownClaimDemo({
   question,
   finding,
+  disabled = false,
   onQuestionChange,
   onAsk,
 }: UnknownClaimDemoProps) {
@@ -26,13 +28,15 @@ export function UnknownClaimDemo({
         id="unknown-question"
         rows={3}
         value={question}
+        disabled={disabled}
         onChange={(event) => onQuestionChange(event.target.value)}
         className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
       />
       <button
         type="button"
         onClick={onAsk}
-        className="rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900 dark:bg-blue-700"
+        disabled={disabled}
+        className="rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900 disabled:opacity-50 dark:bg-blue-700"
       >
         Ask out-of-corpus claim
       </button>

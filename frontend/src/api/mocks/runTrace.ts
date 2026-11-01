@@ -40,4 +40,9 @@ export const DEMO_RUN_EVENTS: ToolCall[] = [
 ]
 
 export const DEFAULT_VERIFY_QUESTION =
-  'Does clause 9.2 comply with Section 6 cross-border transfer rules as of the selected date?'
+  'Does clause 9.2 require Nimbus to keep transfer logs?'
+
+/** Recorded replay dates. Default is the canonical ask-flow cassette. */
+export const DEFAULT_AS_OF = '2026-11-20'
+export const SECONDARY_AS_OF = '2025-10-17'
+export const DEMO_AS_OF_OPTIONS = [DEFAULT_AS_OF, SECONDARY_AS_OF] as const

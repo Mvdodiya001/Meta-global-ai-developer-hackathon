@@ -5,6 +5,7 @@ import { LawyerReviewedBadge } from '../badges/LawyerReviewedBadge'
 type FactTrustListProps = {
   facts: Fact[]
   reviewedIds: string[]
+  disabled?: boolean
   onApprove: (factId: string) => void
   onChallenge: (factId: string) => void
 }
@@ -12,6 +13,7 @@ type FactTrustListProps = {
 export function FactTrustList({
   facts,
   reviewedIds,
+  disabled = false,
   onApprove,
   onChallenge,
 }: FactTrustListProps) {
@@ -41,14 +43,16 @@ export function FactTrustList({
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
+                disabled={disabled}
+                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-800"
                 onClick={() => onApprove(fact.id)}
               >
                 Approve
               </button>
               <button
                 type="button"
-                className="rounded-md border border-rose-300 px-3 py-1 text-xs font-medium text-rose-900 hover:bg-rose-50 dark:border-rose-700 dark:text-rose-100 dark:hover:bg-rose-950/40"
+                disabled={disabled}
+                className="rounded-md border border-rose-300 px-3 py-1 text-xs font-medium text-rose-900 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-700 dark:text-rose-100 dark:hover:bg-rose-950/40"
                 onClick={() => onChallenge(fact.id)}
               >
                 Challenge

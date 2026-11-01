@@ -642,13 +642,17 @@ export interface components {
         };
         /**
          * ClaimCreated
-         * @description Structured claim plus run handle (F4, F5).
+         * @description Structured claim plus run handle, loop finding when accepted (F4, F5).
          */
         ClaimCreated: {
             /** Claim Id */
             claim_id: string;
             /** Run Id */
             run_id: string;
+            /** Finding Id */
+            finding_id?: string | null;
+            /** Status */
+            status?: string | null;
         };
         /**
          * ClaimRequest

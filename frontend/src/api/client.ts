@@ -78,7 +78,8 @@ async function readError(response: Response, path: string): Promise<ApiError> {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${getApiBase()}${path}`)
+  const url = `${getApiBase()}${path}`
+  const response = await fetch(url)
   if (!response.ok) {
     throw await readError(response, path)
   }
@@ -86,7 +87,8 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${getApiBase()}${path}`, {
+  const url = `${getApiBase()}${path}`
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

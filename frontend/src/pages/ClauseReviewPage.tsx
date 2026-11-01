@@ -7,7 +7,12 @@ import {
   parseChallengerReport,
   type ChallengerReportView,
 } from '../api/mocks/challenger'
-import { DEFAULT_VERIFY_QUESTION } from '../api/mocks/runTrace'
+import { rememberClaimId } from '../api/demoSession'
+import {
+  DEFAULT_AS_OF,
+  DEFAULT_VERIFY_QUESTION,
+  DEMO_AS_OF_OPTIONS,
+} from '../api/mocks/runTrace'
 import type { Clause, Fact, Finding, Matter, ToolCall } from '../api/types'
 import { AskBox } from '../components/clause-review/AskBox'
 import { ClauseList } from '../components/clause-review/ClauseList'
@@ -32,7 +37,7 @@ export function ClauseReviewPage() {
   const [facts, setFacts] = useState<Fact[]>([])
   const [selectedClauseId, setSelectedClauseId] = useState<string | null>(null)
   const [question, setQuestion] = useState(DEFAULT_VERIFY_QUESTION)
-  const [asOf, setAsOf] = useState('2025-10-01')
+  const [asOf, setAsOf] = useState(DEFAULT_AS_OF)
   const [phase, setPhase] = useState<VerifyPhase>('idle')
   const [runId, setRunId] = useState<string | null>(null)
   const [traceEvents, setTraceEvents] = useState<ToolCall[]>([])
@@ -47,18 +52,22 @@ export function ClauseReviewPage() {
 
   useEffect(() => {
     void (async () => {
-      const docs = await api.documents(DEMO_MATTER_ID)
-      const documentId = docs.documents[0]?.id ?? DEMO_DOCUMENT_ID
-      const [m, c, f] = await Promise.all([
-        api.matter(DEMO_MATTER_ID),
-        api.clauses(documentId),
-        api.facts(DEMO_MATTER_ID),
-      ])
-      setMatter(m)
-      setClauses(c)
-      setFacts(f)
-      const clause92 = c.find((clause) => clause.ref === '9.2')
-      setSelectedClauseId(clause92?.id ?? c[0]?.id ?? null)
+      try {
+        const docs = await api.documents(DEMO_MATTER_ID)
+        const documentId = docs.documents[0]?.id ?? DEMO_DOCUMENT_ID
+        const [m, c, f] = await Promise.all([
+          api.matter(DEMO_MATTER_ID),
+          api.clauses(documentId),
+          api.facts(DEMO_MATTER_ID),
+        ])
+        setMatter(m)
+        setClauses(c)
+        setFacts(f)
+        const clause92 = c.find((clause) => clause.ref === '9.2')
+        setSelectedClauseId(clause92?.id ?? c[0]?.id ?? null)
+      } catch (err) {
+        setNotice(err instanceof Error ? err.message : 'Failed to load matter')
+      }
     })()
   }, [])
 
@@ -83,6 +92,7 @@ export function ClauseReviewPage() {
         question,
         as_of: asOf,
       })
+      rememberClaimId(created.claim_id)
       setRunId(created.run_id)
 
       await api.pollRunEvents(created.run_id, setTraceEvents, controller.signal)
@@ -137,6 +147,7 @@ export function ClauseReviewPage() {
       <AskBox
         question={question}
         asOf={asOf}
+        asOfOptions={DEMO_AS_OF_OPTIONS}
         disabled={phase === 'running' || !selectedClauseId}
         onQuestionChange={setQuestion}
         onAsOfChange={setAsOf}

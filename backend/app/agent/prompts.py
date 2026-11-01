@@ -101,6 +101,7 @@ def build_proof_input(
     params: dict[str, object],
     as_of: str,
     matter_id: str,
+    claim_id: str,
     clause_ref: str,
     clause_heading: str,
     clause_text: str,
@@ -122,7 +123,8 @@ def build_proof_input(
         "Quote provision and clause text verbatim. "
         "When the checker rejects a draft, fix the flagged steps and retry. "
         "End with propose_finding carrying the full proof object.\n\n"
-        f"Session matter: {matter_id}. Use the ids below EXACTLY as written — "
+        f"Session matter: {matter_id}. Claim id: {claim_id}. "
+        "Use the ids below EXACTLY as written — "
         "never invent, shorten or reformat an id.\n\n"
         f"Claim: {question}\n"
         f"Claim type: {claim_type} params: {params}\n"

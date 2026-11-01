@@ -309,6 +309,33 @@ def test_demo_question_end_to_end(
     assert current.json()["status"] == "FOLLOWS"
 
 
+def test_g4_ask_replays_on_seeded_facts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """G4: POST /api/claims replays over HTTP on a freshly seeded DB.
+
+    Regression for the replay-hash 502: the server's loop request must match
+    a recorded cassette byte for byte on seed state (seed now carries the
+    DOC-01 extraction facts, so the recorded turns embed them).
+    """
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    created = post(
+        app,
+        "/api/claims",
+        {
+            "clause_id": "CL-10",
+            "question": seed.DEMO_92_QUESTION,
+            "as_of": seed.DEMO_92_AS_OF,
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["finding_id"] is not None
+    assert body["status"] == "FOLLOWS"
+    current = get(app, f"/api/claims/{body['claim_id']}/current")
+    assert current.json()["id"] == body["finding_id"]
+
+
 def test_user_date_question_end_to_end(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -493,7 +520,8 @@ def test_extract_persists_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     clauses = get(app, "/api/documents/DOC-01/clauses").json()["clauses"]
     assert len(clauses) == 12
     facts = get(app, "/api/matters/MAT-01/facts").json()["facts"]
-    assert len(facts) == 13
+    # G8: seed already carries 13 facts (F-LOOP-92 + F-SEED-01..12).
+    assert len(facts) == 25
     assert "F-LOOP-92" in {fact["id"] for fact in facts}
 
 

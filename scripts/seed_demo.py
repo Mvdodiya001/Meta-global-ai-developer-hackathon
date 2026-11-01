@@ -22,7 +22,8 @@ def main() -> None:
         f"seeded {result['db']}: matter {result['matter_id']}, "
         f"{result['clauses']} clauses, "
         f"{len(result['versions'])} versions, "
-        f"{len(result['cards'])} cards"
+        f"{len(result['cards'])} cards, "
+        f"{result['facts']} facts"
     )
 
 

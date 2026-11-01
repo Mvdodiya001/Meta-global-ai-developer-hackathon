@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { api } from '../api/client'
 import { DEMO_MATTER_ID } from '../api/config'
+import { lastClaimId } from '../api/demoSession'
 import {
   COMMENCEMENT_DATE,
   UNKNOWN_QUESTION,
@@ -21,6 +22,7 @@ import { UnknownClaimDemo } from '../components/lawyer/UnknownClaimDemo'
 import { AiDraftBadge } from '../components/badges/AiDraftBadge'
 
 export function LawyerControlPage() {
+  const [claimId, setClaimId] = useState<string | null>(null)
   const [facts, setFacts] = useState<Fact[]>([])
   const [baseFinding, setBaseFinding] = useState<Finding | null>(null)
   const [reviewedIds, setReviewedIds] = useState<string[]>([])
@@ -34,6 +36,8 @@ export function LawyerControlPage() {
   const [verifyResult, setVerifyResult] = useState<ProofVerifyResult | null>(null)
 
   useEffect(() => {
+    const stored = lastClaimId()
+    setClaimId(stored)
     void (async () => {
       const nextFacts = await api.facts(DEMO_MATTER_ID)
       setFacts(nextFacts)
@@ -42,7 +46,10 @@ export function LawyerControlPage() {
           .filter((fact) => fact.trust_class === 'lawyer_confirmed')
           .map((fact) => fact.id),
       )
-      const finding = await api.currentFinding('C-001')
+      if (!stored) {
+        return
+      }
+      const finding = await api.currentFinding(stored)
       if (finding) {
         setBaseFinding(finding)
         setDependent(finding)
@@ -51,13 +58,21 @@ export function LawyerControlPage() {
     })()
   }, [])
 
+  const actionsEnabled = Boolean(claimId)
+
   async function handleApprove(factId: string) {
+    if (!actionsEnabled) {
+      return
+    }
     const action = await api.approveFact(factId)
     setFacts((current) => applyFactAction(current, action))
     setReviewedIds((ids) => (ids.includes(factId) ? ids : [...ids, factId]))
   }
 
   async function handleChallenge(factId: string) {
+    if (!actionsEnabled) {
+      return
+    }
     const action = await api.challengeFact(factId)
     setFacts((current) => applyFactAction(current, action))
     setRecomputed(true)
@@ -67,6 +82,9 @@ export function LawyerControlPage() {
   }
 
   function handleAsOf(next: string) {
+    if (!actionsEnabled) {
+      return
+    }
     setAsOf(next)
     if (baseFinding) {
       setAsOfResult(asOfFinding(baseFinding, next))
@@ -81,9 +99,14 @@ export function LawyerControlPage() {
         <AiDraftBadge label="AI draft — not yet reviewed" />
       </header>
 
+      {!actionsEnabled ? (
+        <p className="ct-panel p-4 text-sm font-medium">Run Screen 1 first</p>
+      ) : null}
+
       <FactTrustList
         facts={facts}
         reviewedIds={reviewedIds}
+        disabled={!actionsEnabled}
         onApprove={(id) => void handleApprove(id)}
         onChallenge={(id) => void handleChallenge(id)}
       />
@@ -97,19 +120,26 @@ export function LawyerControlPage() {
         asOf={asOf}
         commencement={COMMENCEMENT_DATE}
         finding={asOfResult}
+        disabled={!actionsEnabled}
         onAsOfChange={handleAsOf}
       />
 
       <UnknownClaimDemo
         question={unknownQ}
         finding={unknownResult}
+        disabled={!actionsEnabled}
         onQuestionChange={setUnknownQ}
-        onAsk={() => setUnknownResult(unknownFinding())}
+        onAsk={() => {
+          if (actionsEnabled) {
+            setUnknownResult(unknownFinding())
+          }
+        }}
       />
 
       <ProofEditor
         value={proofText}
         result={verifyResult}
+        disabled={!actionsEnabled}
         onChange={setProofText}
         onReset={() => {
           if (baseFinding) {
@@ -118,10 +148,12 @@ export function LawyerControlPage() {
           }
         }}
         onVerify={() => {
+          if (!claimId) {
+            return
+          }
           void (async () => {
             try {
               const parsed = JSON.parse(proofText) as Proof
-              const claimId = baseFinding?.claim_id ?? 'C-001'
               setVerifyResult(await api.verifyProof(claimId, parsed))
             } catch {
               setVerifyResult({

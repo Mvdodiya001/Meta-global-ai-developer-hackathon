@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { DEFAULT_AS_OF, DEFAULT_VERIFY_QUESTION, SECONDARY_AS_OF } from '../api/mocks/runTrace'
 import { ClauseReviewPage } from './ClauseReviewPage'
 
 describe('ClauseReviewPage', () => {
@@ -11,6 +12,20 @@ describe('ClauseReviewPage', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it('defaults to the recorded 9.2 question and as-of dates', async () => {
+    render(
+      <MemoryRouter>
+        <ClauseReviewPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByLabelText(/Legal question/i)).toHaveValue(
+      DEFAULT_VERIFY_QUESTION,
+    )
+    expect(screen.getByLabelText(/^As-of date$/i)).toHaveValue(DEFAULT_AS_OF)
+    expect(screen.getByRole('option', { name: SECONDARY_AS_OF })).toBeInTheDocument()
   })
 
   it('runs mock verification and reveals tool trace then finding', async () => {

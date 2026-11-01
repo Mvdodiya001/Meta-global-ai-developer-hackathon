@@ -2,7 +2,8 @@
 
 `seed_demo()` builds a fresh demo database: matter, one hearing + one task
 (both labelled demo data), the Master DPA document with 12 clauses and exact
-spans, plus the T1.2 corpus and T1.3 rule cards for a complete demo state.
+spans, the replay-extracted DOC-01 facts (G8, deterministic `F-SEED-*` ids),
+plus the T1.2 corpus and T1.3 rule cards for a complete demo state.
 Re-running on the same database is a no-op for the contract part (the corpus
 and card loaders are already idempotent).
 """
@@ -15,6 +16,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import models
+from app.agent import extract as extract_agent
 from app.core.errors import ToolError
 from app.db import init_db
 from app.services import rulecards, sources
@@ -25,6 +27,9 @@ DEFAULT_CORPUS_ROOT = REPO_ROOT / "corpus"
 MATTER_ID = "MAT-01"
 DOCUMENT_ID = "DOC-01"
 DOC_VERSION_ID = "DOCV-01"
+
+SEED_EXTRACT_ID_PREFIX = "F-SEED-"
+SEED_EXTRACT_CREATED_AT = "2026-01-01T00:00:00Z"
 
 EXPECTED_REFS = ["1", "2", "3", "4", "5", "6", "7", "8", "9.1", "9.2", "10", "11"]
 
@@ -80,6 +85,67 @@ def ensure_demo_92_claim(session: Session) -> str:
 def _utcnow() -> str:
     """Current UTC time in ISO-8601 (T1.4)."""
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _seed_extraction_facts(session: Session, corpus_root: Path) -> int:
+    """Persist replay-extracted DOC-01 facts with deterministic ids (G8).
+
+    Runs the recorded T2.2 extraction in `replay` mode (zero model spend)
+    and attaches one fact per extracted clause to the seeded seed version,
+    so Screen 3 is populated right after a reset. Ids (`F-SEED-01`, …),
+    text and dates are constants derived from the pinned cassette, never
+    generated, so every reset yields byte-identical prompt hashes.
+    """
+    version = session.get(models.DocumentVersion, DOC_VERSION_ID)
+    if version is None:
+        raise ValueError(f"seeded document version {DOC_VERSION_ID} missing")
+    result = extract_agent.extract_document(
+        str(version.text), mode="replay", cache_dir=corpus_root / "cassettes"
+    )
+    clause_ids = {
+        str(row.ref): str(row.id)
+        for row in session.execute(
+            sa.select(models.Clause).where(
+                models.Clause.document_version_id == DOC_VERSION_ID
+            )
+        )
+        .scalars()
+        .all()
+    }
+    existing: list[str] = list(
+        session.execute(
+            sa.select(models.Fact.id).where(
+                models.Fact.id.startswith(SEED_EXTRACT_ID_PREFIX)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if existing:
+        if len(existing) != len(result.facts):
+            raise ValueError(
+                f"partial seeded extraction: {len(existing)} of "
+                f"{len(result.facts)} facts present"
+            )
+        return len(existing)
+    for index, fact in enumerate(result.facts, start=1):
+        clause_id = clause_ids.get(str(fact.clause_ref))
+        if clause_id is None:
+            raise ValueError(f"extracted fact points at unknown clause {fact.clause_ref!r}")
+        session.add(
+            models.Fact(
+                id=f"{SEED_EXTRACT_ID_PREFIX}{index:02d}",
+                matter_id=MATTER_ID,
+                clause_id=clause_id,
+                statement=fact.statement,
+                structured_json=dict(fact.structured),
+                origin=fact.origin,
+                trust_class=fact.trust_class,
+                created_at=SEED_EXTRACT_CREATED_AT,
+            )
+        )
+    session.commit()
+    return len(result.facts)
 
 
 def parse_contract(text: str) -> list[tuple[str, str, str]]:
@@ -197,6 +263,7 @@ def seed_demo(
             )
         session.commit()
     ensure_demo_92_claim(session)
+    fact_count = _seed_extraction_facts(session, corpus_root)
     clause_count = session.execute(
         sa.select(sa.func.count()).select_from(models.Clause)
     ).scalar()
@@ -207,4 +274,5 @@ def seed_demo(
         "clauses": int(clause_count or 0),
         "versions": sorted(version_ids.values()),
         "cards": card_ids,
+        "facts": int(fact_count or 0),
     }

@@ -159,3 +159,64 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 - Third-party added: none
 - Credit spend: $0 (no model calls)
 - Ready for human commit: yes — suggested message: `T5.4: wire demo UI to the live v1 API`
+
+## [G2,G3,G5,G9] STARTED · 2026-11-02 01:38 IST
+- Task: Gate fixes — Screen 1 recorded question/as-of, Screen 3 uses Screen 1 claim_id, challenger toggle copy
+- Built against: contract v2 (run npm run gen:api)
+
+## [G2,G3,G5,G9] DONE · 2026-11-02 01:41 IST
+- Task: Gate fixes G2, G3, G5, G9 (frontend only, as specified)
+- Built against: contract v2 (`npm run gen:api` run)
+- Files changed: `frontend/src/api/schema.d.ts` (regen v2), `frontend/src/api/demoSession.ts` (new), `frontend/src/api/mocks/runTrace.ts`, `frontend/src/components/clause-review/AskBox.tsx`, `frontend/src/pages/ClauseReviewPage.tsx`, `frontend/src/pages/ClauseReviewPage.test.tsx`, `frontend/src/pages/LawyerControlPage.tsx`, `frontend/src/pages/LawyerControlPage.test.tsx`, `frontend/src/components/ChallengerPanel.tsx`, `frontend/src/components/ChallengerPanel.test.tsx`, `frontend/src/components/lawyer/FactTrustList.tsx`, `frontend/src/components/lawyer/ProofEditor.tsx`, `frontend/src/components/lawyer/AsOfPanel.tsx`, `frontend/src/components/lawyer/UnknownClaimDemo.tsx`, `docs/logs/CURSOR_LOG.md`
+- What changed: Screen 1 default question is the seed/cassette text and as-of defaults to 2026-11-20 with 2025-10-17 as the second option. Screen 1 stores the returned `claim_id` in sessionStorage; Screen 3 uses that id only — no hardcoded `C-001`. With no claim, Screen 3 shows "Run Screen 1 first" and disables approve/challenge/as-of/unknown/proof actions. Challenger checkbox label is the specified display-only copy; it does not imply it starts the backend pass.
+- Checks run: `make check-frontend` → pass (oxlint 0; vitest 27/27); `npm run build` → pass. Browser: `/review` shows the recorded question, as-of 2026-11-20 / 2025-10-17, and the new challenger label; `/control` shows "Run Screen 1 first" with actions disabled. Backend was not started (lane rule).
+- Decisions / assumptions: Claim id is passed via `sessionStorage` (`clausetrace.claim_id`) so Screen 3 works after a Screen 1 run in the same tab. Mock `C-001` remains only inside `openapi/examples` mock payloads, not page code. As-of on Screen 1 is a two-option select so replay dates cannot be mistyped.
+- Contract change: none (consumed v2 types; no API edit)
+- Requests: none
+- UI rules checked: disclaimer still on every screen · challenger copy does not claim the law is true · no legal-advice text
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Fix Screen 1 defaults, Screen 3 claim_id, and challenger toggle copy`
+
+## [proxy-8001] STARTED · 2026-11-02 02:09 IST
+- Task: Screen 1 stuck on Loading matter (Vite proxy vs API port)
+- Built against: contract v2 · live API
+
+## [proxy-8001] PARTIAL · 2026-11-02 02:10 IST
+- Task: Point Vite `/api` proxy at ClauseTrace on 8001
+- Built against: contract v2 · live API on 8001
+- Files changed: `frontend/vite.config.ts` (modified: proxy target 8000 → 8001), `frontend/src/api/client.ts` (debug logs), `frontend/src/pages/ClauseReviewPage.tsx` (load error notice + debug logs), `docs/logs/CURSOR_LOG.md`
+- What changed: `/review` now loads MAT-01, 12 clauses, CL-10. Debug log GET 200 + "matter loaded". Run verification still 502 `MODEL_UNAVAILABLE` hash `72496f2e…` (POST logged status 502).
+- Checks run: proxy `GET /api/matters/MAT-01` through 5173 → 200; browser `/review` shows Acme–Nimbus; Ask 502 on screen
+- Decisions / assumptions: port 8000 is still another app; 8001 is ClauseTrace. Debug instrumentation left in until the 502 is gone.
+- Requests: [REQ → MC] re-record the ask-flow cassettes after G8 seed facts (Muse Code log G4 PARTIAL). [REQ → H] `make reset-demo` then `make record` once (spends credits). Cursor will not call the model.
+- UI rules checked: disclaimer still on `/review`
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: no — debug logs still in client; 502 not fixed
+
+## [ask-502-B] STARTED · 2026-11-02 02:23 IST
+- Task: Ask still 502 after G8; apply Muse option B then make replay work for random API claim ids
+- Built against: contract v2 · live API on 8001 · LLM_MODE=replay
+
+## [ask-502-B] DONE · 2026-11-02 02:30 IST
+- Files changed: `backend/app/agent/prompts.py` (claim id line in proof prompt), `backend/app/agent/loop.py` (`_prompt_claim_id` uses recorded cassette ids, not live C-*), `backend/app/agent/tools.py` (`_bind_run_claim` for verify/propose), `backend/app/agent/llm.py` (debug logs), `corpus/cassettes/` (re-recorded ask chain), `docs/logs/CURSOR_LOG.md`
+- What changed: Option B put a claim id in the proof prompt so the model stops inventing CLAIM-9.2. Live `make record` then accepted in 5 calls and stored FOLLOWS. POST Ask still 502 because API mints `C-{uuid}` and that id was hashed into the prompt (missing cassette `c65a07968606`). Fix: prompt embeds the recorded id (`C-REC-ASK` / `C-REC-ASK-1017` / `C-LOOP-92`); tools rebind verify/propose onto the run claim without mutating conversation history. Direct POST both as-of dates → 200 FOLLOWS.
+- Checks run: POST `/api/claims` 2026-11-20 → 200 `FOLLOWS` (`C-c50516b91871`); 2025-10-17 → 200 `FOLLOWS`. pytest `test_demo_question_end_to_end`, `test_g4_ask_replays_on_seeded_facts`, `test_user_date_question_end_to_end`, `test_challenger_report_returned`, `test_cross_matter_access_rejected`, `test_replay_clause_92_loop` → 6 passed. Full `make check-backend` not run. Frontend debug logs still in.
+- Decisions / assumptions: human proceed treated as override to edit backend (Muse lane) to finish the gate. Did not weaken `request_hash`. Cross-matter claim ids are not rebound. Latest record line `cost_est=$0.000448`.
+- Contract change: none
+- Requests: [REQ → H] commit mixed lanes (frontend proxy + backend G8/B/C + cassettes). Browser confirm Run verification on `/review` shows FOLLOWS. Do not start T7 until that click is green.
+- UI rules checked: no copy change claiming the system proves the law
+- New-work note: prompt claim-id is the cassette id; tools bind the live claim (option B+C)
+- Third-party added: none
+- Credit spend: ~$0.000448 this record (on top of G4 failed record ~$0.013)
+- Ready for human commit: no until browser Ask is confirmed and debug logs are removed
+- Suggested message: `Fix ask replay: stable cassette claim id plus tool rebind`
+
+## [ask-502-B] CONFIRMED · 2026-11-02 02:33 IST
+- What changed: Browser `/review` Run verification (default 2026-11-20 question) returned finding `FND-e25e54bb2f42` status FOLLOWS for live claim `C-dc6c0a3de675`. POST `/api/claims` 200. Replay used prompt id `C-REC-ASK` with cassette `624b9d9783d6` present; tools rebound `C-REC-ASK` → `C-dc6c0a3de675`. The on-screen `72496f2e` cassette error was the previous failed Ask, not a new 502.
+- Files changed: removed debug ingest logs from `frontend/src/api/client.ts`, `frontend/src/pages/ClauseReviewPage.tsx`, `backend/app/agent/llm.py`, `loop.py`, `tools.py`. Kept load-failure `setNotice`. Kept `_prompt_claim_id` + `_bind_run_claim`.
+- Checks run: browser Ask 200 FOLLOWS; uvicorn POST 200; GET `/api/claims/C-dc6c0a3de675/current` 200.
+- Ready for human commit: yes — suggested message: `Fix ask replay: stable cassette claim id plus tool rebind`

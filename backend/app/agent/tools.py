@@ -176,6 +176,32 @@ def _scoped_claim(session: Session, matter_id: str, claim_id: Any) -> models.Cla
     return claim
 
 
+def _bind_run_claim(
+    session: Session,
+    matter_id: str,
+    run_claim: models.Claim,
+    args: dict[str, Any],
+) -> dict[str, Any]:
+    """Rebind verify/propose onto the run claim when the model echoed a cassette id.
+
+    Replay cassettes carry C-REC-ASK / C-REC-ASK-1017 / invented ids. Those
+    must not leak into the hashed conversation, so this copy is local to
+    dispatch. Cross-matter ids stay untouched so `_scoped_claim` still rejects.
+    """
+    bound = dict(args)
+    incoming = bound.get("claim_id")
+    if incoming == run_claim.id:
+        return bound
+    looked = session.get(models.Claim, incoming) if isinstance(incoming, str) else None
+    if looked is not None and looked.matter_id != matter_id:
+        return bound
+    bound["claim_id"] = run_claim.id
+    proof = bound.get("proof")
+    if isinstance(proof, dict):
+        bound["proof"] = {**proof, "claim_id": run_claim.id}
+    return bound
+
+
 def _log_call(
     session: Session,
     run_id: str,
@@ -609,7 +635,10 @@ def call_tool(
             code="tool_budget_exhausted",
         )
     try:
-        result = _HANDLERS[tool](session, matter_id, args)
+        bound_args = args
+        if tool in {"verify_derivation", "propose_finding"}:
+            bound_args = _bind_run_claim(session, matter_id, claim, args)
+        result = _HANDLERS[tool](session, matter_id, bound_args)
     except Exception as exc:
         code = exc.code if isinstance(exc, ToolError) else type(exc).__name__
         _log_call(

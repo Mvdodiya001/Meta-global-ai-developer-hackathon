@@ -8,7 +8,17 @@ describe('ChallengerPanel', () => {
   it('shows idle copy when the challenger is off', () => {
     render(<ChallengerPanel enabled={false} report={null} />)
     expect(screen.getByRole('heading', { name: /Challenger/i })).toBeInTheDocument()
-    expect(screen.getByText(/Challenger is off/i)).toBeInTheDocument()
+    expect(screen.getByText(/Report hidden/i)).toBeInTheDocument()
+  })
+
+  it('labels the toggle as a display filter, not a server switch', () => {
+    render(<ChallengerPanel enabled report={null} onToggle={() => undefined} />)
+    expect(
+      screen.getByText(
+        /Shows the second pass only if the server was started with CHALLENGER=on/i,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/^Challenger on$/i)).not.toBeInTheDocument()
   })
 
   it('lists blocking objections and requires review', () => {

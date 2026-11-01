@@ -63,8 +63,42 @@ def test_seed_is_idempotent(tmp_path: Path) -> None:
             (models.Clause, 12),
             (models.SourceVersion, 5),
             (models.RuleCard, 7),
+            (models.Fact, 13),
         ):
             count = conn.execute(
                 sa.select(sa.func.count()).select_from(entity)
             ).scalar()
             assert count == want
+
+
+def test_seed_extracts_doc01_facts_in_replay(tmp_path: Path) -> None:
+    """G8: a reset seeds DOC-01 extraction facts from the replay cassette."""
+    db = tmp_path / "demo.db"
+    seed.seed_demo(db, CORPUS_ROOT)
+    session = sessionmaker(bind=init_db(db), future=True)()
+    try:
+        facts = (
+            session.execute(
+                sa.select(models.Fact)
+                .where(models.Fact.matter_id == "MAT-01")
+                .order_by(models.Fact.id)
+            )
+            .scalars()
+            .all()
+        )
+        by_id = {row.id: row for row in facts}
+        assert "F-LOOP-92" in by_id
+        seeded = [row for row in facts if row.id.startswith("F-SEED-")]
+        assert len(seeded) == 12
+        assert [row.id for row in seeded] == [f"F-SEED-{i:02d}" for i in range(1, 13)]
+        clause_ids = {
+            row.id
+            for row in session.execute(sa.select(models.Clause)).scalars().all()
+        }
+        for row in seeded:
+            assert row.trust_class == "document_extracted"
+            assert row.origin == "extracted"
+            assert row.clause_id in clause_ids
+            assert row.statement
+    finally:
+        session.close()

@@ -27,7 +27,7 @@ export function ChallengerPanel({
               checked={enabled}
               onChange={(event) => onToggle(event.target.checked)}
             />
-            Challenger on
+            Shows the second pass only if the server was started with CHALLENGER=on
           </label>
         ) : null}
         {onRun && enabled ? (
@@ -43,10 +43,14 @@ export function ChallengerPanel({
       <p className="text-sm text-slate-600 dark:text-slate-400">
         Second Muse Spark pass (<span className="font-mono">muse-spark-1.2</span>
         ), different prompt from the drafter. It reviews; the checker has no
-        model in it. Set <span className="font-mono">CHALLENGER=off</span> to skip.
+        model in it. This control only shows or hides the report. It does not
+        start the server pass.
       </p>
       {!enabled ? (
-        <p className="text-sm">Challenger is off. No second pass is sent.</p>
+        <p className="text-sm">
+          Report hidden. The server second pass runs only when started with{' '}
+          <span className="font-mono">CHALLENGER=on</span>.
+        </p>
       ) : report == null ? (
         <p className="text-sm">No challenger report on this finding yet.</p>
       ) : report.objections.length === 0 ? (

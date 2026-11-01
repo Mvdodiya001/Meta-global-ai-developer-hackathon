@@ -6,10 +6,17 @@ type AsOfPanelProps = {
   asOf: string
   commencement: string
   finding: Finding | null
+  disabled?: boolean
   onAsOfChange: (value: string) => void
 }
 
-export function AsOfPanel({ asOf, commencement, finding, onAsOfChange }: AsOfPanelProps) {
+export function AsOfPanel({
+  asOf,
+  commencement,
+  finding,
+  disabled = false,
+  onAsOfChange,
+}: AsOfPanelProps) {
   const inForce = asOf >= commencement
 
   return (
@@ -26,6 +33,7 @@ export function AsOfPanel({ asOf, commencement, finding, onAsOfChange }: AsOfPan
             id="as-of"
             type="date"
             value={asOf}
+            disabled={disabled}
             onChange={(event) => onAsOfChange(event.target.value)}
             className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
           />

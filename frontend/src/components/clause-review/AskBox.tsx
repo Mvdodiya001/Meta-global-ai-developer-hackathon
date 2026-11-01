@@ -1,6 +1,7 @@
 type AskBoxProps = {
   question: string
   asOf: string
+  asOfOptions: readonly string[]
   disabled: boolean
   onQuestionChange: (value: string) => void
   onAsOfChange: (value: string) => void
@@ -10,6 +11,7 @@ type AskBoxProps = {
 export function AskBox({
   question,
   asOf,
+  asOfOptions,
   disabled,
   onQuestionChange,
   onAsOfChange,
@@ -43,14 +45,19 @@ export function AskBox({
           <label className="mb-1 block text-sm font-medium" htmlFor="verify-as-of">
             As-of date
           </label>
-          <input
+          <select
             id="verify-as-of"
-            type="date"
             value={asOf}
             disabled={disabled}
             onChange={(event) => onAsOfChange(event.target.value)}
             className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
-          />
+          >
+            {asOfOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </div>
         <button
           type="submit"

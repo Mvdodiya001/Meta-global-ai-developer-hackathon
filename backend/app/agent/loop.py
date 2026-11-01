@@ -34,6 +34,16 @@ from app.services.seed import (
 
 LOOP_MODEL = "muse-spark-1.3-contributor"
 MAX_AGENT_RETRIES = 2
+# Ask-flow cassettes were recorded with these ids in the proof prompt.
+# API-created claims mint a random id; substituting the recorded id keeps
+# the replay hash stable (option B + C).
+_CASSETTE_CLAIM_BY_AS_OF = {
+    "2025-10-17": "C-REC-ASK-1017",
+}
+_CASSETTE_CLAIM_DEFAULT = "C-REC-ASK"
+_RECORDED_CLAIM_IDS = frozenset(
+    {DEMO_92_CLAIM_ID, "C-REC-ASK", "C-REC-ASK-1017"}
+)
 
 __all__ = [
     "DEMO_92_AS_OF",
@@ -143,6 +153,20 @@ def datetime_now() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _prompt_claim_id(claim: models.Claim) -> str:
+    """Stable claim id for the proof prompt so replay hashes match cassettes.
+
+    Recorded loops embed C-LOOP-92 / C-REC-ASK / C-REC-ASK-1017. API Ask
+    mints a random C-* id; using that live id in the prompt misses every
+    cassette (502 MODEL_UNAVAILABLE). Keep the recorded id in the hashed
+    prompt; tools rebind verify/propose onto the run's real claim.
+    """
+    cid = str(claim.id)
+    if cid in _RECORDED_CLAIM_IDS:
+        return cid
+    return _CASSETTE_CLAIM_BY_AS_OF.get(str(claim.as_of), _CASSETTE_CLAIM_DEFAULT)
+
+
 def run_verify(
     session: Session,
     *,
@@ -173,12 +197,14 @@ def run_verify(
     if clause is None:
         raise ToolError(f"unknown clause {claim.clause_id!r}", code="unknown_clause")
     ref, heading, text = _claim_context(session, claim)
+    prompt_claim_id = _prompt_claim_id(claim)
     origin = prompts.build_proof_input(
         question=str(claim.question_text),
         claim_type=str(claim.claim_type),
         params=dict(claim.params_json or {}),
         as_of=str(claim.as_of),
         matter_id=matter_id,
+        claim_id=prompt_claim_id,
         clause_ref=ref,
         clause_heading=heading,
         clause_text=text,

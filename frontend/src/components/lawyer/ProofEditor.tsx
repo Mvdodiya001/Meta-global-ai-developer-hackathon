@@ -3,12 +3,20 @@ import type { ProofVerifyResult } from '../../api/types'
 type ProofEditorProps = {
   value: string
   result: ProofVerifyResult | null
+  disabled?: boolean
   onChange: (value: string) => void
   onVerify: () => void
   onReset: () => void
 }
 
-export function ProofEditor({ value, result, onChange, onVerify, onReset }: ProofEditorProps) {
+export function ProofEditor({
+  value,
+  result,
+  disabled = false,
+  onChange,
+  onVerify,
+  onReset,
+}: ProofEditorProps) {
   const codes = result?.errors
     .map((error) => String(error.code ?? ''))
     .filter(Boolean)
@@ -29,6 +37,7 @@ export function ProofEditor({ value, result, onChange, onVerify, onReset }: Proo
         id="proof-json"
         rows={10}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-xs dark:border-slate-600 dark:bg-slate-900"
       />
@@ -36,14 +45,16 @@ export function ProofEditor({ value, result, onChange, onVerify, onReset }: Proo
         <button
           type="button"
           onClick={onVerify}
-          className="rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900 dark:bg-blue-700"
+          disabled={disabled}
+          className="rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900 disabled:opacity-50 dark:bg-blue-700"
         >
           Verify proof
         </button>
         <button
           type="button"
           onClick={onReset}
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium dark:border-slate-600"
+          disabled={disabled}
+          className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium disabled:opacity-50 dark:border-slate-600"
         >
           Reset proof
         </button>
