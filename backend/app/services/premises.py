@@ -132,6 +132,19 @@ def _stale_dependents(session: Session, old: models.Fact, new: models.Fact) -> N
             )
 
 
+def _finish(session: Session, new: models.Fact) -> models.Fact:
+    """Commit, then return the new row detached with attributes loaded.
+
+    Callers read id/trust_class/supersedes_id after the commit; without
+    refresh+expunge that read reloads from the database file, which a
+    demo reset may have replaced mid-request (approve-500).
+    """
+    session.commit()
+    session.refresh(new)
+    session.expunge(new)
+    return new
+
+
 def challenge_fact(
     session: Session, *, fact_id: str, reason: str, reviewer: str = "lawyer"
 ) -> models.Fact:
@@ -146,8 +159,7 @@ def challenge_fact(
         session, old, new, action="challenged", reason=reason, reviewer=reviewer
     )
     _stale_dependents(session, old, new)
-    session.commit()
-    return new
+    return _finish(session, new)
 
 
 def reject_fact(
@@ -164,8 +176,7 @@ def reject_fact(
         session, old, new, action="rejected", reason=reason, reviewer=reviewer
     )
     _stale_dependents(session, old, new)
-    session.commit()
-    return new
+    return _finish(session, new)
 
 
 def approve_fact(
@@ -179,5 +190,4 @@ def approve_fact(
     _record_action(
         session, old, new, action="approved", reason="", reviewer=reviewer
     )
-    session.commit()
-    return new
+    return _finish(session, new)

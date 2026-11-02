@@ -274,11 +274,9 @@ def test_create_claim_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     )
     assert created.status_code == 200, created.text
     assert created.json()["finding_id"] is None
-    run_id = created.json()["run_id"]
-    run = get(app, f"/api/runs/{run_id}")
-    assert run.json()["status"] == "running"
-    events = get(app, f"/api/runs/{run_id}/events")
-    assert events.json() == {"events": []}
+    # The response carries the loop's run id (canned as RUN-LOOP here),
+    # not the claim-open placeholder, so the UI poll finds the trace.
+    assert created.json()["run_id"] == "RUN-LOOP"
     assert get(app, "/api/runs/NOPE").status_code == 404
     assert post(app, "/api/claims", {"clause_id": "NOPE", "question": question}).status_code in (
         400,
@@ -307,6 +305,11 @@ def test_demo_question_end_to_end(
     current = get(app, f"/api/claims/{body['claim_id']}/current")
     assert current.json()["id"] == body["finding_id"]
     assert current.json()["status"] == "FOLLOWS"
+    # The returned run is the loop's run: the UI polls it for the trace.
+    run = get(app, f"/api/runs/{body['run_id']}")
+    assert run.json()["status"] != "running"
+    events = get(app, f"/api/runs/{body['run_id']}/events")
+    assert len(events.json()["events"]) >= 3
 
 
 def test_g4_ask_replays_on_seeded_facts(
@@ -571,7 +574,13 @@ def test_ingest_impact_reverify(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     impact_id = ingested.json()["impact_report_id"]
     report = get(app, f"/api/impact/{impact_id}").json()
     assert report["affected"] == [
-        {"claim_id": "C-01", "finding_id": "FND-01", "state": "STALE"}
+        {
+            "claim_id": "C-01",
+            "finding_id": "FND-01",
+            "state": "STALE",
+            "status_label": "Needs re-check: the law it relied on has changed",
+            "clause_ref": "9.2",
+        }
     ]
     reverify = post(app, f"/api/impact/{impact_id}/reverify", {"proofs": {}})
     assert reverify.status_code == 200, reverify.text
@@ -580,6 +589,34 @@ def test_ingest_impact_reverify(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert get(app, f"/api/impact/{impact_id}").json()["affected"] == []
     assert get(app, "/api/impact/IMP-NOPE").status_code == 404
     assert post(app, "/api/sources/SRC-01/ingest", {"fixture": "x"}).status_code == 400
+
+
+def test_audit_includes_impact_for_matter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """E2E regression: matter-scoped audit shows impact.applied rows.
+
+    Impact audit details carry stale finding ids, not a matter id; the
+    matter filter must resolve them through finding -> claim -> matter,
+    otherwise Screen 2's audit panel hides the amendment event.
+    """
+    app = real_app(tmp_path, monkeypatch, seed_compact)
+    ingested = post(
+        app,
+        "/api/sources/SRC-01/ingest",
+        {
+            "version": {
+                "version_label": "v3",
+                "published_on": "2026-06-01",
+                "effective_from": "2026-06-01",
+                "provisions": [
+                    {"key": "Section 6", "text": "s6 v3", "effective_from": "2026-06-01"},
+                    {"key": "Section 7", "text": "s7", "effective_from": "2023-08-11"},
+                ],
+            }
+        },
+    )
+    assert ingested.status_code == 200, ingested.text
+    events = [row["event"] for row in get(app, "/api/audit?matter_id=MAT-01").json()["rows"]]
+    assert "impact.applied" in events
 
 
 def test_graph_and_audit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT / "backend"))
 import sqlalchemy as sa  # noqa: E402
 from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
 
-from app.agent import challenger, claims, extract, llm, loop  # noqa: E402
+from app.agent import challenger, claims, extract, llm, loop, scan, transcribe  # noqa: E402
 from app import models  # noqa: E402
 from app.db import default_db_path, init_db  # noqa: E402
 from app.services import seed  # noqa: E402
@@ -192,6 +192,30 @@ def record_ask_flow(
         )
 
 
+def record_scan(cassettes: Path, session: Session) -> None:
+    """Record the scanned-page transcription cassette, live, once (T7.2)."""
+    image = (ROOT / "corpus" / "scans" / "clause_9_2_page.png").read_bytes()
+    request = scan.scan_request(image, "image/png")
+    cassette = llm.cache_file(cassettes, llm.request_hash(request))
+    if cassette.exists():
+        print(f"cassette already recorded: {cassette.name} (scan)")
+        return
+    result = scan.scan_page(image, mode="live", cache_dir=cassettes, session=session)
+    print(f"recorded {cassette.name} (scan -> clause {result.clause_ref})")
+
+
+def record_dictation(cassettes: Path, session: Session) -> None:
+    """Record the voice-dictation ASR cassette, live, once (T7.1)."""
+    audio = (ROOT / "corpus" / "audio" / "dictation_fact.wav").read_bytes()
+    sha = transcribe.audio_hash(audio)
+    cassette = cassettes / f"{sha}.asr.json"
+    if cassette.exists():
+        print(f"cassette already recorded: {cassette.name} (dictation)")
+        return
+    result = transcribe.transcribe_audio(audio, mode="live", cache_dir=cassettes, session=session)
+    print(f"recorded {cassette.name} (dictation -> {result.transcript[:60]!r})")
+
+
 def main() -> None:
     """Record the extraction + claim + loop cassettes and print the cost."""
     cassettes = ROOT / "corpus" / "cassettes"
@@ -230,6 +254,8 @@ def main() -> None:
             run_id="RUN-REC-1017",
         )
         record_challenger(cassettes, session)
+        record_scan(cassettes, session)
+        record_dictation(cassettes, session)
         row = session.execute(
             sa.select(models.LlmCall).order_by(models.LlmCall.id.desc())
         ).scalars().first()

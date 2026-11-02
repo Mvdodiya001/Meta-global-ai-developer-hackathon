@@ -14,20 +14,20 @@ export function BeforeAfterSplit({ before, after }: BeforeAfterSplitProps) {
         Before / after
       </h2>
       <p className="text-sm text-slate-600 dark:text-slate-400">
-        Old findings stay on file. Re-verify writes a new row; it does not overwrite history.
+        Earlier answers stay on file. A re-check writes a new answer; it does not overwrite history.
       </p>
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Before · {before.id}</h3>
-          <FindingCard finding={before} />
+          <h3 className="text-sm font-medium">Before</h3>
+          <FindingCard finding={before} title="Earlier answer" />
         </div>
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">After · {after?.id ?? 'pending'}</h3>
+          <h3 className="text-sm font-medium">After</h3>
           {after ? (
-            <FindingCard finding={after} />
+            <FindingCard finding={after} title="Later answer" />
           ) : (
             <div className="ct-panel p-4 text-sm text-slate-600 dark:text-slate-400">
-              Run Re-verify to draft a new finding against the new source version.
+              Run Re-check to draft a new answer against the new law version.
               <div className="mt-2">
                 <StatusBadge status="UNKNOWN" />
               </div>

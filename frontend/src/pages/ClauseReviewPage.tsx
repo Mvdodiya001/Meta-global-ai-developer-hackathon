@@ -2,32 +2,25 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { api } from '../api/client'
 import { DEMO_DOCUMENT_ID, DEMO_MATTER_ID } from '../api/config'
-import {
-  DEMO_CHALLENGER_REPORT,
-  parseChallengerReport,
-  type ChallengerReportView,
-} from '../api/mocks/challenger'
+import { parseChallengerReport, type ChallengerReportView } from '../api/mocks/challenger'
 import { rememberClaimId } from '../api/demoSession'
 import {
   DEFAULT_AS_OF,
   DEFAULT_VERIFY_QUESTION,
   DEMO_AS_OF_OPTIONS,
 } from '../api/mocks/runTrace'
-import type { Clause, Fact, Finding, Matter, ToolCall } from '../api/types'
+import type { Clause, Fact, Finding, Matter } from '../api/types'
 import { AskBox } from '../components/clause-review/AskBox'
 import { ClauseList } from '../components/clause-review/ClauseList'
 import { PremiseTrace } from '../components/clause-review/PremiseTrace'
 import { SourceTrace } from '../components/clause-review/SourceTrace'
-import { ToolTracePanel } from '../components/clause-review/ToolTracePanel'
 import { WhatWouldChangePanel } from '../components/clause-review/WhatWouldChangePanel'
 import { ChallengerPanel } from '../components/ChallengerPanel'
 import { FindingCard } from '../components/FindingCard'
 import { ProofSyllogism } from '../components/ProofSyllogism'
-import {
-  buildPremiseTrace,
-  buildSourceTrace,
-  buildWhatWouldChange,
-} from '../utils/findingTraces'
+import { AiDraftBadge } from '../components/badges/AiDraftBadge'
+import { buildWhatWouldChange } from '../utils/findingTraces'
+import { lawyerError } from '../utils/lawyerCopy'
 
 type VerifyPhase = 'idle' | 'running' | 'done'
 
@@ -39,12 +32,9 @@ export function ClauseReviewPage() {
   const [question, setQuestion] = useState(DEFAULT_VERIFY_QUESTION)
   const [asOf, setAsOf] = useState(DEFAULT_AS_OF)
   const [phase, setPhase] = useState<VerifyPhase>('idle')
-  const [runId, setRunId] = useState<string | null>(null)
-  const [traceEvents, setTraceEvents] = useState<ToolCall[]>([])
   const [finding, setFinding] = useState<Finding | null>(null)
   const [lawyerReviewed, setLawyerReviewed] = useState(false)
   const [reviewing, setReviewing] = useState(false)
-  const [challengerOn, setChallengerOn] = useState(true)
   const [challengerReport, setChallengerReport] = useState<ChallengerReportView | null>(
     null,
   )
@@ -67,7 +57,7 @@ export function ClauseReviewPage() {
         const clause92 = c.find((clause) => clause.ref === '9.2')
         setSelectedClauseId(clause92?.id ?? c[0]?.id ?? null)
       } catch (err) {
-        setNotice(err instanceof Error ? err.message : 'Failed to load matter')
+        setNotice(lawyerError(err))
       }
     })()
   }, [])
@@ -81,7 +71,6 @@ export function ClauseReviewPage() {
     abortRef.current = controller
 
     setPhase('running')
-    setTraceEvents([])
     setFinding(null)
     setLawyerReviewed(false)
     setReviewing(false)
@@ -95,15 +84,14 @@ export function ClauseReviewPage() {
         as_of: asOf,
       })
       rememberClaimId(created.claim_id)
-      setRunId(created.run_id)
 
-      await api.pollRunEvents(created.run_id, setTraceEvents, controller.signal)
+      await api.pollRunEvents(created.run_id, () => undefined, controller.signal)
 
       const result = await api.currentFinding(created.claim_id)
       setFinding(result)
       setChallengerReport(result ? parseChallengerReport(result.challenger_report) : null)
       if (!result) {
-        setNotice('No finding yet. The verification run is still open.')
+        setNotice('No answer yet. The check is still open.')
       }
       setPhase('done')
     } catch (err) {
@@ -111,7 +99,7 @@ export function ClauseReviewPage() {
         return
       }
       setPhase('idle')
-      setNotice(err instanceof Error ? err.message : 'Verification failed')
+      setNotice(lawyerError(err))
     }
   }, [asOf, phase, question, selectedClauseId])
 
@@ -136,7 +124,7 @@ export function ClauseReviewPage() {
       })
       setLawyerReviewed(true)
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : 'Lawyer review failed')
+      setNotice(lawyerError(err))
     } finally {
       setReviewing(false)
     }
@@ -146,17 +134,14 @@ export function ClauseReviewPage() {
     return () => abortRef.current?.abort()
   }, [])
 
-  const sourceRows = finding ? buildSourceTrace(finding) : []
-  const premiseRows = finding ? buildPremiseTrace(finding, facts) : []
   const sensitivity = finding ? buildWhatWouldChange(finding, facts) : []
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header>
-        <p className="ct-section-title">Screen 1 · Clause review</p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {matter?.title ?? 'Loading matter…'}
-        </h1>
+      <header className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Review a clause</h1>
+        <AiDraftBadge label="AI draft — not yet reviewed" />
+        <p className="text-sm font-medium">{matter?.title ?? 'Loading…'}</p>
         <p className="text-sm text-slate-600 dark:text-slate-400">
           {matter?.client_name}
         </p>
@@ -183,8 +168,6 @@ export function ClauseReviewPage() {
         onSubmit={() => void runVerification()}
       />
 
-      <ToolTracePanel events={traceEvents} running={phase === 'running'} runId={runId} />
-
       {notice ? <p className="text-sm text-slate-600 dark:text-slate-400">{notice}</p> : null}
 
       {finding ? (
@@ -197,37 +180,20 @@ export function ClauseReviewPage() {
               className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-900"
               onClick={() => void markLawyerReviewed()}
             >
-              {lawyerReviewed ? 'Lawyer-reviewed' : reviewing ? 'Saving review…' : 'Mark lawyer-reviewed'}
+              {lawyerReviewed
+                ? 'Lawyer-reviewed'
+                : reviewing
+                  ? 'Saving review…'
+                  : 'Mark lawyer-reviewed'}
             </button>
           </div>
-          <ProofSyllogism proof={finding.proof} />
-          <SourceTrace rows={sourceRows} />
-          <PremiseTrace rows={premiseRows} />
+          <ProofSyllogism finding={finding} />
+          <SourceTrace finding={finding} />
+          <PremiseTrace finding={finding} />
           <WhatWouldChangePanel hints={sensitivity} />
+          <ChallengerPanel report={challengerReport} />
         </>
       ) : null}
-
-      <ChallengerPanel
-        enabled={challengerOn}
-        report={challengerReport}
-        onToggle={setChallengerOn}
-        onRun={() => {
-          setChallengerReport(DEMO_CHALLENGER_REPORT)
-          setFinding((current) =>
-            current
-              ? {
-                  ...current,
-                  status: 'REQUIRES_REVIEW',
-                  challenger_report: {
-                    model: DEMO_CHALLENGER_REPORT.model,
-                    blocking: DEMO_CHALLENGER_REPORT.blocking,
-                    objections: DEMO_CHALLENGER_REPORT.objections,
-                  },
-                }
-              : current,
-          )
-        }}
-      />
     </div>
   )
 }

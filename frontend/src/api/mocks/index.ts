@@ -30,7 +30,15 @@ import type {
   SourceList,
   SourceVersionList,
   ToolCall,
+  TrustClass,
 } from '../types'
+import { STATUS_LABELS, TRUST_LABELS } from '../../content/glossary'
+import {
+  fetchMockCounterfactual,
+  fetchMockDictation,
+  fetchMockReverifyList,
+  fetchMockScan,
+} from './stretch'
 import {
   afterFindingFrom,
   decoyImpact,
@@ -43,12 +51,45 @@ import {
 import { approveFact, challengeFact, verifyProof } from './lawyerControl'
 import { DEMO_RUN_EVENTS } from './runTrace'
 
-/** Example payloads from `openapi/examples/` (contract v1 compatible stubs). */
+function withDisplayFields(finding: Finding): Finding {
+  return {
+    ...finding,
+    status_label: finding.status_label || STATUS_LABELS[finding.status] || '',
+    clause_ref: finding.clause_ref || '9.2',
+    clause_quote:
+      finding.clause_quote ||
+      'Nimbus may transfer order data to its analytics cluster outside India for fraud screening.',
+    section_label: finding.section_label || 'Digital Personal Data Protection Act, 2023, s 8(6)',
+    section_quote:
+      finding.section_quote ||
+      'Personal data may be transferred outside India except to notified countries',
+    law_version_label:
+      finding.law_version_label || 'Digital Personal Data Protection Act, 2023, version v1',
+    law_version_date: finding.law_version_date || finding.as_of,
+    fact_lines:
+      finding.fact_lines.length > 0
+        ? finding.fact_lines
+        : finding.proof.premises.map((premise) => ({
+            label: premise.statement,
+            trust_label: TRUST_LABELS[premise.trust_class as TrustClass] ?? '',
+            confirmed_by: premise.trust_class === 'lawyer_confirmed' ? 'You' : null,
+          })),
+  }
+}
+
+function withTrustLabels(facts: Fact[]): Fact[] {
+  return facts.map((fact) => ({
+    ...fact,
+    trust_label: fact.trust_label || TRUST_LABELS[fact.trust_class as TrustClass] || '',
+  }))
+}
+
+/** Example payloads from `openapi/examples/` plus v9 display fields for the UI. */
 export const mockData = {
   matter: matterJson as Matter,
   clauses: clausesJson as { clauses: Clause[] },
-  finding: findingJson as Finding,
-  facts: factsJson as { facts: Fact[] },
+  finding: withDisplayFields(findingJson as Finding),
+  facts: { facts: withTrustLabels((factsJson as { facts: Fact[] }).facts) },
   diff: diffJson as DiffResult,
   audit: auditJson as AuditTrail,
   sourceVersions: sourceVersionsJson as SourceVersionList,
@@ -162,8 +203,11 @@ export async function fetchMockCreateClaim(): Promise<ClaimCreated> {
 }
 
 export async function fetchMockApproveFact(factId: string): Promise<FactAction> {
-  const fact = mockData.facts.facts.find((row) => row.id === factId) ?? mockData.facts.facts[0]
-  return approveFact(fact)
+  const fact = mockData.facts.facts.find((row) => row.id === factId)
+  if (fact) {
+    return approveFact(fact)
+  }
+  return { fact_id: factId, trust_class: 'lawyer_confirmed', supersedes_id: factId }
 }
 
 export async function fetchMockChallengeFact(factId: string): Promise<FactAction> {
@@ -177,6 +221,13 @@ export async function fetchMockVerifyProof(body: ProofVerifyBody): Promise<Proof
 
 export async function fetchMockReviewFinding(findingId: string): Promise<ReviewResult> {
   return { finding_id: findingId, state: 'REVIEWED' }
+}
+
+export {
+  fetchMockCounterfactual,
+  fetchMockDictation,
+  fetchMockReverifyList,
+  fetchMockScan,
 }
 
 export async function pollMockRunEvents(

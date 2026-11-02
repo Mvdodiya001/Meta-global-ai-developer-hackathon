@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClauseTrace",
-    "version": "v6"
+    "version": "v9"
   },
   "paths": {
     "/api/health": {
@@ -438,6 +438,84 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExtractResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans": {
+      "post": {
+        "summary": "Scan Page",
+        "description": "Store one scanned page as a new document + clause + fact (T7.2).\n\nThe transcription comes from Muse Spark image input through the\ngateway; the fact is stored `document_extracted` against the new\ndocument version, exactly like text extraction (F3).",
+        "operationId": "scan_page_api_scans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictations": {
+      "post": {
+        "summary": "Create Dictation",
+        "description": "Dictate a proposed fact: transcript stored ai_inferred (T7.1).\n\nThe approval gate is the point: an `ai_inferred` fact can never be a\nproof premise (the checker rejects it) until a lawyer approves it via\nPOST /api/facts/{id}/approve, which mints the lawyer_confirmed copy.",
+        "operationId": "create_dictation_api_dictations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DictationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictationResult"
                 }
               }
             }
@@ -1370,6 +1448,16 @@
           "state": {
             "type": "string",
             "title": "State"
+          },
+          "status_label": {
+            "type": "string",
+            "title": "Status Label",
+            "default": ""
+          },
+          "clause_ref": {
+            "type": "string",
+            "title": "Clause Ref",
+            "default": ""
           }
         },
         "type": "object",
@@ -1651,6 +1739,11 @@
             "type": "boolean",
             "title": "Would Remain Valid"
           },
+          "would_follow_label": {
+            "type": "string",
+            "title": "Would Follow Label",
+            "default": ""
+          },
           "logic": {
             "additionalProperties": true,
             "type": "object",
@@ -1736,6 +1829,60 @@
         ],
         "title": "CounterfactualResult",
         "description": "Read-only what-if traversal (F19, stretch T7.3)."
+      },
+      "DictationRequest": {
+        "properties": {
+          "matter_id": {
+            "type": "string",
+            "title": "Matter Id"
+          },
+          "clause_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clause Id"
+          },
+          "audio_base64": {
+            "type": "string",
+            "title": "Audio Base64"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matter_id",
+          "audio_base64"
+        ],
+        "title": "DictationRequest",
+        "description": "One dictated clip as base64 WAV JSON (T7.1)."
+      },
+      "DictationResult": {
+        "properties": {
+          "fact_id": {
+            "type": "string",
+            "title": "Fact Id"
+          },
+          "transcript": {
+            "type": "string",
+            "title": "Transcript"
+          },
+          "trust_class": {
+            "type": "string",
+            "title": "Trust Class"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fact_id",
+          "transcript",
+          "trust_class"
+        ],
+        "title": "DictationResult",
+        "description": "A transcript stored as a proposed (ai_inferred) fact (T7.1)."
       },
       "DiffResult": {
         "properties": {
@@ -1889,6 +2036,11 @@
             "type": "string",
             "title": "Trust Class"
           },
+          "trust_label": {
+            "type": "string",
+            "title": "Trust Label",
+            "default": ""
+          },
           "created_at": {
             "type": "string",
             "title": "Created At"
@@ -1978,6 +2130,36 @@
         "title": "FactActionBody",
         "description": "Lawyer trust-action request body (F15)."
       },
+      "FactLine": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "trust_label": {
+            "type": "string",
+            "title": "Trust Label",
+            "default": ""
+          },
+          "confirmed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "FactLine",
+        "description": "One fact a finding relies on, in lawyer wording (contract v9)."
+      },
       "FactList": {
         "properties": {
           "facts": {
@@ -2012,6 +2194,49 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "status_label": {
+            "type": "string",
+            "title": "Status Label",
+            "default": ""
+          },
+          "clause_ref": {
+            "type": "string",
+            "title": "Clause Ref",
+            "default": ""
+          },
+          "clause_quote": {
+            "type": "string",
+            "title": "Clause Quote",
+            "default": ""
+          },
+          "section_label": {
+            "type": "string",
+            "title": "Section Label",
+            "default": ""
+          },
+          "section_quote": {
+            "type": "string",
+            "title": "Section Quote",
+            "default": ""
+          },
+          "law_version_label": {
+            "type": "string",
+            "title": "Law Version Label",
+            "default": ""
+          },
+          "law_version_date": {
+            "type": "string",
+            "title": "Law Version Date",
+            "default": ""
+          },
+          "fact_lines": {
+            "items": {
+              "$ref": "#/components/schemas/FactLine"
+            },
+            "type": "array",
+            "title": "Fact Lines",
+            "default": []
           },
           "confidence_band": {
             "type": "string",
@@ -2798,6 +3023,16 @@
           "reason": {
             "type": "string",
             "title": "Reason"
+          },
+          "reason_label": {
+            "type": "string",
+            "title": "Reason Label",
+            "default": ""
+          },
+          "clause_ref": {
+            "type": "string",
+            "title": "Clause Ref",
+            "default": ""
           }
         },
         "type": "object",
@@ -2934,6 +3169,57 @@
         ],
         "title": "RunEvents",
         "description": "Stub: live tool-call trace example; SSE lands after v0 (F5)."
+      },
+      "ScanRequest": {
+        "properties": {
+          "matter_id": {
+            "type": "string",
+            "title": "Matter Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "image_base64": {
+            "type": "string",
+            "title": "Image Base64"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type",
+            "default": "image/png"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matter_id",
+          "title",
+          "image_base64"
+        ],
+        "title": "ScanRequest",
+        "description": "One scanned page as base64 JSON (no multipart dependency) (T7.2)."
+      },
+      "ScanResult": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "clause": {
+            "$ref": "#/components/schemas/Clause"
+          },
+          "fact": {
+            "$ref": "#/components/schemas/Fact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "clause",
+          "fact"
+        ],
+        "title": "ScanResult",
+        "description": "A scanned page stored as a new document with clause + fact (T7.2)."
       },
       "Source": {
         "properties": {

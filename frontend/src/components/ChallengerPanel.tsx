@@ -1,89 +1,60 @@
+import { SECOND_REVIEW_BLOCKING } from '../content/glossary'
 import type { ChallengerReportView } from '../api/mocks/challenger'
+import { isLawyerSafeText } from '../utils/lawyerCopy'
 import { StatusBadge } from './badges/StatusBadge'
 
 type ChallengerPanelProps = {
-  enabled: boolean
   report: ChallengerReportView | null
-  onToggle?: (enabled: boolean) => void
-  onRun?: () => void
 }
 
-export function ChallengerPanel({
-  enabled,
-  report,
-  onToggle,
-  onRun,
-}: ChallengerPanelProps) {
+export function ChallengerPanel({ report }: ChallengerPanelProps) {
+  if (report == null) {
+    return null
+  }
+
+  const reasons = report.objections
+    .map((row) => row.reason)
+    .filter((reason) => isLawyerSafeText(reason))
+  const quotes = report.objections
+    .map((row) => row.quote)
+    .filter((quote): quote is string => Boolean(quote && isLawyerSafeText(quote)))
+
   return (
-    <section className="ct-panel space-y-3 p-4" aria-labelledby="challenger-heading">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 id="challenger-heading" className="ct-section-title">
-          Challenger
-        </h2>
-        {onToggle ? (
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={(event) => onToggle(event.target.checked)}
-            />
-            Shows the second pass only if the server was started with CHALLENGER=on
-          </label>
-        ) : null}
-        {onRun && enabled ? (
-          <button
-            type="button"
-            onClick={onRun}
-            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-900"
-          >
-            Run challenger (demo)
-          </button>
-        ) : null}
-      </div>
-      <p className="text-sm text-slate-600 dark:text-slate-400">
-        Second Muse Spark pass (<span className="font-mono">muse-spark-1.2</span>
-        ), different prompt from the drafter. It reviews; the checker has no
-        model in it. This control only shows or hides the report. It does not
-        start the server pass.
-      </p>
-      {!enabled ? (
-        <p className="text-sm">
-          Report hidden. The server second pass runs only when started with{' '}
-          <span className="font-mono">CHALLENGER=on</span>.
-        </p>
-      ) : report == null ? (
-        <p className="text-sm">No challenger report on this finding yet.</p>
-      ) : report.objections.length === 0 ? (
-        <p className="text-sm">No objections. The reviewer endorsed the draft.</p>
-      ) : (
-        <>
-          {report.blocking ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status="REQUIRES_REVIEW" />
-              <span className="text-sm">Blocking objection forces Requires review.</span>
-            </div>
-          ) : null}
-          <p className="font-mono text-xs text-slate-500">model {report.model}</p>
-          <ul className="space-y-2">
-            {report.objections.map((objection, index) => (
-              <li
-                key={`${objection.severity}-${index}`}
-                className="rounded-md border border-slate-200 p-3 text-sm dark:border-slate-700"
-              >
-                <p className="font-medium">
-                  {objection.severity === 'blocking' ? 'Blocking' : 'Note'}
-                </p>
-                <p>{objection.reason}</p>
-                {objection.quote ? (
-                  <blockquote className="mt-1 font-mono text-xs text-slate-600 dark:text-slate-400">
-                    {objection.quote}
-                  </blockquote>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+    <section className="ct-panel space-y-3 p-4" aria-labelledby="second-review-heading">
+      <h2 id="second-review-heading" className="ct-section-title">
+        Second-review pass
+      </h2>
+      {report.blocking ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status="REQUIRES_REVIEW" />
+          <p className="text-sm font-medium">{SECOND_REVIEW_BLOCKING}</p>
+        </div>
+      ) : reasons.length === 0 ? (
+        <p className="text-sm">The second review did not flag this draft.</p>
+      ) : null}
+      {reasons.length > 0 ? (
+        <ul className="space-y-2">
+          {reasons.map((reason, index) => (
+            <li
+              key={`${index}-${reason.slice(0, 24)}`}
+              className="rounded-md border border-slate-200 p-3 text-sm dark:border-slate-700"
+            >
+              {reason}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {quotes.length > 0 ? (
+        <ul className="space-y-2">
+          {quotes.map((quote, index) => (
+            <li key={`${index}-${quote.slice(0, 24)}`}>
+              <blockquote className="border-l-2 border-slate-300 pl-3 text-sm dark:border-slate-600">
+                {quote}
+              </blockquote>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   )
 }

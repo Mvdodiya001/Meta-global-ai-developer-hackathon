@@ -1,31 +1,38 @@
-import type { TrustClass } from '../../api/types'
+import type { Finding } from '../../api/types'
+import { displayFactLines } from '../../utils/displayFields'
 import { TrustChip } from '../TrustChip'
-import type { PremiseTraceRow } from '../../utils/findingTraces'
 
 type PremiseTraceProps = {
-  rows: PremiseTraceRow[]
+  finding: Finding
 }
 
-export function PremiseTrace({ rows }: PremiseTraceProps) {
+export function PremiseTrace({ finding }: PremiseTraceProps) {
+  const lines = displayFactLines(finding)
+
   return (
     <section className="ct-panel p-4" aria-labelledby="premise-trace-heading">
       <h2 id="premise-trace-heading" className="mb-3 ct-section-title">
-        Premise trace
+        Facts
       </h2>
       <ul className="space-y-2">
-        {rows.map((row) => (
+        {lines.map((line, index) => (
           <li
-            key={row.factId}
+            key={`${line.label}-${index}`}
+            aria-label={line.label}
             className="rounded-md border border-slate-200 p-3 dark:border-slate-700"
           >
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs">{row.factId}</span>
-              <TrustChip trustClass={row.trustClass as TrustClass} />
-              {row.inProof ? (
-                <span className="text-xs text-slate-500">Used in proof</span>
+              <TrustChip trustClass={line.trustClass} label={line.trustLabel} />
+              {line.proposed ? (
+                <span className="text-xs text-slate-500">Not relied on</span>
               ) : null}
             </div>
-            <p className="text-sm">{row.statement}</p>
+            <p className="text-sm">{line.label}</p>
+            {line.confirmedBy ? (
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                Confirmed by {line.confirmedBy}
+              </p>
+            ) : null}
           </li>
         ))}
       </ul>

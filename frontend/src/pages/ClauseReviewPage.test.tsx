@@ -26,9 +26,10 @@ describe('ClauseReviewPage', () => {
     )
     expect(screen.getByLabelText(/^As-of date$/i)).toHaveValue(DEFAULT_AS_OF)
     expect(screen.getByRole('option', { name: SECONDARY_AS_OF })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Ask about a clause/i })).toBeInTheDocument()
   })
 
-  it('runs mock verification and reveals tool trace then finding', async () => {
+  it('asks about a clause and shows the legal test without a tool trace', async () => {
     render(
       <MemoryRouter>
         <ClauseReviewPage />
@@ -37,35 +38,22 @@ describe('ClauseReviewPage', () => {
 
     expect(await screen.findByText(/Cross-border transfer/i)).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /run verification/i }))
-
-    await waitFor(() => {
-      expect(screen.getByText(/lookup_source/i)).toBeInTheDocument()
-    })
-
+    fireEvent.click(screen.getByRole('button', { name: /^Ask$/i }))
     await vi.runAllTimersAsync()
 
-    expect(await screen.findByRole('heading', { name: /Finding FND-001/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /Source trace/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /What would change my answer/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /Challenger/i })).toBeInTheDocument()
-  })
-
-  it('runs the demo challenger and forces requires review', async () => {
-    render(
-      <MemoryRouter>
-        <ClauseReviewPage />
-      </MemoryRouter>,
-    )
-    fireEvent.click(await screen.findByRole('button', { name: /run verification/i }))
-    await vi.runAllTimersAsync()
-    await screen.findByRole('heading', { name: /Finding FND-001/i })
-
-    fireEvent.click(screen.getByRole('button', { name: /run challenger/i }))
-    expect(screen.getByRole('article', { name: /Finding FND-001/i })).toHaveTextContent(
-      'Requires review',
-    )
-    expect(screen.getByText(/Blocking objection forces Requires review/i)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Legal test/i })).toBeInTheDocument()
+    expect(
+      screen.getByText(/Meets the requirement — on the facts and law listed below/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByText(/Nimbus may transfer order data to its analytics cluster/i).length,
+    ).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: /^Section$/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /What would change this answer/i })).toBeInTheDocument()
+    expect(screen.getAllByText(/Confirmed by You/i).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/lookup_source/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Tool trace/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/FND-/i)).not.toBeInTheDocument()
   })
 
   it('can show lawyer-reviewed badge after demo action', async () => {
@@ -75,12 +63,12 @@ describe('ClauseReviewPage', () => {
       </MemoryRouter>,
     )
 
-    fireEvent.click(await screen.findByRole('button', { name: /run verification/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Ask$/i }))
     await vi.runAllTimersAsync()
-    await screen.findByRole('heading', { name: /Finding FND-001/i })
+    await screen.findByRole('heading', { name: /Legal test/i })
 
     fireEvent.click(screen.getByRole('button', { name: /mark lawyer-reviewed/i }))
-    const finding = await screen.findByRole('article', { name: /Finding FND-001/i })
+    const finding = await screen.findByRole('article', { name: /Legal test/i })
     await waitFor(() => {
       expect(finding).toHaveTextContent('Lawyer-reviewed')
     })

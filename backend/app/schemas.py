@@ -74,6 +74,7 @@ class Fact(BaseModel):
     structured: dict[str, Any]
     origin: str
     trust_class: str
+    trust_label: str = ""
     created_at: str
 
 
@@ -96,6 +97,39 @@ class ExtractResult(BaseModel):
 
     clauses: list[Clause]
     facts: list[Fact]
+
+
+class ScanRequest(BaseModel):
+    """One scanned page as base64 JSON (no multipart dependency) (T7.2)."""
+
+    matter_id: str
+    title: str
+    image_base64: str
+    media_type: str = "image/png"
+
+
+class ScanResult(BaseModel):
+    """A scanned page stored as a new document with clause + fact (T7.2)."""
+
+    document_id: str
+    clause: Clause
+    fact: Fact
+
+
+class DictationRequest(BaseModel):
+    """One dictated clip as base64 WAV JSON (T7.1)."""
+
+    matter_id: str
+    clause_id: str | None = None
+    audio_base64: str
+
+
+class DictationResult(BaseModel):
+    """A transcript stored as a proposed (ai_inferred) fact (T7.1)."""
+
+    fact_id: str
+    transcript: str
+    trust_class: str
 
 
 class ClaimCreated(BaseModel):
@@ -193,6 +227,14 @@ class CheckerReport(BaseModel):
     cited_source_versions: list[str]
 
 
+class FactLine(BaseModel):
+    """One fact a finding relies on, in lawyer wording (contract v9)."""
+
+    label: str
+    trust_label: str = ""
+    confirmed_by: str | None = None
+
+
 class Finding(BaseModel):
     """A finding with proof, traces and reports (F7, F9)."""
 
@@ -200,6 +242,14 @@ class Finding(BaseModel):
     claim_id: str
     version_no: int
     status: str
+    status_label: str = ""
+    clause_ref: str = ""
+    clause_quote: str = ""
+    section_label: str = ""
+    section_quote: str = ""
+    law_version_label: str = ""
+    law_version_date: str = ""
+    fact_lines: list[FactLine] = []
     confidence_band: str
     proof: Proof
     as_of: str
@@ -354,6 +404,8 @@ class AffectedFinding(BaseModel):
     claim_id: str
     finding_id: str
     state: str
+    status_label: str = ""
+    clause_ref: str = ""
 
 
 class ImpactReport(BaseModel):
@@ -428,6 +480,7 @@ class CounterfactualAffected(BaseModel):
     finding_id: str
     claim_id: str
     would_remain_valid: bool
+    would_follow_label: str = ""
     logic: dict[str, Any]
 
 
@@ -450,6 +503,8 @@ class ReverifyListItem(BaseModel):
     finding_id: str
     claim_id: str
     reason: str
+    reason_label: str = ""
+    clause_ref: str = ""
 
 
 class ReverifyList(BaseModel):

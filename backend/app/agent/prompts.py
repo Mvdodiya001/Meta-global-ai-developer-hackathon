@@ -162,6 +162,51 @@ def build_proof_input(
     )
 
 
+SCAN_TOOL = {
+    "type": "function",
+    "name": "emit_scan",
+    "description": (
+        "Emit the clause transcribed from one scanned page plus one "
+        "candidate fact. Transcribe the clause body verbatim."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "clause_ref": {"type": "string"},
+            "heading": {"type": "string"},
+            "text": {"type": "string"},
+            "fact_statement": {"type": "string"},
+        },
+        "required": ["clause_ref", "heading", "text", "fact_statement"],
+        "additionalProperties": False,
+    },
+}
+
+
+def build_scan_input(image_data_uri: str) -> list[dict[str, object]]:
+    """Build the multimodal scan input for one page (T7.2, F3)."""
+    return [
+        {
+            "type": "message",
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": (
+                        "Transcribe the single contract clause on this scanned "
+                        "page. Call emit_scan exactly once: clause_ref and "
+                        "heading as printed, text as the verbatim clause body, "
+                        "and fact_statement as one concise statement of the "
+                        "clause's operative content. The page is a fictional "
+                        "demo document; transcribe only what it says."
+                    ),
+                },
+                {"type": "input_image", "image_url": image_data_uri},
+            ],
+        }
+    ]
+
+
 CHALLENGER_TOOL = {
     "type": "function",
     "name": "emit_objections",

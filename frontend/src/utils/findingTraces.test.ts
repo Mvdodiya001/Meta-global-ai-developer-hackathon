@@ -22,6 +22,6 @@ describe('findingTraces', () => {
 
   it('lists sensitivity hints', () => {
     const hints = buildWhatWouldChange(mockData.finding, mockData.facts.facts)
-    expect(hints.some((h) => h.label.includes('Amend'))).toBe(true)
+    expect(hints.some((h) => h.label.includes('amended'))).toBe(true)
   })
 })

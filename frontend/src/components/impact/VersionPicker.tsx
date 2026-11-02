@@ -6,9 +6,11 @@ type VersionPickerProps = {
   versions: SourceVersion[]
   sourceId: string
   versionId: string
+  whatIfBusy?: boolean
   onSourceChange: (sourceId: string) => void
   onVersionChange: (versionId: string) => void
   onIngest: () => void
+  onWhatIf: () => void
 }
 
 export function VersionPicker({
@@ -16,9 +18,11 @@ export function VersionPicker({
   versions,
   sourceId,
   versionId,
+  whatIfBusy = false,
   onSourceChange,
   onVersionChange,
   onIngest,
+  onWhatIf,
 }: VersionPickerProps) {
   const selected = versions.find((version) => version.id === versionId)
 
@@ -43,7 +47,7 @@ export function VersionPicker({
       </div>
       <div>
         <label htmlFor="version-picker" className="mb-1 block text-sm font-medium">
-          Compare against version
+          Law version
         </label>
         <select
           id="version-picker"
@@ -53,7 +57,7 @@ export function VersionPicker({
         >
           {versions.map((version) => (
             <option key={version.id} value={version.id}>
-              {version.version_label} ({version.id})
+              {version.version_label} · from {version.effective_from}
             </option>
           ))}
         </select>
@@ -61,10 +65,19 @@ export function VersionPicker({
       {selected?.is_simulated ? <SimulatedBadge /> : null}
       <button
         type="button"
+        onClick={onWhatIf}
+        disabled={!versionId || whatIfBusy}
+        aria-label="Preview a law change — nothing is saved"
+        className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-900"
+      >
+        {whatIfBusy ? 'Previewing…' : 'Preview a law change — nothing is saved'}
+      </button>
+      <button
+        type="button"
         onClick={onIngest}
         className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-900"
       >
-        Ingest source change
+        Apply this law change
       </button>
     </section>
   )

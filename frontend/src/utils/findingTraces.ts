@@ -6,6 +6,7 @@ export type SourceTraceRow = {
   provisionId: string
   span: string
   sha256: string
+  quote: string | null
 }
 
 export function buildSourceTrace(finding: Finding): SourceTraceRow[] {
@@ -18,6 +19,7 @@ export function buildSourceTrace(finding: Finding): SourceTraceRow[] {
         provisionId: step.citation.provision_id,
         span: step.citation.span.join('–'),
         sha256: step.citation.sha256.slice(0, 12),
+        quote: step.quote ?? null,
       })
     }
   }
@@ -29,6 +31,7 @@ export function buildSourceTrace(finding: Finding): SourceTraceRow[] {
         provisionId: '—',
         span: '—',
         sha256: '—',
+        quote: null,
       })
     }
   }
@@ -48,8 +51,8 @@ export function buildPremiseTrace(finding: Finding, facts: Fact[]): PremiseTrace
     const fact = byId.get(factId)
     return {
       factId,
-      statement: fact?.statement ?? 'Premise text unavailable in mock.',
-      trustClass: fact?.trust_class ?? 'unknown',
+      statement: fact?.statement ?? 'This fact is not on the list yet.',
+      trustClass: fact?.trust_class ?? 'ai_inferred',
       inProof: finding.proof.premises.some((p) => p.fact_id === factId),
     }
   })
@@ -67,30 +70,28 @@ export function buildWhatWouldChange(finding: Finding, facts: Fact[]): Sensitivi
     if (premise.trust_class !== 'lawyer_confirmed') {
       hints.push({
         id: `premise-${premise.fact_id}`,
-        label: `Challenge ${premise.fact_id}`,
+        label: 'If you dispute a listed fact',
         detail:
-          'If this premise were disputed or downgraded, the checker may reject the proof or the finding may move to REQUIRES_REVIEW.',
+          'The answer may need your review before it can be relied on.',
       })
     }
   }
   hints.push({
     id: 'source-version',
-    label: 'Amend the cited source version',
-    detail:
-      'A new source version that changes Section 6 would mark this finding stale until the agent runs a fresh lookup_source.',
+    label: 'If the cited law is amended',
+    detail: 'This answer would need a re-check against the new wording.',
   })
   hints.push({
     id: 'as-of',
-    label: 'Move the as-of date',
-    detail: `In-force checks use as-of ${finding.as_of}; an earlier date may fail commencement gates.`,
+    label: 'If you move the law version date',
+    detail: `In-force reading uses ${finding.as_of}. An earlier date may put the section out of force.`,
   })
   const disputed = facts.filter((f) => f.trust_class === 'disputed')
   if (disputed.length === 0) {
     hints.push({
       id: 'unknown-premise',
-      label: 'Add an unverified premise',
-      detail:
-        'Introducing ai_inferred or disputed premises without lawyer confirmation blocks a FOLLOWS conclusion.',
+      label: 'If you add a fact you have not confirmed',
+      detail: 'A proposed fact is not relied on until you approve it.',
     })
   }
   return hints

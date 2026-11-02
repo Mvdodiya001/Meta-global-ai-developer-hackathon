@@ -20,12 +20,20 @@ import {
   fetchMockSources,
   fetchMockReviewFinding,
   fetchMockVerifyProof,
+  fetchMockCounterfactual,
+  fetchMockReverifyList,
+  fetchMockScan,
+  fetchMockDictation,
   pollMockRunEvents,
 } from './mocks'
 import type {
   AuditTrail,
   ClaimCreated,
   Clause,
+  CounterfactualBody,
+  CounterfactualResult,
+  DictationRequest,
+  DictationResult,
   DiffResult,
   DocumentList,
   Fact,
@@ -40,9 +48,12 @@ import type {
   ProofVerifyResult,
   ReviewBody,
   ReviewResult,
+  ReverifyList,
   ReverifyResult,
   Run,
   RunEvents,
+  ScanRequest,
+  ScanResult,
   SourceList,
   SourceVersionList,
   ToolCall,
@@ -161,7 +172,7 @@ async function pollLiveRunEvents(
   return events
 }
 
-/** HTTP client for contract v1. Tests keep `openapi/examples` mocks. */
+/** HTTP client for contract v8. Tests keep mocks (`MODE=test`). */
 export const api = {
   matter: (id: string): Promise<Matter> =>
     mocksEnabled() ? fetchMockMatter() : getJson<Matter>(`/api/matters/${encodeURIComponent(id)}`),
@@ -264,4 +275,18 @@ export const api = {
     mocksEnabled()
       ? fetchMockReviewFinding(findingId)
       : postJson<ReviewResult>(`/api/findings/${encodeURIComponent(findingId)}/review`, body),
+  counterfactual: (body: CounterfactualBody): Promise<CounterfactualResult> =>
+    mocksEnabled()
+      ? fetchMockCounterfactual(body)
+      : postJson<CounterfactualResult>('/api/counterfactual', body),
+  reverifyList: (matterId: string): Promise<ReverifyList> =>
+    mocksEnabled()
+      ? fetchMockReverifyList(matterId)
+      : getJson<ReverifyList>(`/api/reverify-list${query({ matter_id: matterId })}`),
+  scanPage: (body: ScanRequest): Promise<ScanResult> =>
+    mocksEnabled() ? fetchMockScan(body) : postJson<ScanResult>('/api/scans', body),
+  createDictation: (body: DictationRequest): Promise<DictationResult> =>
+    mocksEnabled()
+      ? fetchMockDictation(body)
+      : postJson<DictationResult>('/api/dictations', body),
 }

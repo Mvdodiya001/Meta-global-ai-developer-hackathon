@@ -224,6 +224,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scan Page
+         * @description Store one scanned page as a new document + clause + fact (T7.2).
+         *
+         *     The transcription comes from Muse Spark image input through the
+         *     gateway; the fact is stored `document_extracted` against the new
+         *     document version, exactly like text extraction (F3).
+         */
+        post: operations["scan_page_api_scans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dictations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Dictation
+         * @description Dictate a proposed fact: transcript stored ai_inferred (T7.1).
+         *
+         *     The approval gate is the point: an `ai_inferred` fact can never be a
+         *     proof premise (the checker rejects it) until a lawyer approves it via
+         *     POST /api/facts/{id}/approve, which mints the lawyer_confirmed copy.
+         */
+        post: operations["create_dictation_api_dictations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/claims": {
         parameters: {
             query?: never;
@@ -643,6 +691,16 @@ export interface components {
             finding_id: string;
             /** State */
             state: string;
+            /**
+             * Status Label
+             * @default
+             */
+            status_label: string;
+            /**
+             * Clause Ref
+             * @default
+             */
+            clause_ref: string;
         };
         /**
          * AuditRow
@@ -769,6 +827,11 @@ export interface components {
             claim_id: string;
             /** Would Remain Valid */
             would_remain_valid: boolean;
+            /**
+             * Would Follow Label
+             * @default
+             */
+            would_follow_label: string;
             /** Logic */
             logic: {
                 [key: string]: unknown;
@@ -810,6 +873,30 @@ export interface components {
              * @default []
              */
             edges: components["schemas"]["GraphEdge"][];
+        };
+        /**
+         * DictationRequest
+         * @description One dictated clip as base64 WAV JSON (T7.1).
+         */
+        DictationRequest: {
+            /** Matter Id */
+            matter_id: string;
+            /** Clause Id */
+            clause_id?: string | null;
+            /** Audio Base64 */
+            audio_base64: string;
+        };
+        /**
+         * DictationResult
+         * @description A transcript stored as a proposed (ai_inferred) fact (T7.1).
+         */
+        DictationResult: {
+            /** Fact Id */
+            fact_id: string;
+            /** Transcript */
+            transcript: string;
+            /** Trust Class */
+            trust_class: string;
         };
         /**
          * DiffResult
@@ -880,6 +967,11 @@ export interface components {
             origin: string;
             /** Trust Class */
             trust_class: string;
+            /**
+             * Trust Label
+             * @default
+             */
+            trust_label: string;
             /** Created At */
             created_at: string;
         };
@@ -908,6 +1000,21 @@ export interface components {
             note?: string | null;
         };
         /**
+         * FactLine
+         * @description One fact a finding relies on, in lawyer wording (contract v9).
+         */
+        FactLine: {
+            /** Label */
+            label: string;
+            /**
+             * Trust Label
+             * @default
+             */
+            trust_label: string;
+            /** Confirmed By */
+            confirmed_by?: string | null;
+        };
+        /**
          * FactList
          * @description Stub: facts with trust classes example (T0.7).
          */
@@ -928,6 +1035,46 @@ export interface components {
             version_no: number;
             /** Status */
             status: string;
+            /**
+             * Status Label
+             * @default
+             */
+            status_label: string;
+            /**
+             * Clause Ref
+             * @default
+             */
+            clause_ref: string;
+            /**
+             * Clause Quote
+             * @default
+             */
+            clause_quote: string;
+            /**
+             * Section Label
+             * @default
+             */
+            section_label: string;
+            /**
+             * Section Quote
+             * @default
+             */
+            section_quote: string;
+            /**
+             * Law Version Label
+             * @default
+             */
+            law_version_label: string;
+            /**
+             * Law Version Date
+             * @default
+             */
+            law_version_date: string;
+            /**
+             * Fact Lines
+             * @default []
+             */
+            fact_lines: components["schemas"]["FactLine"][];
             /** Confidence Band */
             confidence_band: string;
             proof: components["schemas"]["Proof"];
@@ -1243,6 +1390,16 @@ export interface components {
             claim_id: string;
             /** Reason */
             reason: string;
+            /**
+             * Reason Label
+             * @default
+             */
+            reason_label: string;
+            /**
+             * Clause Ref
+             * @default
+             */
+            clause_ref: string;
         };
         /**
          * ReverifyResult
@@ -1297,6 +1454,33 @@ export interface components {
         RunEvents: {
             /** Events */
             events: components["schemas"]["ToolCall"][];
+        };
+        /**
+         * ScanRequest
+         * @description One scanned page as base64 JSON (no multipart dependency) (T7.2).
+         */
+        ScanRequest: {
+            /** Matter Id */
+            matter_id: string;
+            /** Title */
+            title: string;
+            /** Image Base64 */
+            image_base64: string;
+            /**
+             * Media Type
+             * @default image/png
+             */
+            media_type: string;
+        };
+        /**
+         * ScanResult
+         * @description A scanned page stored as a new document with clause + fact (T7.2).
+         */
+        ScanResult: {
+            /** Document Id */
+            document_id: string;
+            clause: components["schemas"]["Clause"];
+            fact: components["schemas"]["Fact"];
         };
         /**
          * Source
@@ -1713,6 +1897,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExtractResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scan_page_api_scans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_dictation_api_dictations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DictationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictationResult"];
                 };
             };
             /** @description Validation Error */

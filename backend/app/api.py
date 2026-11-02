@@ -8,6 +8,8 @@ Handlers are `async def` so SQLite stays on one thread; the blocking
 SQLAlchemy calls are short demo queries.
 """
 
+import base64
+import binascii
 import functools
 import re
 import uuid
@@ -23,7 +25,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import models, schemas
-from app.agent import claims, extract, tools
+from app.agent import claims, extract, scan, tools, transcribe
 from app.agent import loop as loop_agent
 from app.core.errors import (
     CassetteMissing,
@@ -95,14 +97,21 @@ def endpoint(fn: Callable[..., Any]) -> Callable[..., Any]:
             if str(exc).startswith("unknown"):
                 return _error(404, "NOT_FOUND", str(exc))
             return _error(400, "DECISION_REJECTED", str(exc))
-        except (RuleCardError, ClaimError, ExtractionError) as exc:
+        except (RuleCardError, ClaimError, ExtractionError, transcribe.TranscribeError) as exc:
             return _error(400, type(exc).__name__, str(exc))
         except ToolError as exc:
             if exc.code.startswith("unknown"):
                 return _error(404, "NOT_FOUND", str(exc))
             return _error(400, exc.code.upper(), str(exc))
-        except (CassetteMissing, LLMRequestFailed, LiveCallsBlocked) as exc:
-            return _error(502, "MODEL_UNAVAILABLE", str(exc))
+        except (CassetteMissing, LLMRequestFailed, LiveCallsBlocked):
+            # Code stays for machines; the message is for the lawyer.
+            return _error(
+                502,
+                "MODEL_UNAVAILABLE",
+                "This question is not in the prepared set for the offline "
+                "demo. Ask one of the prepared questions, or run the "
+                "server in live mode.",
+            )
         except ValueError as exc:
             return _error(400, "BAD_REQUEST", str(exc))
 
@@ -168,6 +177,130 @@ def _challenger_payload(session: Session, finding_id: str) -> dict[str, Any] | N
     }
 
 
+STATUS_LABELS = {
+    "FOLLOWS": "Meets the requirement — on the facts and law listed below",
+    "RULED_OUT": "Does not meet the requirement, on the material listed",
+    "UNKNOWN": "Cannot be determined from the available material",
+    "REQUIRES_REVIEW": "Needs your review before it can be relied on",
+    "CONFLICTING": "Two readings of the law conflict — your call",
+}
+
+TRUST_LABELS = {
+    "lawyer_confirmed": "Confirmed by you",
+    "document_extracted": "Taken from the document",
+    "ai_inferred": "Proposed — not yet approved by you",
+    "disputed": "Disputed by you",
+}
+
+STALE_LABEL = "Needs re-check: the law it relied on has changed"
+
+REASON_LABELS = {
+    "STALE": STALE_LABEL,
+    "CONFLICTING": STATUS_LABELS["CONFLICTING"],
+}
+
+
+def _trust_label(trust_class: str) -> str:
+    """Lawyer wording for one trust class (contract v9)."""
+    return TRUST_LABELS.get(trust_class, trust_class)
+
+
+def _section_text(key: str) -> str:
+    """Section token from a provision key, e.g. s8(6) → 's 8(6)' (v9)."""
+    token = key.rsplit("_", 1)[-1] if "_" in key else key
+    if len(token) > 1 and token[0] in "sr" and token[1].isdigit():
+        return f"{token[0]} {token[1:]}"
+    return token
+
+
+def _clause_ref_for_claim(session: Session, claim_id: str) -> str:
+    """Clause ref a claim targets, for display beside finding ids (v9)."""
+    claim = session.get(models.Claim, claim_id)
+    clause = session.get(models.Clause, claim.clause_id) if claim is not None else None
+    return str(clause.ref) if clause is not None else ""
+
+
+def _display_fields(session: Session, finding: models.Finding) -> dict[str, Any]:
+    """Human display fields beside the machine fields (contract v9).
+
+    Everything here is derived from stored rows: clause quote from the
+    claim's clause, section quote/label from the first cited rule card's
+    provision and its law version, and one line per premise fact. The
+    machine fields (ids, proof JSON, hashes) are untouched.
+    """
+    claim = session.get(models.Claim, finding.claim_id)
+    clause = session.get(models.Clause, claim.clause_id) if claim is not None else None
+    card_ids = list(finding.rule_card_ids_json or [])
+    if not card_ids:
+        card_ids = [
+            str(edge.dst_id)
+            for edge in session.execute(
+                sa.select(models.Edge).where(
+                    models.Edge.src_type == "finding",
+                    models.Edge.src_id == finding.id,
+                    models.Edge.rel == "DEPENDS_ON",
+                    models.Edge.dst_type == "rule_card",
+                )
+            ).scalars().all()
+        ]
+    section_label = ""
+    section_quote = ""
+    law_version_label = ""
+    law_version_date = ""
+    version: models.SourceVersion | None = None
+    if card_ids:
+        card = session.get(models.RuleCard, card_ids[0])
+        provision = (
+            session.get(models.Provision, card.provision_id) if card is not None else None
+        )
+        if provision is not None:
+            section_quote = str(provision.text)
+            version = session.get(models.SourceVersion, provision.source_version_id)
+            source = (
+                session.get(models.Source, version.source_id) if version is not None else None
+            )
+            title = str(source.title) if source is not None else ""
+            section = _section_text(str(provision.key))
+            section_label = f"{title}, {section}" if title else section
+    if version is None:
+        version_ids = list(finding.source_version_ids_json or [])
+        if version_ids:
+            version = session.get(models.SourceVersion, version_ids[0])
+    if version is not None:
+        source = session.get(models.Source, version.source_id)
+        title = str(source.title) if source is not None else ""
+        label = f"version {version.version_label}"
+        law_version_label = f"{title}, {label}" if title else label
+        law_version_date = str(version.effective_from)
+    fact_lines = []
+    for fact_id in list(finding.premise_ids_json or []):
+        fact = session.get(models.Fact, fact_id)
+        if fact is None:
+            continue
+        review = session.execute(
+            sa.select(models.Review)
+            .where(models.Review.item_type == "fact", models.Review.item_id == fact_id)
+            .order_by(models.Review.created_at.desc())
+        ).scalars().first()
+        fact_lines.append(
+            {
+                "label": str(fact.statement),
+                "trust_label": _trust_label(str(fact.trust_class)),
+                "confirmed_by": str(review.reviewer) if review is not None else None,
+            }
+        )
+    return {
+        "status_label": STATUS_LABELS.get(str(finding.status), str(finding.status)),
+        "clause_ref": str(clause.ref) if clause is not None else "",
+        "clause_quote": str(clause.text) if clause is not None else "",
+        "section_label": section_label,
+        "section_quote": section_quote,
+        "law_version_label": law_version_label,
+        "law_version_date": law_version_date,
+        "fact_lines": fact_lines,
+    }
+
+
 def _finding_payload(session: Session, finding: models.Finding) -> dict[str, Any]:
     """Serialize one finding against the v1 Finding schema (T4.5)."""
     proof = finding.proof_json if isinstance(finding.proof_json, dict) else {}
@@ -177,6 +310,7 @@ def _finding_payload(session: Session, finding: models.Finding) -> dict[str, Any
         "claim_id": finding.claim_id,
         "version_no": finding.version_no,
         "status": finding.status,
+        **_display_fields(session, finding),
         "confidence_band": finding.confidence_band,
         "proof": proof,
         "as_of": finding.as_of,
@@ -308,6 +442,7 @@ async def list_facts(id: str, session: Session = Depends(db_session)) -> Any:
                 "structured": dict(row.structured_json or {}),
                 "origin": row.origin,
                 "trust_class": row.trust_class,
+                "trust_label": _trust_label(str(row.trust_class)),
                 "created_at": row.created_at,
             }
             for row in rows
@@ -440,6 +575,7 @@ async def extract_document(
                 "structured": dict(row.structured_json or {}),
                 "origin": row.origin,
                 "trust_class": row.trust_class,
+                "trust_label": _trust_label(str(row.trust_class)),
                 "created_at": row.created_at,
             }
             for row in created_facts
@@ -471,6 +607,121 @@ def _resolve_clause(
         )
     ).scalars().first()
     return target if target is not None else clause
+
+
+@router.post("/api/scans", response_model=schemas.ScanResult)
+@endpoint
+async def scan_page(body: schemas.ScanRequest, session: Session = Depends(db_session)) -> Any:
+    """Store one scanned page as a new document + clause + fact (T7.2).
+
+    The transcription comes from Muse Spark image input through the
+    gateway; the fact is stored `document_extracted` against the new
+    document version, exactly like text extraction (F3).
+    """
+    _require_matter(session, body.matter_id)
+    try:
+        image_bytes = base64.b64decode(body.image_base64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError("image_base64 is not valid base64") from exc
+    result = scan.scan_page(
+        image_bytes, media_type=body.media_type, cache_dir=CASSETTES_DIR, session=session
+    )
+    now = _utcnow()
+    document_id = _new_id("DOC")
+    version_id = _new_id("DV")
+    clause_id = _new_id("CL")
+    fact_id = _new_id("F")
+    session.add(
+        models.Document(
+            id=document_id, matter_id=body.matter_id, title=body.title, kind="scan"
+        )
+    )
+    session.add(
+        models.DocumentVersion(
+            id=version_id,
+            document_id=document_id,
+            text=result.text,
+            sha256=sources.sha256_text(result.text),
+            created_at=now,
+        )
+    )
+    clause_payload = {
+        "id": clause_id,
+        "document_version_id": version_id,
+        "ref": result.clause_ref,
+        "heading": result.heading,
+        "text": result.text,
+        "span_start": 0,
+        "span_end": len(result.text),
+    }
+    session.add(models.Clause(**clause_payload))
+    fact_payload = {
+        "id": fact_id,
+        "matter_id": body.matter_id,
+        "clause_id": clause_id,
+        "statement": result.fact_statement,
+        "structured": {"clause_ref": result.clause_ref},
+        "origin": "extracted",
+        "trust_class": "document_extracted",
+        "trust_label": _trust_label("document_extracted"),
+        "created_at": now,
+    }
+    session.add(
+        models.Fact(
+            id=fact_id,
+            matter_id=body.matter_id,
+            clause_id=clause_id,
+            statement=result.fact_statement,
+            structured_json={"clause_ref": result.clause_ref},
+            origin="extracted",
+            trust_class="document_extracted",
+            created_at=now,
+        )
+    )
+    session.commit()
+    return {"document_id": document_id, "clause": clause_payload, "fact": fact_payload}
+
+
+@router.post("/api/dictations", response_model=schemas.DictationResult)
+@endpoint
+async def create_dictation(
+    body: schemas.DictationRequest, session: Session = Depends(db_session)
+) -> Any:
+    """Dictate a proposed fact: transcript stored ai_inferred (T7.1).
+
+    The approval gate is the point: an `ai_inferred` fact can never be a
+    proof premise (the checker rejects it) until a lawyer approves it via
+    POST /api/facts/{id}/approve, which mints the lawyer_confirmed copy.
+    """
+    _require_matter(session, body.matter_id)
+    if body.clause_id is not None and session.get(models.Clause, body.clause_id) is None:
+        raise SourceUnavailable(f"unknown clause: {body.clause_id}")
+    try:
+        audio_bytes = base64.b64decode(body.audio_base64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError("audio_base64 is not valid base64") from exc
+    result = transcribe.transcribe_audio(audio_bytes, cache_dir=CASSETTES_DIR, session=session)
+    if not result.transcript:
+        raise ValueError("transcription produced no text")
+    fact_id = _new_id("F")
+    session.add(
+        models.Fact(
+            id=fact_id,
+            matter_id=body.matter_id,
+            clause_id=body.clause_id,
+            statement=result.transcript,
+            structured_json={"source": "voice_dictation"},
+            origin="voice_dictation",
+            trust_class="ai_inferred",
+            created_at=_utcnow(),
+        )
+    )
+    session.commit()
+    return {
+        "fact_id": fact_id,
+        "transcript": result.transcript,
+        "trust_class": "ai_inferred",
+    }
 
 
 @router.post("/api/claims", response_model=schemas.ClaimCreated)
@@ -527,6 +778,11 @@ async def create_claim(body: schemas.ClaimRequest, session: Session = Depends(db
             run_id=run_id,
             challenger_cache_dir=CASSETTES_DIR,
         )
+        run_row = session.get(models.Run, run_id)
+        if run_row is not None:
+            run_row.ended_at = _utcnow()
+            run_row.outcome = "unknown"
+            session.commit()
         return {
             "claim_id": claim_id,
             "run_id": run_id,
@@ -551,9 +807,11 @@ async def create_claim(body: schemas.ClaimRequest, session: Session = Depends(db
         )
         finding_id = str(finding.id)
         status = str(finding.status)
+    # Return the loop's run, not the claim-open placeholder: the UI polls
+    # this id for the tool trace and run status (integration fix).
     return {
         "claim_id": claim_id,
-        "run_id": run_id,
+        "run_id": loop_result.run_id,
         "finding_id": finding_id,
         "status": status,
     }
@@ -917,6 +1175,8 @@ async def get_impact(id: str, session: Session = Depends(db_session)) -> Any:
                 "claim_id": finding.claim_id,
                 "finding_id": finding.id,
                 "state": "STALE",
+                "status_label": STALE_LABEL,
+                "clause_ref": _clause_ref_for_claim(session, str(finding.claim_id)),
             }
         )
     affected.sort(key=lambda item: str(item["finding_id"]))
@@ -1100,6 +1360,17 @@ def _audit_matches(session: Session, row: models.AuditLog, matter_id: str | None
         fact = session.get(models.Fact, fact_id)
         if fact is not None and fact.matter_id == matter_id:
             return True
+    stale_ids = details.get("stale_findings")
+    if isinstance(stale_ids, list):
+        for stale_id in stale_ids:
+            if not isinstance(stale_id, str):
+                continue
+            stale = session.get(models.Finding, stale_id)
+            if stale is None:
+                continue
+            claim = session.get(models.Claim, stale.claim_id)
+            if claim is not None and claim.matter_id == matter_id:
+                return True
     return False
 
 
@@ -1130,6 +1401,14 @@ async def get_audit(
     }
 
 
+PLAIN_CHECKER_MESSAGES = {
+    "PREMISE_MISMATCH": "This fact no longer matches the document",
+    "PREMISE_UNTRUSTED": "This fact has not been approved, so it cannot be relied on",
+    "PREMISE_UNKNOWN": "This fact is not on record",
+    "CONCLUDE_MISMATCH": "The conclusion does not match the reasoning steps",
+}
+
+
 @router.post("/api/proofs/verify", response_model=schemas.ProofVerifyResult)
 @endpoint
 async def verify_proof(
@@ -1139,7 +1418,13 @@ async def verify_proof(
     claim = session.get(models.Claim, body.claim_id)
     if claim is None:
         raise SourceUnavailable(f"unknown claim: {body.claim_id}")
-    return tools.verify_proof(session, str(claim.matter_id), body.claim_id, body.proof)
+    report = tools.verify_proof(session, str(claim.matter_id), body.claim_id, body.proof)
+    # Codes stay for machines; known messages read plainly for lawyers.
+    for error in report["errors"]:
+        plain = PLAIN_CHECKER_MESSAGES.get(str(error.get("code")))
+        if plain is not None:
+            error["message"] = plain
+    return report
 
 
 @router.post("/api/counterfactual", response_model=schemas.CounterfactualResult)
@@ -1192,6 +1477,8 @@ async def reverify_list(
                 "finding_id": str(finding.id),
                 "claim_id": str(finding.claim_id),
                 "reason": reason,
+                "reason_label": REASON_LABELS.get(reason, reason),
+                "clause_ref": _clause_ref_for_claim(session, str(finding.claim_id)),
             }
         )
     return {"findings": sorted(items, key=lambda item: item["finding_id"])}

@@ -331,3 +331,60 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 - Third-party added: none
 - Credit spend: $0
 - Ready for human commit: yes — suggested message: `Show CONFLICTING findings with a text badge; regenerate API types for v6`
+
+## [v8-wire] STARTED · 2026-11-02 13:56 IST
+- Task: Wire counterfactual, reverify list, scan, and dictation on contract v8
+- Built against: contract v8
+
+## [v8-wire] DONE · 2026-11-02 14:02 IST
+- Task: Wire counterfactual, reverify list, scan, and dictation on contract v8
+- Built against: contract v8
+- Files changed: `frontend/src/api/schema.d.ts`, `frontend/src/api/types.ts`, `frontend/src/api/client.ts`, `frontend/src/api/mocks/index.ts`, `frontend/src/api/mocks/stretch.ts`, `frontend/src/utils/fileBase64.ts`, `frontend/src/utils/trustClass.ts`, `frontend/src/components/impact/VersionPicker.tsx`, `frontend/src/components/impact/WhatIfPanel.tsx`, `frontend/src/components/impact/ReverifyListPanel.tsx`, `frontend/src/components/lawyer/ScanPagePanel.tsx`, `frontend/src/components/lawyer/DictationPanel.tsx`, `frontend/src/pages/SourceImpactPage.tsx`, `frontend/src/pages/SourceImpactPage.test.tsx`, `frontend/src/pages/LawyerControlPage.tsx`, `frontend/src/pages/LawyerControlPage.test.tsx`, `docs/logs/CURSOR_LOG.md`
+- What changed: regenerated types for v8. Live client (mocks only in tests) for POST /api/counterfactual, GET /api/reverify-list, POST /api/scans, POST /api/dictations. Screen 2 What-if is read-only next to the simulated version; shows changed keys, affected validity, counterexample text, hypothetical reverify ids, and the matter reverify list with STALE/CONFLICTING StatusBadge. Screen 3 scan (PNG/JPEG JSON) and dictation (WAV) show AI draft / ai_inferred and keep approve. Envelope errors are shown. FindingStatus still includes CONFLICTING.
+- Checks run: `make check-frontend` → pass (oxlint 0; vitest 32/32). Extra: `./node_modules/.bin/tsc -b` → pass. Live API (no model): GET reverify-list 200; POST counterfactual SV-DPDP-ACT-V2SIM 200 available, changed DPDP-Act-2023_s8(6). Vite was not running, so the UI click was not repeated in the browser; tests cover the controls.
+- Decisions / assumptions: What-if never calls ingest. Scan/dictation were not posted live (would spend credits). Dictation default clause is the current finding's premise clause, else CL-10. Copy does not claim the system proves the law.
+- Contract change: none (consumed v8; did not edit openapi)
+- Requests: none
+- UI rules checked: AI draft label unchanged · status text+icon · light/dark classes · accessible file/select labels · new components under 150 lines
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Wire counterfactual, reverify list, scan, and dictation on contract v8`
+
+## [phase1-glossary] STARTED · 2026-11-02 15:01 IST
+- Task: Hide machinery and use the lawyer glossary on every screen
+- Built against: contract v8
+
+## [phase1-glossary] DONE · 2026-11-02 15:09 IST
+- Task: Hide machinery and use the lawyer glossary on every screen
+- Built against: contract v8
+- Files changed: `frontend/src/content/glossary.ts`, `frontend/src/utils/lawyerCopy.ts`, `frontend/src/utils/findingTraces.ts`, `frontend/src/components/badges/StatusBadge.tsx`, `frontend/src/components/TrustChip.tsx`, `frontend/src/components/FindingCard.tsx`, `frontend/src/components/ProofSyllogism.tsx`, `frontend/src/components/ChallengerPanel.tsx`, `frontend/src/components/StaleGraph.tsx`, `frontend/src/components/AuditList.tsx`, `frontend/src/components/DiffView.tsx`, `frontend/src/components/clause-review/AskBox.tsx`, `frontend/src/components/clause-review/SourceTrace.tsx`, `frontend/src/components/clause-review/PremiseTrace.tsx`, `frontend/src/components/clause-review/WhatWouldChangePanel.tsx`, `frontend/src/components/impact/AffectedFindings.tsx`, `frontend/src/components/impact/WhatIfPanel.tsx`, `frontend/src/components/impact/ReverifyListPanel.tsx`, `frontend/src/components/impact/BeforeAfterSplit.tsx`, `frontend/src/components/impact/VersionPicker.tsx`, `frontend/src/components/lawyer/FactWordingEditor.tsx`, `frontend/src/components/lawyer/FactTrustList.tsx`, `frontend/src/components/lawyer/ScanPagePanel.tsx`, `frontend/src/components/lawyer/DictationPanel.tsx`, `frontend/src/components/lawyer/AsOfPanel.tsx`, `frontend/src/components/lawyer/UnknownClaimDemo.tsx`, `frontend/src/components/lawyer/ProofEditor.tsx`, `frontend/src/pages/ClauseReviewPage.tsx`, `frontend/src/pages/SourceImpactPage.tsx`, `frontend/src/pages/LawyerControlPage.tsx`, matching `*.test.tsx` files, `docs/logs/CURSOR_LOG.md`
+- What changed: rendered UI uses the lawyer glossary. Status and trust labels are the exact sentences. Tool-trace is off Screen 1. Answer cards show Legal test, quotes, and law version date; no claim/finding ids. Screen 2 queue is Re-check; What-if copy is Preview a law change — nothing is saved; counterexample JSON is hidden. Screen 3 facts queue and fact-sentence Re-check replace Proof JSON. Scan/dictation copy updated. AI proposals stay last and not relied on. Ids remain in types and client calls.
+- Checks run: `make check-frontend` → pass (oxlint 0; vitest 31/31). Extra: `tsc -b` → pass.
+- Decisions / assumptions: SUPERSEDED (not in the glossary) is shown as "Replaced by a later answer". Nav labels unchanged. Error strings from the envelope are shown only if they pass the lawyer-safe filter.
+- Contract change: none
+- Requests: none
+- UI rules checked: disclaimer kept · AI draft — not yet reviewed kept · status text+icon · no legal-advice claim · light/dark classes kept
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Hide machinery and use the lawyer glossary on every screen`
+
+## [phase3-workflows] STARTED · 2026-11-02 15:10 IST
+- Task: Restructure the three screens around the lawyer workflows
+- Built against: contract v9
+
+## [phase3-workflows] DONE · 2026-11-02 15:17 IST
+- Task: Restructure the three screens around the lawyer workflows
+- Built against: contract v9
+- Files changed: `frontend/src/api/schema.d.ts`, `frontend/src/api/types.ts`, `frontend/src/api/mocks/index.ts`, `frontend/src/api/mocks/stretch.ts`, `frontend/src/api/mocks/impactDemo.ts`, `frontend/src/api/mocks/lawyerControl.ts`, `frontend/src/content/glossary.ts`, `frontend/src/utils/displayFields.ts`, `frontend/src/utils/displayFields.test.ts`, `frontend/src/components/layout/SiteNav.tsx`, `frontend/src/components/badges/StatusBadge.tsx`, `frontend/src/components/TrustChip.tsx`, `frontend/src/components/FindingCard.tsx`, `frontend/src/components/ProofSyllogism.tsx`, `frontend/src/components/clause-review/SourceTrace.tsx`, `frontend/src/components/clause-review/PremiseTrace.tsx`, `frontend/src/components/impact/WhatIfPanel.tsx`, `frontend/src/components/impact/ReverifyListPanel.tsx`, `frontend/src/components/impact/AffectedFindings.tsx`, `frontend/src/components/lawyer/FactTrustList.tsx`, `frontend/src/components/lawyer/ScanPagePanel.tsx`, `frontend/src/components/lawyer/DictationPanel.tsx`, `frontend/src/pages/ClauseReviewPage.tsx`, `frontend/src/pages/SourceImpactPage.tsx`, `frontend/src/pages/LawyerControlPage.tsx`, matching tests, `docs/logs/CURSOR_LOG.md`
+- What changed: `npm run gen:api` for v9. Nav is Review a clause / Law changes / Your control room. Screens render status_label, clause_quote, section_quote, law_version_label, law_version_date, fact_lines, reason_label, would_follow_label. Missing labels fall back to the glossary, not ids. Phase 1 copy kept (wording editor, Re-check queue, Facts awaiting your approval, Preview a law change — nothing is saved, Add a scanned clause page, Dictate a fact). Disclaimer and AI draft — not yet reviewed on every screen. Ids stay in types and client calls.
+- Checks run: `make check-frontend` → pass (oxlint 0; vitest 34/34). Extra: `tsc -b` → pass.
+- Decisions / assumptions: display fields are preferred; glossary fallbacks fill empty strings. Counterexample JSON is not shown; would_follow_label is. Nav labels changed in this phase as requested.
+- Contract change: none (consumed v9; did not edit openapi)
+- Requests: none
+- UI rules checked: disclaimer kept · AI draft — not yet reviewed kept · status text+icon · no legal-advice claim · light/dark classes kept
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Restructure the three screens around the lawyer workflows`

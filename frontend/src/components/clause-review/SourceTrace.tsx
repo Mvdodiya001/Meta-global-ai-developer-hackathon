@@ -1,30 +1,30 @@
-import type { SourceTraceRow } from '../../utils/findingTraces'
+import type { Finding } from '../../api/types'
+import {
+  displayLawVersionDate,
+  displayLawVersionLabel,
+  displaySectionLabel,
+  displaySectionQuote,
+} from '../../utils/displayFields'
 
 type SourceTraceProps = {
-  rows: SourceTraceRow[]
+  finding: Finding
 }
 
-export function SourceTrace({ rows }: SourceTraceProps) {
+export function SourceTrace({ finding }: SourceTraceProps) {
+  const heading = displaySectionLabel(finding)
+
   return (
     <section className="ct-panel p-4" aria-labelledby="source-trace-heading">
       <h2 id="source-trace-heading" className="mb-3 ct-section-title">
-        Source trace
+        Section
       </h2>
-      <ul className="space-y-2 text-sm">
-        {rows.map((row) => (
-          <li
-            key={row.id}
-            className="rounded-md border border-slate-200 p-3 dark:border-slate-700"
-          >
-            <div className="font-mono text-xs text-slate-500">
-              {row.sourceVersionId} · {row.provisionId}
-            </div>
-            <p>
-              Span {row.span} · sha256 prefix {row.sha256}
-            </p>
-          </li>
-        ))}
-      </ul>
+      <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+        {displayLawVersionLabel(finding)} · {displayLawVersionDate(finding)}
+      </p>
+      {heading ? <p className="mb-2 text-sm font-medium">{heading}</p> : null}
+      <blockquote className="border-l-2 border-slate-300 pl-3 text-sm dark:border-slate-600">
+        {displaySectionQuote(finding)}
+      </blockquote>
     </section>
   )
 }

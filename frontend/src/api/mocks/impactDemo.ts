@@ -5,6 +5,7 @@ import type {
   ImpactReport,
   SourceVersionList,
 } from '../types'
+import { STATUS_LABELS } from '../../content/glossary'
 
 const FINDING_IDS = [
   'FND-001',
@@ -52,9 +53,27 @@ export const demoImpact: ImpactReport = {
   id: 'IMP-01',
   source_version_id: 'SV-02',
   affected: [
-    { claim_id: 'C-001', finding_id: 'FND-001', state: 'STALE' },
-    { claim_id: 'C-003', finding_id: 'FND-003', state: 'STALE' },
-    { claim_id: 'C-004', finding_id: 'FND-004', state: 'STALE' },
+    {
+      claim_id: 'C-001',
+      finding_id: 'FND-001',
+      state: 'STALE',
+      status_label: STATUS_LABELS.STALE,
+      clause_ref: '9.2',
+    },
+    {
+      claim_id: 'C-003',
+      finding_id: 'FND-003',
+      state: 'STALE',
+      status_label: STATUS_LABELS.STALE,
+      clause_ref: '8.1',
+    },
+    {
+      claim_id: 'C-004',
+      finding_id: 'FND-004',
+      state: 'STALE',
+      status_label: STATUS_LABELS.STALE,
+      clause_ref: '10',
+    },
   ],
 }
 
@@ -86,6 +105,7 @@ export function afterFindingFrom(before: Finding): Finding {
     id: 'FND-002',
     version_no: 2,
     status: 'UNKNOWN',
+    status_label: STATUS_LABELS.UNKNOWN,
     confidence_band: 'not computed',
     state: 'CURRENT',
     source_version_ids: ['SV-02'],

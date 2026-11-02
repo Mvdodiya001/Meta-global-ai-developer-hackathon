@@ -27,7 +27,7 @@ export function AskBox({
       }}
     >
       <h2 id="ask-heading" className="ct-section-title">
-        Ask about the selected clause
+        Ask about a clause
       </h2>
       <label className="block text-sm font-medium" htmlFor="verify-question">
         Legal question
@@ -64,7 +64,7 @@ export function AskBox({
           disabled={disabled || question.trim().length === 0}
           className="rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900 disabled:opacity-50 dark:bg-blue-700"
         >
-          Run verification
+          Ask
         </button>
       </div>
     </form>

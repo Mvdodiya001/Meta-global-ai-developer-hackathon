@@ -67,8 +67,15 @@ def default_db_path() -> Path:
 
 
 def get_engine(path: str | Path) -> Engine:
-    """Open a SQLite engine with WAL mode and foreign keys enforced (T1.1)."""
-    engine = sa.create_engine(f"sqlite:///{path}")
+    """Open a SQLite engine with WAL mode and foreign keys enforced (T1.1).
+
+    NullPool: a pooled SQLite connection keeps the old inode alive when
+    `make reset-demo` replaces the database file, so later checkouts can
+    read/write a deleted database and post-commit refreshes then fail
+    with ObjectDeletedError (approve-500). Every checkout must open the
+    file as it exists now.
+    """
+    engine = sa.create_engine(f"sqlite:///{path}", poolclass=sa.pool.NullPool)
 
     @sa.event.listens_for(engine, "connect")
     def _set_pragmas(dbapi_conn: Any, _: Any) -> None:

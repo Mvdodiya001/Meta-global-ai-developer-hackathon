@@ -1,4 +1,5 @@
-import type { Fact, FactAction, Finding, Proof, ProofVerifyResult } from '../types'
+import type { Fact, FactAction, Finding, Proof, ProofVerifyResult, TrustClass } from '../types'
+import { STATUS_LABELS, TRUST_LABELS } from '../../content/glossary'
 
 export const COMMENCEMENT_DATE = '2025-10-01'
 
@@ -24,7 +25,12 @@ export function challengeFact(fact: Fact): FactAction {
 export function applyFactAction(facts: Fact[], action: FactAction): Fact[] {
   return facts.map((fact) =>
     fact.id === action.fact_id || fact.id === action.supersedes_id
-      ? { ...fact, trust_class: action.trust_class, origin: 'lawyer' }
+      ? {
+          ...fact,
+          trust_class: action.trust_class,
+          trust_label: TRUST_LABELS[action.trust_class as TrustClass] ?? fact.trust_label,
+          origin: 'lawyer',
+        }
       : fact,
   )
 }
@@ -35,6 +41,14 @@ export function unknownFinding(): Finding {
     claim_id: 'C-UNK',
     version_no: 1,
     status: 'UNKNOWN',
+    status_label: STATUS_LABELS.UNKNOWN,
+    clause_ref: '',
+    clause_quote: '',
+    section_label: '',
+    section_quote: '',
+    law_version_label: '',
+    law_version_date: '',
+    fact_lines: [],
     confidence_band: 'not computed',
     as_of: COMMENCEMENT_DATE,
     source_version_ids: [],
@@ -64,6 +78,8 @@ export function asOfFinding(base: Finding, asOf: string): Finding {
     id: 'FND-ASOF',
     as_of: asOf,
     status: inForce ? 'FOLLOWS' : 'UNKNOWN',
+    status_label: inForce ? base.status_label : STATUS_LABELS.UNKNOWN,
+    law_version_date: asOf,
     confidence_band: inForce ? base.confidence_band : 'not computed',
     checker_report: inForce ? base.checker_report : null,
     proof: {
@@ -78,6 +94,7 @@ export function challengedFinding(base: Finding): Finding {
   return {
     ...base,
     status: 'UNKNOWN',
+    status_label: STATUS_LABELS.UNKNOWN,
     confidence_band: 'not computed',
     checker_report: null,
     proof: { ...base.proof, conclusion: 'unknown' },

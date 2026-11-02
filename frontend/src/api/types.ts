@@ -1,6 +1,7 @@
 import type { components } from './schema'
 
 export type Finding = components['schemas']['Finding']
+export type FactLine = components['schemas']['FactLine']
 export type Proof = components['schemas']['Proof']
 export type Fact = components['schemas']['Fact']
 export type Clause = components['schemas']['Clause']
@@ -25,6 +26,18 @@ export type IngestVersionBody = components['schemas']['IngestVersionBody']
 export type Run = components['schemas']['Run']
 export type ReviewBody = components['schemas']['ReviewBody']
 export type ReviewResult = components['schemas']['ReviewResult']
+export type CounterfactualResult = components['schemas']['CounterfactualResult']
+export type CounterfactualAffected = components['schemas']['CounterfactualAffected']
+export type ReverifyList = components['schemas']['ReverifyList']
+export type ReverifyListItem = components['schemas']['ReverifyListItem']
+export type ScanRequest = components['schemas']['ScanRequest']
+export type ScanResult = components['schemas']['ScanResult']
+export type DictationRequest = components['schemas']['DictationRequest']
+export type DictationResult = components['schemas']['DictationResult']
+
+export type CounterfactualBody = {
+  source_version_id: string
+}
 
 export type TrustClass =
   | 'document_extracted'

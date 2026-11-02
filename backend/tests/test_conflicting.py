@@ -317,5 +317,11 @@ def test_conflicting_finding_joins_reverify_list(
     listed = asyncio.run(get("/api/reverify-list?matter_id=MAT-01"))
     assert listed.status_code == 200, listed.text
     assert listed.json()["findings"] == [
-        {"finding_id": finding_id, "claim_id": "C-01", "reason": "CONFLICTING"}
+        {
+            "finding_id": finding_id,
+            "claim_id": "C-01",
+            "reason": "CONFLICTING",
+            "reason_label": "Two readings of the law conflict — your call",
+            "clause_ref": "",
+        }
     ]

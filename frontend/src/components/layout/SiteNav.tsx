@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom'
 
 const links = [
-  { to: '/review', label: 'Clause review' },
-  { to: '/impact', label: 'Source change' },
-  { to: '/control', label: 'Lawyer control' },
+  { to: '/review', label: 'Review a clause' },
+  { to: '/impact', label: 'Law changes' },
+  { to: '/control', label: 'Your control room' },
 ] as const
 
 export function SiteNav() {

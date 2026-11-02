@@ -22,7 +22,7 @@ export function AsOfPanel({
   return (
     <section className="ct-panel space-y-3 p-4" aria-labelledby="asof-heading">
       <h2 id="asof-heading" className="ct-section-title">
-        As-of applicability
+        Law version date
       </h2>
       <div className="flex flex-wrap items-end gap-4">
         <div>
@@ -39,14 +39,16 @@ export function AsOfPanel({
           />
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Commencement {commencement}. Move the date across it to flip in-force.
+          Commencement {commencement}. Move the date across it to see whether the section is in force.
         </p>
       </div>
       <p className="text-sm">
         Section 6 is {inForce ? 'in force' : 'not in force'} on {asOf}.
       </p>
       <StatusBadge status={inForce ? 'FOLLOWS' : 'UNKNOWN'} />
-      {finding && asOf < commencement ? <FindingCard finding={finding} /> : null}
+      {finding && asOf < commencement ? (
+        <FindingCard finding={finding} title="Answer as of this date" />
+      ) : null}
     </section>
   )
 }

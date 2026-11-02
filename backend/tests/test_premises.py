@@ -1,5 +1,6 @@
 """T4.4 tests (written first): premise challenge/approve/reject."""
 
+
 from pathlib import Path
 from typing import Any
 
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app import models
 from app.core.errors import MemoryServiceError
-from app.db import init_db
+from app.db import get_engine, init_db
 from app.services import memory, premises
 
 MATTER = "MAT-01"
@@ -267,3 +268,31 @@ def test_recompute_with_disputed_premise_requires_review(
     )
     assert finding.status == "REQUIRES_REVIEW"
     session.close()
+
+
+def test_engine_uses_null_pool() -> None:
+    """Approve-500 regression: pooled connections must not outlive a reset.
+
+    A pooled SQLite connection keeps the deleted inode after
+    `make reset-demo` replaces the DB file; the next checkout must open
+    the current file instead (NullPool).
+    """
+    engine = get_engine(":memory:")
+    assert isinstance(engine.pool, sa.pool.NullPool)
+    engine.dispose()
+
+
+def test_approved_fact_attributes_survive_session_close(tmp_path: Path) -> None:
+    """Approve-500 regression: returned fact is readable after close.
+
+    The endpoint reads id/trust_class/supersedes_id after the service
+    commits; those attributes must already be loaded (refresh+expunge),
+    never reloaded from a possibly replaced database file.
+    """
+    session = make_session(tmp_path)
+    seed(session)
+    new = premises.approve_fact(session, fact_id="F-01", reviewer="lawyer")
+    session.close()
+    assert new.trust_class == "lawyer_confirmed"
+    assert new.supersedes_id == "F-01"
+    assert new.id != "F-01"

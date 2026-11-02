@@ -11,18 +11,21 @@ import {
   challengedFinding,
   unknownFinding,
 } from '../api/mocks/lawyerControl'
-import type { Fact, Finding, Proof, ProofVerifyResult } from '../api/types'
-import { DEMO_CHALLENGER_REPORT } from '../api/mocks/challenger'
+import type { Clause, Fact, Finding, Proof, ProofVerifyResult } from '../api/types'
+import { parseChallengerReport } from '../api/mocks/challenger'
 import { ChallengerPanel } from '../components/ChallengerPanel'
 import { FindingCard } from '../components/FindingCard'
 import { AsOfPanel } from '../components/lawyer/AsOfPanel'
+import { DictationPanel } from '../components/lawyer/DictationPanel'
 import { FactTrustList } from '../components/lawyer/FactTrustList'
-import { ProofEditor } from '../components/lawyer/ProofEditor'
+import { FactWordingEditor } from '../components/lawyer/FactWordingEditor'
+import { ScanPagePanel } from '../components/lawyer/ScanPagePanel'
 import { UnknownClaimDemo } from '../components/lawyer/UnknownClaimDemo'
 import { AiDraftBadge } from '../components/badges/AiDraftBadge'
 
 export function LawyerControlPage() {
   const [claimId, setClaimId] = useState<string | null>(null)
+  const [clauses, setClauses] = useState<Clause[]>([])
   const [facts, setFacts] = useState<Fact[]>([])
   const [baseFinding, setBaseFinding] = useState<Finding | null>(null)
   const [reviewedIds, setReviewedIds] = useState<string[]>([])
@@ -32,13 +35,18 @@ export function LawyerControlPage() {
   const [asOfResult, setAsOfResult] = useState<Finding | null>(null)
   const [unknownQ, setUnknownQ] = useState(UNKNOWN_QUESTION)
   const [unknownResult, setUnknownResult] = useState<Finding | null>(null)
-  const [proofText, setProofText] = useState('')
+  const [factSentence, setFactSentence] = useState('')
   const [verifyResult, setVerifyResult] = useState<ProofVerifyResult | null>(null)
 
   useEffect(() => {
     const stored = lastClaimId()
     setClaimId(stored)
     void (async () => {
+      const docs = await api.documents(DEMO_MATTER_ID)
+      const documentId = docs.documents[0]?.id
+      if (documentId) {
+        setClauses(await api.clauses(documentId))
+      }
       const nextFacts = await api.facts(DEMO_MATTER_ID)
       setFacts(nextFacts)
       setReviewedIds(
@@ -53,17 +61,17 @@ export function LawyerControlPage() {
       if (finding) {
         setBaseFinding(finding)
         setDependent(finding)
-        setProofText(JSON.stringify(finding.proof, null, 2))
+        setFactSentence(finding.proof.premises[0]?.statement ?? '')
       }
     })()
   }, [])
 
   const actionsEnabled = Boolean(claimId)
+  const defaultClauseId =
+    facts.find((fact) => baseFinding?.premise_ids.includes(fact.id) && fact.clause_id)
+      ?.clause_id ?? 'CL-10'
 
   async function handleApprove(factId: string) {
-    if (!actionsEnabled) {
-      return
-    }
     const action = await api.approveFact(factId)
     setFacts((current) => applyFactAction(current, action))
     setReviewedIds((ids) => (ids.includes(factId) ? ids : [...ids, factId]))
@@ -91,17 +99,33 @@ export function LawyerControlPage() {
     }
   }
 
+  function proofFromSentence(base: Proof, sentence: string): Proof {
+    const premises = base.premises.map((premise, index) =>
+      index === 0 ? { ...premise, statement: sentence } : premise,
+    )
+    return { ...base, premises }
+  }
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header>
-        <p className="ct-section-title">Screen 3 · Lawyer control</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Premises &amp; trust</h1>
+      <header className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Your control room</h1>
         <AiDraftBadge label="AI draft — not yet reviewed" />
       </header>
 
       {!actionsEnabled ? (
-        <p className="ct-panel p-4 text-sm font-medium">Run Screen 1 first</p>
+        <p className="ct-panel p-4 text-sm font-medium">Ask about a clause first</p>
       ) : null}
+
+      <ScanPagePanel />
+      <DictationPanel
+        clauses={clauses}
+        defaultClauseId={defaultClauseId}
+        onFactProposed={(fact) => {
+          setFacts((current) => [fact, ...current.filter((row) => row.id !== fact.id)])
+        }}
+        onApprove={(id) => void handleApprove(id)}
+      />
 
       <FactTrustList
         facts={facts}
@@ -112,9 +136,11 @@ export function LawyerControlPage() {
       />
 
       {recomputed ? (
-        <p className="text-sm font-medium">Dependents recomputed after the trust-class change.</p>
+        <p className="text-sm font-medium">
+          Related answers were updated after you changed this fact.
+        </p>
       ) : null}
-      {dependent ? <FindingCard finding={dependent} /> : null}
+      {dependent ? <FindingCard finding={dependent} title="Current answer" /> : null}
 
       <AsOfPanel
         asOf={asOf}
@@ -136,44 +162,42 @@ export function LawyerControlPage() {
         }}
       />
 
-      <ProofEditor
-        value={proofText}
+      <FactWordingEditor
+        sentence={factSentence}
         result={verifyResult}
         disabled={!actionsEnabled}
-        onChange={setProofText}
+        onChange={setFactSentence}
         onReset={() => {
           if (baseFinding) {
-            setProofText(JSON.stringify(baseFinding.proof, null, 2))
+            setFactSentence(baseFinding.proof.premises[0]?.statement ?? '')
             setVerifyResult(null)
           }
         }}
-        onVerify={() => {
-          if (!claimId) {
+        onRecheck={() => {
+          if (!claimId || !baseFinding) {
             return
           }
           void (async () => {
-            try {
-              const parsed = JSON.parse(proofText) as Proof
-              setVerifyResult(await api.verifyProof(claimId, parsed))
-            } catch {
-              setVerifyResult({
-                valid: false,
-                cited_source_versions: [],
-                errors: [
-                  {
-                    code: 'PREMISE_MISMATCH',
-                    message: 'Proof JSON is not valid.',
-                  },
-                ],
-              })
-            }
+            const proof = proofFromSentence(baseFinding.proof, factSentence)
+            setVerifyResult(await api.verifyProof(claimId, proof))
           })()
         }}
       />
 
       <ChallengerPanel
-        enabled
-        report={verifyResult && !verifyResult.valid ? DEMO_CHALLENGER_REPORT : null}
+        report={
+          verifyResult && !verifyResult.valid
+            ? parseChallengerReport({
+                blocking: true,
+                objections: [
+                  {
+                    severity: 'blocking',
+                    reason: 'Cited premise text does not match the admitted fact statement, so the proof is not using an admitted premise.',
+                  },
+                ],
+              })
+            : null
+        }
       />
     </div>
   )

@@ -142,6 +142,11 @@ def run_counterfactual(session: Session, source_version_id: str) -> dict[str, An
                 "finding_id": finding_id,
                 "claim_id": str(finding.claim_id),
                 "would_remain_valid": valid,
+                "would_follow_label": (
+                    "Would still meet the requirement"
+                    if valid
+                    else "This answer would no longer follow"
+                ),
                 "logic": logic,
             }
         )

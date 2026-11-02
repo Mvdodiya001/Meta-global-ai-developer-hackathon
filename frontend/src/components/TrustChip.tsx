@@ -1,11 +1,5 @@
 import type { TrustClass } from '../api/types'
-
-const TRUST_LABELS: Record<TrustClass, string> = {
-  document_extracted: 'Document extracted',
-  lawyer_confirmed: 'Lawyer confirmed',
-  ai_inferred: 'AI inferred',
-  disputed: 'Disputed',
-}
+import { displayTrustLabel } from '../utils/displayFields'
 
 const TRUST_STYLES: Record<TrustClass, string> = {
   document_extracted:
@@ -20,14 +14,15 @@ const TRUST_STYLES: Record<TrustClass, string> = {
 
 type TrustChipProps = {
   trustClass: TrustClass
+  label?: string | null
 }
 
-export function TrustChip({ trustClass }: TrustChipProps) {
+export function TrustChip({ trustClass, label }: TrustChipProps) {
   return (
     <span
       className={`inline-flex rounded-md border px-2 py-0.5 text-xs font-medium ${TRUST_STYLES[trustClass]}`}
     >
-      {TRUST_LABELS[trustClass]}
+      {displayTrustLabel(trustClass, label)}
     </span>
   )
 }

@@ -10,6 +10,8 @@ import {
 import { useMemo } from 'react'
 
 import type { GraphSlice } from '../api/types'
+import { STATUS_LABELS } from '../content/glossary'
+import { isLawyerSafeText } from '../utils/lawyerCopy'
 
 type StaleGraphProps = {
   graph: GraphSlice
@@ -25,16 +27,32 @@ function layoutPosition(kind: string, index: number): { x: number; y: number } {
   return { x: 180, y: 320 }
 }
 
+function nodeCaption(kind: string, label: string, state: string | null): string {
+  if (kind === 'finding') {
+    return state === 'STALE' ? 'Answer · needs re-check' : 'Answer'
+  }
+  if (kind === 'rule_card') {
+    return 'Legal test'
+  }
+  if (label && isLawyerSafeText(label)) {
+    return label
+  }
+  return 'Section'
+}
+
 function toFlowGraph(slice: GraphSlice): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = slice.nodes.map((node, index) => ({
     id: node.id,
     data: {
       label: (
         <div className="text-xs">
-          <div className="font-semibold">{node.label}</div>
-          <div className="text-slate-500">{node.kind}</div>
-          {node.state ? (
-            <div className="mt-1 font-medium text-orange-700">{node.state}</div>
+          <div className="font-semibold">
+            {nodeCaption(node.kind, node.label, node.state ?? null)}
+          </div>
+          {node.state === 'STALE' ? (
+            <div className="mt-1 font-medium text-orange-700">
+              {STATUS_LABELS.STALE}
+            </div>
           ) : null}
         </div>
       ),
@@ -50,7 +68,6 @@ function toFlowGraph(slice: GraphSlice): { nodes: Node[]; edges: Edge[] } {
     id: `${edge.src}-${edge.dst}`,
     source: edge.src,
     target: edge.dst,
-    label: edge.rel,
     animated: edge.rel === 'DEPENDS_ON',
   }))
 
@@ -63,12 +80,9 @@ export function StaleGraph({ graph }: StaleGraphProps) {
   const staleCount = findingNodes.filter((node) => node.state === 'STALE').length
 
   return (
-    <section className="ct-panel overflow-hidden" aria-label="Dependency graph">
+    <section className="ct-panel overflow-hidden" aria-label="How answers depend on the law">
       <p className="border-b border-slate-200 px-4 py-2 text-sm dark:border-slate-700">
-        {staleCount} of {findingNodes.length} findings stale
-        <span className="ml-2 text-slate-500">
-          (orange outline and STALE label; not colour-only)
-        </span>
+        {staleCount} of {findingNodes.length} answers need re-check
       </p>
       <div className="h-[320px]">
         <ReactFlowProvider>
