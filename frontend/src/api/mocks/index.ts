@@ -48,7 +48,7 @@ import {
   demoStaleGraph,
   reverifyAudit,
 } from './impactDemo'
-import { approveFact, challengeFact, verifyProof } from './lawyerControl'
+import { approveFact, challengeFact, unknownFinding, verifyProof } from './lawyerControl'
 import { DEMO_RUN_EVENTS } from './runTrace'
 
 function withDisplayFields(finding: Finding): Finding {
@@ -198,8 +198,23 @@ export async function fetchMockRunEvents(_runId: string): Promise<ToolCall[]> {
   return DEMO_RUN_EVENTS
 }
 
-export async function fetchMockCreateClaim(): Promise<ClaimCreated> {
+export async function fetchMockCreateClaim(body?: {
+  question?: string
+}): Promise<ClaimCreated> {
+  const question = body?.question ?? ''
+  if (/telecom|fairness opinion/i.test(question)) {
+    return {
+      claim_id: 'C-UNK',
+      run_id: 'RUN-UNK',
+      finding_id: 'FND-UNK',
+      status: 'UNKNOWN',
+    }
+  }
   return { claim_id: 'C-001', run_id: 'RUN-01' }
+}
+
+export async function fetchMockUnknownFinding(): Promise<Finding> {
+  return unknownFinding()
 }
 
 export async function fetchMockApproveFact(factId: string): Promise<FactAction> {

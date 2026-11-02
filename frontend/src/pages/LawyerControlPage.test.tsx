@@ -77,6 +77,22 @@ describe('LawyerControlPage', () => {
       expect(item).toHaveTextContent('Lawyer-reviewed')
     })
 
+    it('shows Already confirmed when a fact is approved twice', async () => {
+      renderPage()
+      const item = await screen.findByRole('listitem', {
+        name: /Clause 9.2 permits transfer of order data outside India/i,
+      })
+
+      fireEvent.click(within(item).getByRole('button', { name: /^Approve$/i }))
+      await waitFor(() => {
+        expect(item).toHaveTextContent('Confirmed by you')
+      })
+
+      fireEvent.click(within(item).getByRole('button', { name: /^Approve$/i }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Already confirmed')
+    })
+
     it('challenges a premise and recomputes dependents to unknown', async () => {
       renderPage()
       const item = await screen.findByRole('listitem', {
@@ -89,6 +105,7 @@ describe('LawyerControlPage', () => {
         expect(item).toHaveTextContent('Disputed by you')
       })
       expect(screen.getByText(/Related answers were updated/i)).toBeInTheDocument()
+      expect(screen.getByText(/Illustration, not a server answer/i)).toBeInTheDocument()
       expect(screen.getByRole('article', { name: /Current answer/i })).toHaveTextContent(
         'Cannot be determined from the available material',
       )

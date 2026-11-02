@@ -5,6 +5,7 @@ type UnknownClaimDemoProps = {
   question: string
   finding: Finding | null
   disabled?: boolean
+  error?: string | null
   onQuestionChange: (value: string) => void
   onAsk: () => void
 }
@@ -13,6 +14,7 @@ export function UnknownClaimDemo({
   question,
   finding,
   disabled = false,
+  error = null,
   onQuestionChange,
   onAsk,
 }: UnknownClaimDemoProps) {
@@ -40,6 +42,11 @@ export function UnknownClaimDemo({
       >
         Ask a question this file does not cover
       </button>
+      {error ? (
+        <p role="status" className="text-sm font-medium">
+          {error}
+        </p>
+      ) : null}
       {finding ? (
         <>
           <p className="text-sm text-slate-700 dark:text-slate-300">

@@ -216,6 +216,36 @@ def record_dictation(cassettes: Path, session: Session) -> None:
     print(f"recorded {cassette.name} (dictation -> {result.transcript[:60]!r})")
 
 
+UNKNOWN_DEMO_QUESTION = (
+    "Is it fair that this clause relies on an unrelated telecom circular?"
+)
+UNKNOWN_DEMO_AS_OF = "2025-10-01"
+
+
+def record_unknown_demo(cassettes: Path, session: Session) -> None:
+    """Record the out-of-corpus Screen 3 question, live, once (F3).
+
+    It types UNKNOWN, and POST /api/claims now decides UNKNOWN directly,
+    so this single structuring cassette is the whole server path.
+    """
+    request = claims.claim_request(
+        UNKNOWN_DEMO_QUESTION, claims.default_inventory(), UNKNOWN_DEMO_AS_OF
+    )
+    cassette = llm.cache_file(cassettes, llm.request_hash(request))
+    if cassette.exists():
+        print(f"cassette already recorded: {cassette.name} (unknown demo)")
+        return
+    draft = claims.structure_claim(
+        UNKNOWN_DEMO_QUESTION,
+        claims.default_inventory(),
+        UNKNOWN_DEMO_AS_OF,
+        mode="live",
+        cache_dir=cassettes,
+        session=session,
+    )
+    print(f"recorded {cassette.name} (unknown demo -> {draft.claim_type})")
+
+
 def main() -> None:
     """Record the extraction + claim + loop cassettes and print the cost."""
     cassettes = ROOT / "corpus" / "cassettes"
@@ -256,6 +286,7 @@ def main() -> None:
         record_challenger(cassettes, session)
         record_scan(cassettes, session)
         record_dictation(cassettes, session)
+        record_unknown_demo(cassettes, session)
         row = session.execute(
             sa.select(models.LlmCall).order_by(models.LlmCall.id.desc())
         ).scalars().first()

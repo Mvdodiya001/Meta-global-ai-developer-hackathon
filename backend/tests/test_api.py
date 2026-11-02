@@ -424,6 +424,32 @@ def test_unknown_question_returns_unknown_finding(
     assert current.json()["checker_report"] is None
 
 
+def test_out_of_corpus_question_returns_unknown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """F3: the Screen 3 out-of-corpus question is a real server UNKNOWN."""
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    created = post(
+        app,
+        "/api/claims",
+        {
+            "clause_id": "CL-10",
+            "question": "Is it fair that this clause relies on an unrelated "
+            "telecom circular?",
+            "as_of": "2025-10-01",
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["status"] == "UNKNOWN"
+    assert body["finding_id"] is not None
+    current = get(app, f"/api/claims/{body['claim_id']}/current")
+    assert current.json()["status"] == "UNKNOWN"
+    assert current.json()["status_label"] == (
+        "Cannot be determined from the available material"
+    )
+
+
 def test_challenger_miss_still_decides(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -617,6 +643,118 @@ def test_audit_includes_impact_for_matter(tmp_path: Path, monkeypatch: pytest.Mo
     assert ingested.status_code == 200, ingested.text
     events = [row["event"] for row in get(app, "/api/audit?matter_id=MAT-01").json()["rows"]]
     assert "impact.applied" in events
+
+
+def test_stale_demo_reverify_rechecks_every_stale_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """F1: every stale row can be re-checked; the new answer is shown."""
+    monkeypatch.setenv("DEMO_MODE", "1")
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    scenario = post(app, "/api/demo/scenario/stale-demo", {})
+    assert scenario.status_code == 200, scenario.text
+    stale = get(app, "/api/reverify-list?matter_id=MAT-01").json()["findings"]
+    assert {item["finding_id"] for item in stale} == {
+        "FND-RC-CT3-BREACH-01",
+        "FND-RC-CT3-BREACH-CONFLICT-01",
+    }
+    result = post(app, "/api/impact/IMP-SV-DPDP-ACT-V2SIM/reverify", {"proofs": {}})
+    assert result.status_code == 200, result.text
+    body = result.json()
+    assert set(body["superseded"]) == {item["finding_id"] for item in stale}
+    assert len(body["current"]) == len(stale)
+    assert body["skipped"] == []
+    for finding_id in body["current"]:
+        new = get(app, f"/api/findings/{finding_id}")
+        assert new.status_code == 200
+        # Honest outcome: the old proof cited the replaced text.
+        assert new.json()["status"] == "REQUIRES_REVIEW"
+        assert new.json()["status_label"].startswith("Needs your review")
+    assert get(app, "/api/reverify-list?matter_id=MAT-01").json()["findings"] == []
+    diff = get(app, "/api/source-versions/SV-DPDP-ACT-V2SIM/diff?against=SV-DPDP-ACT-V1")
+    payload = diff.json()
+    assert payload["changed_keys"] == ["DPDP-Act-2023_s8(6)"]
+    # Both s8(6) texts are present and differ (UIs select by changed_keys;
+    # list order must stay stable for ingest idempotency).
+    before_s86 = next(r for r in payload["before"] if r["key"] == "DPDP-Act-2023_s8(6)")
+    after_s86 = next(r for r in payload["after"] if r["key"] == "DPDP-Act-2023_s8(6)")
+    assert "In the event of a personal data breach" in before_s86["text"]
+    assert before_s86["text"] != after_s86["text"]
+
+
+def test_reverify_reports_proofless_stale_rows_as_skipped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """F1: a stale finding with no stored proof is reported, not dropped."""
+    app = real_app(tmp_path, monkeypatch, seed_compact)
+    engine = init_db(str(tmp_path / "api.db"))
+    session = sessionmaker(bind=engine, future=True)()
+    session.add(
+        models.Claim(
+            id="C-NP",
+            matter_id="MAT-01",
+            clause_id="CL-01",
+            claim_type="CT2",
+            params_json={"element": "transfer logs"},
+            question_text="q",
+            as_of="2026-11-20",
+            created_at="2026-01-01T00:00:00Z",
+        )
+    )
+    session.add(
+        models.Finding(
+            id="FND-NP",
+            claim_id="C-NP",
+            version_no=1,
+            status="FOLLOWS",
+            confidence_band="high",
+            proof_json=None,
+            as_of="2026-11-20",
+            created_at="2026-01-01T00:00:00Z",
+        )
+    )
+    session.add(
+        models.FindingEvent(
+            id="FE-NP",
+            finding_id="FND-NP",
+            state="CURRENT",
+            created_at="2026-01-01T00:00:00Z",
+        )
+    )
+    graph.add_edge(
+        session,
+        src_type="finding",
+        src_id="FND-NP",
+        dst_type="rule_card",
+        dst_id="RC-01",
+        rel="DEPENDS_ON",
+    )
+    session.commit()
+    session.close()
+    ingested = post(
+        app,
+        "/api/sources/SRC-01/ingest",
+        {
+            "version": {
+                "version_label": "v3",
+                "published_on": "2026-06-01",
+                "effective_from": "2026-06-01",
+                "provisions": [
+                    {"key": "Section 6", "text": "s6 v3", "effective_from": "2026-06-01"},
+                    {"key": "Section 7", "text": "s7", "effective_from": "2023-08-11"},
+                ],
+            }
+        },
+    )
+    assert ingested.status_code == 200, ingested.text
+    impact_id = ingested.json()["impact_report_id"]
+    result = post(app, f"/api/impact/{impact_id}/reverify", {"proofs": {}})
+    assert result.status_code == 200, result.text
+    body = result.json()
+    assert body["skipped"] == ["FND-NP"]
+    assert "FND-NP" not in body["superseded"]
+    listed = get(app, "/api/reverify-list?matter_id=MAT-01").json()["findings"]
+    assert "FND-NP" in {item["finding_id"] for item in listed}
 
 
 def test_graph_and_audit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

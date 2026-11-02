@@ -1,6 +1,7 @@
 import type { Finding } from '../../api/types'
 import { FindingCard } from '../FindingCard'
 import { StatusBadge } from '../badges/StatusBadge'
+import { IllustrationLabel } from './IllustrationLabel'
 
 type AsOfPanelProps = {
   asOf: string
@@ -47,7 +48,10 @@ export function AsOfPanel({
       </p>
       <StatusBadge status={inForce ? 'FOLLOWS' : 'UNKNOWN'} />
       {finding && asOf < commencement ? (
-        <FindingCard finding={finding} title="Answer as of this date" />
+        <>
+          <IllustrationLabel />
+          <FindingCard finding={finding} title="Answer as of this date" />
+        </>
       ) : null}
     </section>
   )

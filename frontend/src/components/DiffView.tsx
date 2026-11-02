@@ -6,9 +6,13 @@ type DiffViewProps = {
 }
 
 export function DiffView({ diff }: DiffViewProps) {
-  const before = diff.before[0]
-  const after = diff.after[0]
-  const heading = sectionWording(diff.changed_keys[0] ?? '')
+  // Show the amended provision named in changed_keys, not the first
+  // provision in the list (which is the commencement section).
+  const changedKey = diff.changed_keys[0]
+  const before =
+    diff.before.find((row) => row.key === changedKey) ?? diff.before[0]
+  const after = diff.after.find((row) => row.key === changedKey) ?? diff.after[0]
+  const heading = sectionWording(changedKey ?? '')
 
   return (
     <section className="space-y-3" aria-labelledby="diff-heading">

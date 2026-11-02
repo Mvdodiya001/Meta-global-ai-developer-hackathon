@@ -13,6 +13,7 @@ import {
   fetchMockApproveFact,
   fetchMockChallengeFact,
   fetchMockCreateClaim,
+  fetchMockUnknownFinding,
   fetchMockIngest,
   fetchMockReverify,
   fetchMockRunEvents,
@@ -192,7 +193,9 @@ export const api = {
       : getJson<Finding>(`/api/claims/${encodeURIComponent(claimId)}/current`),
   currentFinding: (claimId: string): Promise<Finding | null> =>
     mocksEnabled()
-      ? fetchMockFinding()
+      ? claimId === 'C-UNK'
+        ? fetchMockUnknownFinding()
+        : fetchMockFinding()
       : optionalGet<Finding>(`/api/claims/${encodeURIComponent(claimId)}/current`),
   findingById: (findingId: string): Promise<Finding> =>
     mocksEnabled()
@@ -249,7 +252,7 @@ export const api = {
     question: string
     as_of: string
   }): Promise<ClaimCreated> =>
-    mocksEnabled() ? fetchMockCreateClaim() : postJson<ClaimCreated>('/api/claims', body),
+    mocksEnabled() ? fetchMockCreateClaim(body) : postJson<ClaimCreated>('/api/claims', body),
   runEvents: (runId: string): Promise<ToolCall[]> =>
     mocksEnabled()
       ? fetchMockRunEvents(runId)

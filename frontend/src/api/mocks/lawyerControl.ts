@@ -4,7 +4,7 @@ import { STATUS_LABELS, TRUST_LABELS } from '../../content/glossary'
 export const COMMENCEMENT_DATE = '2025-10-01'
 
 export const UNKNOWN_QUESTION =
-  'Does this clause require a fairness opinion from an unrelated telecom circular?'
+  'Is it fair that this clause relies on an unrelated telecom circular?'
 
 export function approveFact(fact: Fact): FactAction {
   return {

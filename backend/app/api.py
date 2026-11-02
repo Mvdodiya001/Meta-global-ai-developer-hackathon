@@ -1040,6 +1040,11 @@ async def diff_versions(
         [impact.snapshot(row) for row in after],
     )
     changed_keys = sorted(set(diff["changed"]) | set(diff["added"]) | set(diff["removed"]))
+    # F1: changed provisions lead both lists, so a before/after view shows
+    # the amended section first instead of the first provision overall.
+    # NOTE (F1): before/after stay in stored provision order; clients
+    # round-trip these lists into ingest, whose content hash is
+    # order-sensitive. Select the amended provision by changed_keys.
     return {
         "against": against,
         "current": id,
@@ -1203,6 +1208,7 @@ async def reverify_impact(
     ).scalars().all()
     superseded: list[str] = []
     current: list[str] = []
+    skipped: list[str] = []
     for event in stale:
         finding = session.get(models.Finding, event.finding_id)
         if finding is None or not graph.is_current_finding(session, str(finding.id)):
@@ -1211,6 +1217,9 @@ async def reverify_impact(
         if proof is None:
             stored = finding.proof_json
             if not isinstance(stored, dict):
+                # F1: never drop a stale row silently; it stays in the
+                # reverify list and is reported here as skipped.
+                skipped.append(str(finding.id))
                 continue
             proof = stored
         run_id = _new_id("RUN")
@@ -1237,7 +1246,11 @@ async def reverify_impact(
         )
         superseded.append(str(finding.id))
         current.append(str(new.id))
-    return {"superseded": sorted(superseded), "current": sorted(current)}
+    return {
+        "superseded": sorted(superseded),
+        "current": sorted(current),
+        "skipped": sorted(skipped),
+    }
 
 
 def _graph_label(kind: str, row: Any) -> str:

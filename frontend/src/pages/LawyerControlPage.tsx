@@ -9,7 +9,6 @@ import {
   applyFactAction,
   asOfFinding,
   challengedFinding,
-  unknownFinding,
 } from '../api/mocks/lawyerControl'
 import type { Clause, Fact, Finding, Proof, ProofVerifyResult } from '../api/types'
 import { parseChallengerReport } from '../api/mocks/challenger'
@@ -19,6 +18,7 @@ import { AsOfPanel } from '../components/lawyer/AsOfPanel'
 import { DictationPanel } from '../components/lawyer/DictationPanel'
 import { FactTrustList } from '../components/lawyer/FactTrustList'
 import { FactWordingEditor } from '../components/lawyer/FactWordingEditor'
+import { IllustrationLabel } from '../components/lawyer/IllustrationLabel'
 import { ScanPagePanel } from '../components/lawyer/ScanPagePanel'
 import { UnknownClaimDemo } from '../components/lawyer/UnknownClaimDemo'
 import { AiDraftBadge } from '../components/badges/AiDraftBadge'
@@ -37,6 +37,9 @@ export function LawyerControlPage() {
   const [unknownResult, setUnknownResult] = useState<Finding | null>(null)
   const [factSentence, setFactSentence] = useState('')
   const [verifyResult, setVerifyResult] = useState<ProofVerifyResult | null>(null)
+  const [approveNotice, setApproveNotice] = useState<string | null>(null)
+  const [unknownBusy, setUnknownBusy] = useState(false)
+  const [unknownError, setUnknownError] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = lastClaimId()
@@ -72,9 +75,48 @@ export function LawyerControlPage() {
       ?.clause_id ?? 'CL-10'
 
   async function handleApprove(factId: string) {
-    const action = await api.approveFact(factId)
-    setFacts((current) => applyFactAction(current, action))
-    setReviewedIds((ids) => (ids.includes(factId) ? ids : [...ids, factId]))
+    const fact = facts.find((row) => row.id === factId)
+    if (reviewedIds.includes(factId) || fact?.trust_class === 'lawyer_confirmed') {
+      setApproveNotice('Already confirmed')
+      return
+    }
+    try {
+      const action = await api.approveFact(factId)
+      setFacts((current) => applyFactAction(current, action))
+      setReviewedIds((ids) => (ids.includes(factId) ? ids : [...ids, factId]))
+      setApproveNotice(null)
+    } catch {
+      // A second confirm lands on the superseded row server-side.
+      setApproveNotice('Already confirmed')
+    }
+  }
+
+  async function handleUnknownAsk() {
+    if (!actionsEnabled || unknownBusy) {
+      return
+    }
+    setUnknownBusy(true)
+    setUnknownError(null)
+    try {
+      const clause92 = clauses.find((clause) => clause.ref === '9.2')
+      const created = await api.createClaim({
+        clause_id: clause92?.id ?? defaultClauseId,
+        question: unknownQ,
+        as_of: COMMENCEMENT_DATE,
+      })
+      const finding = created.claim_id
+        ? await api.currentFinding(created.claim_id)
+        : null
+      setUnknownResult(finding)
+      if (!finding) {
+        setUnknownError('No answer came back. Try again.')
+      }
+    } catch {
+      setUnknownResult(null)
+      setUnknownError('That question could not be answered. Try again.')
+    } finally {
+      setUnknownBusy(false)
+    }
   }
 
   async function handleChallenge(factId: string) {
@@ -134,13 +176,23 @@ export function LawyerControlPage() {
         onApprove={(id) => void handleApprove(id)}
         onChallenge={(id) => void handleChallenge(id)}
       />
+      {approveNotice ? (
+        <p role="status" className="text-sm font-medium">
+          {approveNotice}
+        </p>
+      ) : null}
 
       {recomputed ? (
         <p className="text-sm font-medium">
           Related answers were updated after you changed this fact.
         </p>
       ) : null}
-      {dependent ? <FindingCard finding={dependent} title="Current answer" /> : null}
+      {dependent ? (
+        <>
+          {recomputed ? <IllustrationLabel /> : null}
+          <FindingCard finding={dependent} title="Current answer" />
+        </>
+      ) : null}
 
       <AsOfPanel
         asOf={asOf}
@@ -153,13 +205,10 @@ export function LawyerControlPage() {
       <UnknownClaimDemo
         question={unknownQ}
         finding={unknownResult}
-        disabled={!actionsEnabled}
+        disabled={!actionsEnabled || unknownBusy}
+        error={unknownError}
         onQuestionChange={setUnknownQ}
-        onAsk={() => {
-          if (actionsEnabled) {
-            setUnknownResult(unknownFinding())
-          }
-        }}
+        onAsk={() => void handleUnknownAsk()}
       />
 
       <FactWordingEditor

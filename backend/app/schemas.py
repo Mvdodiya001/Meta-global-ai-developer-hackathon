@@ -421,6 +421,7 @@ class ReverifyResult(BaseModel):
 
     superseded: list[str]
     current: list[str]
+    skipped: list[str] = []
 
 
 class GraphNode(BaseModel):

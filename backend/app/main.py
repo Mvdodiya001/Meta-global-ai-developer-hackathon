@@ -11,7 +11,7 @@ from app.stub import router as stub_router
 
 def create_app() -> FastAPI:
     """Build the ClauseTrace FastAPI application (T0.4, T0.7, T4.5, ask-flow)."""
-    app = FastAPI(title="ClauseTrace", version="v9")
+    app = FastAPI(title="ClauseTrace", version="v10")
 
     @app.get("/api/health", response_model=schemas.Health)
     def health() -> dict[str, str]:

@@ -388,3 +388,26 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 - Third-party added: none
 - Credit spend: $0
 - Ready for human commit: yes — suggested message: `Restructure the three screens around the lawyer workflows`
+
+## [context-md] DONE · 2026-11-02 17:18 IST
+- Task: One handoff of everything done through the lawyer browser walk
+- Built against: contract v9
+- Files changed: `context.md`, `docs/logs/CURSOR_LOG.md`
+- What changed: `context.md` at the repo root. It records HEAD `e1c130b`, contract v9, T0–T6 plus T7.1–T7.4 and T8.1, the demo order, the 2026-11-02 browser walk, and what is still open (T7.5, T8.2–T9, stale status docs). No product code changed.
+- Checks run: none (document only). Facts taken from `openapi/openapi.json` v9, `git log`, the agent logs, and the browser walk in this session.
+- Decisions / assumptions: status docs were left as they are. They still say contract v4 and T7 not started.
+- Contract change: none
+- Requests: [REQ → H] `PROGRESS.md`, `docs/TASKS.md`, `NEW_WORK.md`, and `docs/logs/HUMAN_LOG.md` are behind v9. `context.md` is the current handoff until those are updated.
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Add a handoff of the build through contract v9`
+
+## [context-md-tree] DONE · 2026-11-02 17:21 IST
+- Task: Add the full tracked tree to context.md, with why each path exists
+- Files changed: `context.md`, `docs/logs/CURSOR_LOG.md`
+- What changed: repository section from `git ls-files` at `e1c130b`. Cassettes summarised as 55 request files plus one `.asr.json`. Local caches and the sqlite file called out as not product. No product code changed.
+- Checks run: `git ls-files` only
+- Contract change: none
+- Credit spend: $0
+- Ready for human commit: yes — same message as [context-md]

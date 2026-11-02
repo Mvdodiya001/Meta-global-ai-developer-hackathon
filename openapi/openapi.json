@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClauseTrace",
-    "version": "v9"
+    "version": "v10"
   },
   "paths": {
     "/api/health": {
@@ -3059,6 +3059,14 @@
             },
             "type": "array",
             "title": "Current"
+          },
+          "skipped": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skipped",
+            "default": []
           }
         },
         "type": "object",
