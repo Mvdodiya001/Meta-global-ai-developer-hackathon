@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# runtime junk
+nohup.out
+*.sqlite3-wal
+*.sqlite3-shm
