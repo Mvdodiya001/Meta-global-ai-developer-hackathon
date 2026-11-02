@@ -220,3 +220,81 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 - Files changed: removed debug ingest logs from `frontend/src/api/client.ts`, `frontend/src/pages/ClauseReviewPage.tsx`, `backend/app/agent/llm.py`, `loop.py`, `tools.py`. Kept load-failure `setNotice`. Kept `_prompt_claim_id` + `_bind_run_claim`.
 - Checks run: browser Ask 200 FOLLOWS; uvicorn POST 200; GET `/api/claims/C-dc6c0a3de675/current` 200.
 - Ready for human commit: yes — suggested message: `Fix ask replay: stable cassette claim id plus tool rebind`
+
+## [T9.1] STARTED · 2026-11-02 09:49 IST
+- Task: README as sales document (DEMO_AND_SUBMISSION §1) plus Muse Code [REQ → CU] backend facts
+- Built against: contract v3
+
+## [T9.1] DONE · 2026-11-02 09:49 IST
+- Task: README as sales document
+- Built against: contract v3 (`npm run gen:api` run)
+- Files changed: `README.md`, `frontend/src/api/schema.d.ts` (v3 regen), `docs/logs/CURSOR_LOG.md`
+- What changed: README is now the judge-facing sales page: pitch, why-different, architecture mermaid, Meta model table, six tools, NEW_WORK link, honest limitations, replay runbook (env.example, API_STUB=0, recorded question/dates, 8000 vs local 8001), checks, NOTICE link. Applied Muse Code [REQ → CU] from [readme-backend]: contract v3, muse-spark-1.3-contributor, isolated checker / memory-only status, UNKNOWN and challenger-miss behaviour, Docker note. No demo GIF or video URL (T9.2 not done).
+- Checks run: `make check-frontend` → pass (oxlint 0; vitest 27/27). Backend pytest 215/215 cited from Muse Code [gate-fix], not re-run (would open the DB).
+- Decisions / assumptions: Tool disclosure names Muse Spark in the verdict path and Muse Code as the backend lane, per DEMO_AND_SUBMISSION §1; no "written by" attribution. Canonical API port remains 8000; README states this machine's 8001 workaround instead of changing Makefile.
+- Contract change: none (consumed v3 types only)
+- Requests: [REQ → H] add the 3-minute video link when T9.2 is uploaded. Compose file still pending H (Muse Code).
+- UI rules checked: disclaimer in README · no claim the system proves the law · SIMULATED labelled · not legal advice
+- New-work note: none (README rewrite 2026-11-02)
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Rewrite README as the hackathon sales document`
+
+## [proxy-8000] STARTED · 2026-11-02 10:02 IST
+- Task: Point Vite `/api` proxy at backend port 8000
+- Built against: contract v3
+
+## [proxy-8000] DONE · 2026-11-02 10:03 IST
+- Task: Point Vite `/api` proxy at backend port 8000
+- Built against: contract v3
+- Files changed: `frontend/vite.config.ts`, `README.md`, `docs/logs/CURSOR_LOG.md`
+- What changed: Vite `/api` proxy target is `http://127.0.0.1:8000`. README no longer describes the 8001 workaround.
+- Checks run: `make check-frontend` → pass (oxlint 0; vitest 27/27)
+- Decisions / assumptions: Canonical ports are backend 8000, frontend 5173.
+- Contract change: none
+- Requests: none
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Point Vite API proxy at port 8000`
+
+## [S1-review] STARTED · 2026-11-02 10:09 IST
+- Task: Screen 1 Mark lawyer-reviewed was a local-only toggle; wire it to POST /findings/{id}/review
+- Built against: contract v3
+
+## [S1-review] DONE · 2026-11-02 10:11 IST
+- Task: Screen 1 Mark lawyer-reviewed posts to the review API
+- Built against: contract v3
+- Files changed: `frontend/src/api/client.ts`, `frontend/src/api/types.ts`, `frontend/src/api/mocks/index.ts`, `frontend/src/pages/ClauseReviewPage.tsx`, `frontend/src/pages/ClauseReviewPage.test.tsx`, `frontend/src/components/FindingCard.tsx`, `frontend/src/components/FindingCard.test.tsx`, `docs/logs/CURSOR_LOG.md`
+- What changed: the Screen 1 button was a local `setState` labelled "(demo)", so live review never hit the API and the badge did not persist. It now `POST /api/findings/{id}/review` with `action=approve`, refetches the finding, and shows Lawyer-reviewed from `REVIEWED` state / "Reviewed by lawyer" label. Button disables after success.
+- Checks run: `make check-frontend` → pass (oxlint 0; vitest 28/28). Browser: `/review` loaded; Run verification 502'd (`CHALLENGER=on` cassette miss `7187dcc1…`) so the review click could not be exercised live. Tests cover the click.
+- Decisions / assumptions: approve is the lawyer-reviewed action (reject would be REJECTED). Overlay `ai_draft_label` after a successful POST so mocks still flip the badge.
+- Contract change: none
+- Requests: none
+- UI rules checked: AI-draft vs Lawyer-reviewed still text+icon · disclaimer unchanged
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Wire Screen 1 lawyer-reviewed to the review API`
+
+## [impact-reingest] STARTED · 2026-11-02 11:14 IST
+- Task: Screen 2 ingest of the stored simulated amendment showed no STALE findings
+- Built against: contract v3
+
+## [impact-reingest] DONE · 2026-11-02 11:32 IST
+- Task: Screen 2 ingest of a stored amendment marks dependent findings STALE
+- Built against: contract v3
+- Files changed: `backend/app/api.py`, `backend/app/services/seed.py`, `backend/tests/test_api.py`, `backend/tests/test_scenarios.py`, `docs/logs/CURSOR_LOG.md`
+- What changed: identical-content ingest still runs impact for that stored version. Seed ensures one current finding per loaded rule card, with ids, clause choice, and the citation taken from the card and the contract text. No source, card, or machine path is special-cased. Debug logs stay until the click-through is confirmed.
+- Checks run: `pytest tests/test_api.py::test_reingest_stored_version_stales_card_dependents tests/test_scenarios.py::test_scenario_stale_chain_flags_exactly_dependents tests/test_seed.py` → 6 passed. `ruff check` on the four files → pass. `mypy app/api.py app/services/seed.py` → pass. Live ingest of the stored simulated version → 200, impact affected 1, state STALE. `make check-backend` not run.
+- Decisions / assumptions: [REQ → H] backend files edited from the Cursor lane because the human said to proceed on this gate. A finding goes stale only when it depends on a card whose provision key changed. Re-verify on `LLM_MODE=live` with `CHALLENGER=on` would call the model; the regression test uses replay and challenger off and gets REQUIRES_REVIEW.
+- Contract change: none
+- Requests: [REQ → H] lane note above
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Mark dependents stale when a stored amendment is ingested`
+
+## [impact-reingest] VERIFIED · 2026-11-02 11:36 IST
+- Ingest on the Source change page returned 200 for the stored simulated version. Impact listed `FND-RC-CT3-BREACH-01` as STALE; the other findings stayed current. Debug logging removed after that run.
+- Credit spend: $0

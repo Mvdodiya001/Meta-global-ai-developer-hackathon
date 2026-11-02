@@ -16,4 +16,18 @@ describe('FindingCard', () => {
     render(<FindingCard finding={mockData.finding} lawyerReviewed />)
     expect(screen.getByText(/Lawyer-reviewed/i)).toBeInTheDocument()
   })
+
+  it('shows lawyer-reviewed when the finding state is REVIEWED', () => {
+    render(
+      <FindingCard
+        finding={{
+          ...mockData.finding,
+          state: 'REVIEWED',
+          ai_draft_label: 'Reviewed by lawyer',
+        }}
+      />,
+    )
+    expect(screen.getByText(/Lawyer-reviewed/i)).toBeInTheDocument()
+    expect(screen.queryByText(/AI draft/i)).not.toBeInTheDocument()
+  })
 })

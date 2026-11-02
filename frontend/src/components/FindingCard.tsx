@@ -8,7 +8,15 @@ type FindingCardProps = {
   lawyerReviewed?: boolean
 }
 
+function isLawyerReviewed(finding: Finding, flagged: boolean): boolean {
+  if (flagged || finding.state === 'REVIEWED') {
+    return true
+  }
+  return finding.ai_draft_label.toLowerCase().includes('reviewed by lawyer')
+}
+
 export function FindingCard({ finding, lawyerReviewed = false }: FindingCardProps) {
+  const reviewed = isLawyerReviewed(finding, lawyerReviewed)
   return (
     <article
       className="ct-panel space-y-3 p-4"
@@ -19,7 +27,7 @@ export function FindingCard({ finding, lawyerReviewed = false }: FindingCardProp
           Finding {finding.id}
         </h2>
         <StatusBadge status={finding.status} state={finding.state} />
-        {lawyerReviewed ? (
+        {reviewed ? (
           <LawyerReviewedBadge />
         ) : (
           <AiDraftBadge label={finding.ai_draft_label} />

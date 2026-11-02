@@ -22,7 +22,12 @@ from sqlalchemy.orm import Session
 from app import models
 from app.agent import challenger as challenger_agent
 from app.agent import llm
-from app.core.errors import MemoryServiceError
+from app.core.errors import (
+    CassetteMissing,
+    ChallengerError,
+    LLMRequestFailed,
+    MemoryServiceError,
+)
 from app.services.graph import is_current_finding, is_current_version
 from checker import verify as checker
 
@@ -375,20 +380,28 @@ def decide_finding(
         challenger if challenger is not None else os.getenv("CHALLENGER", "off") == "on"
     )
     challenge: challenger_agent.ChallengerReport | None = None
+    challenger_failed = False
     if run_challenger:
-        challenge = challenger_agent.review_claim(
-            question=str(claim.question_text),
-            claim_type=str(claim.claim_type),
-            params=dict(claim.params_json or {}),
-            proof=proof,
-            premise_lines=challenger_agent.premise_lines(session, matter_id),
-            card_lines=challenger_agent.card_lines(session),
-            session=session,
-            run_id=run_id,
-            cache_dir=challenger_cache_dir,
-        )
-        challenger_blocking = challenger_blocking or challenge.blocking
-        challenger_note = challenger_note or challenge.note
+        try:
+            challenge = challenger_agent.review_claim(
+                question=str(claim.question_text),
+                claim_type=str(claim.claim_type),
+                params=dict(claim.params_json or {}),
+                proof=proof,
+                premise_lines=challenger_agent.premise_lines(session, matter_id),
+                card_lines=challenger_agent.card_lines(session),
+                session=session,
+                run_id=run_id,
+                cache_dir=challenger_cache_dir,
+            )
+        except (CassetteMissing, LLMRequestFailed, ChallengerError):
+            # Gate fix: an unavailable second pass (e.g. no replay
+            # cassette) must not lose the finding. It decides below as
+            # REQUIRES_REVIEW — unreviewed is never endorsed.
+            challenger_failed = True
+        else:
+            challenger_blocking = challenger_blocking or challenge.blocking
+            challenger_note = challenger_note or challenge.note
 
     facts = _proof_facts(session, matter_id, proof)
     stores = _checker_stores(session)
@@ -423,6 +436,8 @@ def decide_finding(
         status = "REQUIRES_REVIEW"
     elif challenger_blocking:
         status = "REQUIRES_REVIEW"
+    elif challenger_failed:
+        status = "REQUIRES_REVIEW"
     elif not _tool_log_ok(session, run_id, verdict["cited_source_versions"]):
         status = "REQUIRES_REVIEW"
     elif proof.get("conclusion") == CONCLUSION_HOLDS:
@@ -433,7 +448,7 @@ def decide_finding(
         status = "REQUIRES_REVIEW"
 
     band = _confidence_band(
-        as_of, facts, cards, provisions, versions, challenger_note
+        as_of, facts, cards, provisions, versions, challenger_note or challenger_failed
     )
     return _store_decision(
         session,

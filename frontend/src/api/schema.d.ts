@@ -1027,6 +1027,10 @@ export interface components {
         /**
          * ProofStep
          * @description One checker step (kinds land fully in T3.2).
+         *
+         *     Gate fix: carries every checker step field (compare/evidence/role
+         *     included) and allows future kinds, so a proof read back from the API
+         *     round-trips into /api/proofs/verify without losing its evidence.
          */
         ProofStep: {
             /** Kind */
@@ -1042,6 +1046,22 @@ export interface components {
             as_of?: string | null;
             /** Conclusion */
             conclusion?: string | null;
+            /** Clause Id */
+            clause_id?: string | null;
+            /** Quote */
+            quote?: string | null;
+            /** Value */
+            value?: number | null;
+            /** Op */
+            op?: string | null;
+            /** Bound */
+            bound?: number | null;
+            /** Party */
+            party?: string | null;
+            /** Role */
+            role?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * ProofVerifyBody

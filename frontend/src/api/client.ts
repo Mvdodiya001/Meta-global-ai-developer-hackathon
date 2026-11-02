@@ -18,6 +18,7 @@ import {
   fetchMockRunEvents,
   fetchMockSourceVersions,
   fetchMockSources,
+  fetchMockReviewFinding,
   fetchMockVerifyProof,
   pollMockRunEvents,
 } from './mocks'
@@ -37,6 +38,8 @@ import type {
   Matter,
   Proof,
   ProofVerifyResult,
+  ReviewBody,
+  ReviewResult,
   ReverifyResult,
   Run,
   RunEvents,
@@ -257,4 +260,8 @@ export const api = {
     mocksEnabled()
       ? fetchMockVerifyProof({ claim_id: claimId, proof })
       : postJson<ProofVerifyResult>('/api/proofs/verify', { claim_id: claimId, proof }),
+  reviewFinding: (findingId: string, body: ReviewBody): Promise<ReviewResult> =>
+    mocksEnabled()
+      ? fetchMockReviewFinding(findingId)
+      : postJson<ReviewResult>(`/api/findings/${encodeURIComponent(findingId)}/review`, body),
 }

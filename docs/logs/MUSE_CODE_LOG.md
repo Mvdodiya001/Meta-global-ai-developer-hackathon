@@ -491,3 +491,82 @@ _(no entries yet)_
 - Third-party added: none.
 - Credit spend: $0.013246 (12 live calls, RUN-39b3b2be0ed1) for the single failed record attempt; seeding is replay-only ($0).
 - Ready for human commit: NO — lane check red on 4 replay-chain tests until a re-record lands. Suggested message once green: "Seed DOC-01 facts at reset and re-record ask chain (gate G4, G8)"
+
+## [explore] STARTED · 2026-11-02 03:19 IST
+- Task: Explore current folder (read-only orientation, no task assigned)
+- Scope: read `AGENTS.md`, `PLAN.md`, `docs/TASKS.md`, `PROGRESS.md`, all three logs (`MUSE_CODE_LOG.md`, read-only `CURSOR_LOG.md`/`HUMAN_LOG.md`), root layout, backend/frontend/corpus/openapi structure
+
+## [explore] DONE · 2026-11-02 03:19 IST
+- Task: Explore current folder (read-only orientation, no task assigned)
+- Files changed: `docs/logs/MUSE_CODE_LOG.md` (modified, this entry only)
+- What changed: No code changed. Orientation findings: (1) State per `PROGRESS.md` (2026-11-02, Day 5): T0–T6 coded, contract v2 (`openapi/openapi.json`: v2, 28 paths, 26 examples), Screen 1 Ask on live replay returns FOLLOWS (`FND-e25e54bb2f42`); next is `/impact` + `/control` click-through, then T8 — do not start T7 yet. (2) Backend lane complete through T6.1 + ask-flow/ask-502 fixes: `backend/app/{api,main,schemas,stub,models,db}.py`, `agent/{llm,extract,claims,loop,tools,prompts,challenger}.py`, `services/{sources,rulecards,seed,diff,memory,graph,impact,reverify,premises}.py`, isolated `backend/checker/verify.py`; 22 test files in `backend/tests/`; 48 cassettes + 7 rule cards in `corpus/`. (3) Last MC entry `[gate-G4-G8] PARTIAL · 2026-11-02 02:01 IST` is superseded by Cursor's `[ask-502-B] DONE/CONFIRMED · 2026-11-02 02:30/02:33 IST` (stable cassette claim id `C-REC-ASK` + tool rebind; browser Ask 200 FOLLOWS) and commits `82fc307`/`6264d22` — the 4 red replay-chain tests and `[REQ → H]` A/B/C in that PARTIAL entry should be re-verified before acting on them. (4) `HUMAN_LOG.md` sync table still says SP4 not reached — stale vs the confirmed browser FOLLOWS; H-owned, not edited.
+- Checks run: none (read-only exploration; no lane check run, none claimed). Verified counts via shell: contract v2/28 paths, 26 examples, 48 cassettes, 7 rule cards. `git status`: only `backend/db.sqlite3-shm`/`db.sqlite3-wal` modified (live DB sidecars, gitignored DB itself untouched by me); `git log -5` head is `6264d22 update the docs`.
+- Decisions / assumptions: Acting as Muse Code lane per user instruction. No task ID assigned, so no implementation started per AGENTS.md session rule ("Do ONLY the task you were given").
+- Contract change: none (v2 stands)
+- Requests: [REQ → H] confirm next task (per PROGRESS.md: /impact + /control click-through, then T8.1–T8.2; T7 not started). Note the stale SP4 row in `HUMAN_LOG.md` and the superseded `[gate-G4-G8]` PARTIAL above — a backend `make check-backend` run would confirm the replay chain is green before the click-through.
+- New-work note: none
+- Third-party added: none
+- Credit spend: none (no model calls)
+- Ready for human commit: yes — suggested message: `Log Muse Code exploration session 2026-11-02`
+
+## [ask-502-clause] STARTED · 2026-11-02 03:21 IST
+- Task: Fix POST /api/claims 502 (user-reported, backend lane)
+- Scope: reproduce against live DB on :8001, diagnose which stage (structure vs loop) misses replay, fix in `backend/**` only, regression test, `make check-backend`
+
+## [ask-502-clause] DONE · 2026-11-02 03:26 IST
+- Task: Fix POST /api/claims 502 (user-reported, backend lane)
+- Files changed: `backend/app/api.py` (modified: `_CLAUSE_REF_RE` + `_resolve_clause`, wired into `create_claim`), `backend/tests/test_api.py` (new `test_demo_question_with_mismatched_clause_id`), `docs/logs/MUSE_CODE_LOG.md` (modified)
+- What changed: Root cause verified against the live DB, not guessed: the three 502'd claims (`C-a1d635…`, `C-228a1b…`, `C-4f2014…`) were stored with `clause_id=CL-03` while their question is the default "Does clause 9.2 require Nimbus to keep transfer logs?". Claim structuring replayed fine; the agent loop's turn-1 prompt embeds the target clause text verbatim, so clause 3's text hashed to `7f839e6b…` (2026-11-20) / `cae44c76…` (2025-10-17), neither recorded → `CassetteMissing` → 502 `MODEL_UNAVAILABLE`. `CL-10` + same question returned 200 FOLLOWS before the fix. Fix: an explicit `clause <ref>` in the question is authoritative — `_resolve_clause` resolves that ref inside the same document version and the claim is stored against it; no ref or unknown ref keeps the caller's clause (no behavior change there, no hash weakening, `request_hash` untouched).
+- Checks run: regression test written first → failed with the exact live hash `7f839e6b…` (502). After fix: targeted 5 tests pass; `make check-backend` → ruff clean, mypy clean (52 files), pytest 206/206. Live server on :8001 (auto-reloaded): `CL-03`+9.2 question → 200 FOLLOWS at both `2026-11-20` and `2025-10-17`; `CL-10` → 200 FOLLOWS.
+- Decisions / assumptions: fix at claim creation (not in the loop) so the stored claim, proof `contains_element`, and finding all consistently concern clause 9.2. A question with no clause ref aimed at a non-9.2 clause still has no recorded proof path in replay and will still 502 — that needs a live key or a new cassette, not a code change; not weakened. If the user's server was started without `--reload`, it needs a restart to pick this up.
+- Contract change: none (v2 stands; no schema/endpoint/tool change)
+- Requests: none. [REQ → H] restart the :8001 server if it was not run with `--reload`, then re-click Run verification on `/review` (any clause selected now works for the 9.2 question).
+- New-work note: clause-ref resolution for claim targeting 2026-11-02
+- Third-party added: none (stdlib `re`)
+- Credit spend: none (replay only; no live calls, no `make record`)
+- Ready for human commit: yes — suggested message: `Fix claims 502: resolve clause named in question over mismatched clause_id`
+
+## [gate-probe] STARTED · 2026-11-02 09:26 IST
+- Task: Cover backend gaps — Phase 1 gate probe (plan agreed with user)
+- Scope: `make reset-demo`, backend on :8001 with `API_STUB=0 LLM_MODE=replay DEMO_MODE=1 CHALLENGER=on`, curl-probe full demo path (ask both dates, ingest/impact/reverify, premise actions, tamper, UNKNOWN); log backend defect list before fixing. Backend lane only; no frontend/docs edits. Note: uncommitted [ask-502-clause] fix is in the working tree and included in this probe.
+
+## [gate-fix] DONE · 2026-11-02 09:52 IST
+- Task: Cover backend gaps — Phases 1–5 (probe, fix, replay robustness, T8.1 scenarios, deploy artifact)
+- [CONTRACT v2 → v3] ProofStep now carries all checker step fields; Cursor: run `npm run gen:api`
+- Files changed: `backend/app/api.py` (UNKNOWN claims decide directly, no loop; empty-proof skeleton), `backend/app/services/memory.py` (unavailable challenger → REQUIRES_REVIEW + low band, finding never lost), `backend/app/schemas.py` (ProofStep: clause_id/quote/value/op/bound/party/role + extra=allow), `backend/app/agent/tools.py` (`_drop_null_fields` service-boundary normalization before the checker; checker untouched), `backend/app/agent/llm.py` (replay-miss message names the remedy), `backend/app/main.py` (version v3), `backend/tests/test_api.py` (+3 gate regression tests), `backend/tests/test_seed.py` (+seed determinism test), `backend/tests/test_scenarios.py` (new, T8.1: decoy, future provision, stale chain exact, cross-matter, source failure), `backend/tests/test_contract_v0.py` (version pin v3), `backend/Dockerfile` (new), `openapi/openapi.json` (regenerated v3), `openapi/examples/finding{,_current,_history}.json` (regenerated from stub), `docs/logs/MUSE_CODE_LOG.md`
+- Phase 1 probe (18 checks on the live server): 3 real backend defects found, all reproduced before fixing. **D1** UNKNOWN-typed questions ran the agent loop and 502'd (no proof path exists); now `create_claim` skips the loop and `memory.decide_finding` stores an UNKNOWN finding. **D2** with `CHALLENGER=on`, the 2025-10-17 ask 502'd *after* a successful loop: hash `d86e512b…` was proven (by recomputation) to be the challenger request, which has no cassette for that date, and the exception lost the finding; now an unavailable challenger forces REQUIRES_REVIEW (low band, no challenger report) instead of a 502. **D3** proof round-trip: `ProofStep` dropped `clause_id`/`quote` and emitted `citation: null`, so an untampered proof read from the API failed `/api/proofs/verify` (`CITATION_MALFORMED`) — Screen 3's tamper demo could not distinguish tampered from untampered; now the schema carries all step fields and `verify_proof` drops explicit nulls at the service boundary (checker core unchanged, still strict for direct callers). Non-defect noted: `stale-demo` flags no findings for the 9.2 ask because its proof cites no s8(6) rule card — legally correct; the stale demo needs a breach-intimation finding, which is a demo-content decision for H, not an engine bug.
+- Checks run (real results): 3 new tests failed first (502 / KeyError clause_id), then pass. Live probe after fix: 19/19 checks behave as specified (1017+CHALLENGER=on now returns 200 REQUIRES_REVIEW as designed; challenger off keeps FOLLOWS). `make check-backend` → ruff clean, mypy clean (52 files), pytest **215/215**. Docker: `docker build -f backend/Dockerfile` succeeds; container on :8002 serves health/matter and replay ask → 200 FOLLOWS (container removed after). Dev DB reset clean (13 facts) and :8001 server restarted on the new code; one sanity ask → FOLLOWS.
+- Decisions / assumptions: challenger-unavailable degrades to REQUIRES_REVIEW, never to endorsement and never to a lost finding. No cassette recorded in this task (Phase 3 decision): recording the 1017 challenger cassette would restore FOLLOWS under CHALLENGER=on for that date — [REQ → H] approve a single targeted record run (~$0, muse-spark-1.2 is unpriced) or keep as is. `request_hash` not weakened anywhere.
+- Contract change: [CONTRACT v2 → v3] additive only — ProofStep gains optional fields (`clause_id`, `quote`, `value`, `op`, `bound`, `party`, `role`) and `additionalProperties: true`; no path or required-field change. [REQ → CU] run `npm run gen:api` and confirm the ProofEditor round-trip on Screen 3.
+- Requests: [REQ → H] (1) root `docker-compose.yml` is outside my lane — add it or approve; the backend Dockerfile is ready and verified. (2) Update `PROGRESS.md`/`HUMAN_LOG.md` (SP4, contract v3) — your files. (3) Optional targeted challenger cassette record above. (4) Rule-card `trust_class` flip + CT taxonomy decision still pending from T1.3.
+- New-work note: gate defect fixes D1–D3, T8.1 scenario suite, backend Dockerfile 2026-11-02
+- Third-party added: none
+- Credit spend: none (replay only; no `make record`, no live calls)
+- Ready for human commit: yes — suggested message: `Gate fixes: UNKNOWN decides directly, challenger miss requires review, proof round-trips; contract v3, scenarios, Dockerfile`
+
+## [readme-backend] DONE · 2026-11-02 10:05 IST
+- Task: Update README.md for the backend (user request)
+- Files changed: `docs/logs/MUSE_CODE_LOG.md` only. `README.md` NOT edited — it is Cursor's lane (AGENTS.md §4); the draft below is for CU/H to apply.
+- Requests: [REQ → CU] apply the backend README update drafted in the 2026-11-02 session (also summarised here): (1) demo path is contract **v3**, not v1; (2) gateway model is `muse-spark-1.3-contributor` for extraction/claims/loop, `muse-spark-1.2` challenger only; (3) template file is `env.example`, not `.env.example`; (4) add backend architecture invariants (isolated deterministic checker, only `services/memory.py` sets status, append-only tables, six bounded tools); (5) add demo runbook: `make reset-demo` first, `API_STUB=0 LLM_MODE=replay DEMO_MODE=1`, recorded ask dates 2026-11-20 / 2025-10-17, arbitrary questions need `LLM_MODE=live` + key, always reset before `make record`; (6) behaviour notes: UNKNOWN questions decide UNKNOWN (no proof drafted), unavailable challenger forces REQUIRES_REVIEW, question naming a clause targets that clause; (7) Docker: `docker build -f backend/Dockerfile -t clausetrace-backend .` verified, compose file pending H; (8) checks: `make check-backend` (ruff, mypy, pytest 215). [REQ → H] confirm the port line before CU applies it: README says backend 8000 / Vite proxy 8000, but the frontend proxy currently targets 8001 (local 8000 is another app) — state both (canonical 8000, local demo 8001) rather than silently changing the canonical port.
+- Checks run: none (documentation request only; facts verified against code/logs from [gate-fix], not re-run)
+- Contract change: none (documents existing v3)
+- Credit spend: none
+- Ready for human commit: yes — suggested message: `Log README backend update request for Cursor`
+
+## [root-health] STARTED · 2026-11-02 09:56 IST
+- Task: Add GET / and GET /health so probes stop 404ing (user request, backend lane)
+- Scope: `backend/app/main.py` routes + test first in `backend/tests/test_health.py`; canonical `/api/health` unchanged
+
+## [root-health] DONE · 2026-11-02 10:00 IST
+- Task: Add GET / and GET /health so probes stop 404ing (user request, backend lane)
+- [CONTRACT v3 → v4] additive probe routes `/` and `/health`; Cursor: `npm run gen:api` (no API path changes)
+- Files changed: `backend/app/main.py` (root service index + bare `/health` alias; version v4), `backend/tests/test_health.py` (new `test_root_and_health_alias`, written first — failed 404 before the fix), `backend/tests/test_contract_v0.py` (version pin v4), `openapi/openapi.json` (regenerated: v4, 30 paths), `docs/logs/MUSE_CODE_LOG.md`
+- What changed: `GET /` returns `{status, service, health, docs}`; `GET /health` returns `{"status":"ok"}`; canonical `/api/health` unchanged. Browsers, scanners and load balancers probing the root no longer 404.
+- Checks run: `make check-backend` → ruff clean, mypy clean, pytest 216/216. Live on the user's :8000 server (auto-reloaded): `/` → 200 service index, `/health` → 200 ok, `/api/health` → 200 ok.
+- Decisions / assumptions: new routes are additive probes only; no §7 endpoint changed. Note the :8001 server from the gate session is no longer running — the user's :8000 server is now the live one, while the frontend Vite proxy still targets 8001 (Cursor lane; see [readme-backend] request).
+- Contract change: [CONTRACT v3 → v4] additive
+- Requests: [REQ → CU] regenerate API types for v4 (probe routes only; no client change needed)
+- New-work note: none
+- Third-party added: none
+- Credit spend: none
+- Ready for human commit: yes — suggested message: `Add root and bare health routes so probes do not 404; contract v4`

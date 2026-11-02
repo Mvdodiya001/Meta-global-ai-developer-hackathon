@@ -71,6 +71,36 @@ def test_seed_is_idempotent(tmp_path: Path) -> None:
             assert count == want
 
 
+def test_seed_is_deterministic_across_databases(tmp_path: Path) -> None:
+    """Gate: two fresh seeds produce identical fact rows (replay hashes).
+
+    The recorded ask chain hashes the admitted-premise lines verbatim, so
+    any seed drift (random ids, timestamps in statements) breaks replay.
+    """
+    snapshots = []
+    for name in ("a.db", "b.db"):
+        db = tmp_path / name
+        seed.seed_demo(db, CORPUS_ROOT)
+        session = sessionmaker(bind=init_db(db), future=True)()
+        try:
+            rows = (
+                session.execute(
+                    sa.select(models.Fact)
+                    .where(models.Fact.matter_id == "MAT-01")
+                    .order_by(models.Fact.id)
+                )
+                .scalars()
+                .all()
+            )
+            snapshots.append(
+                [(row.id, row.clause_id, row.statement, row.trust_class) for row in rows]
+            )
+        finally:
+            session.close()
+    assert snapshots[0] == snapshots[1]
+    assert len(snapshots[0]) == 13
+
+
 def test_seed_extracts_doc01_facts_in_replay(tmp_path: Path) -> None:
     """G8: a reset seeds DOC-01 extraction facts from the replay cassette."""
     db = tmp_path / "demo.db"

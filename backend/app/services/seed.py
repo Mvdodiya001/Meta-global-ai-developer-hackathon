@@ -8,6 +8,7 @@ Re-running on the same database is a no-op for the contract part (the corpus
 and card loaders are already idempotent).
 """
 
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -19,7 +20,7 @@ from app import models
 from app.agent import extract as extract_agent
 from app.core.errors import ToolError
 from app.db import init_db
-from app.services import rulecards, sources
+from app.services import graph, rulecards, sources
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CORPUS_ROOT = REPO_ROOT / "corpus"
@@ -148,6 +149,138 @@ def _seed_extraction_facts(session: Session, corpus_root: Path) -> int:
     return len(result.facts)
 
 
+_TOKEN = re.compile(r"[a-z0-9]+")
+
+
+def _tokens(text: str) -> set[str]:
+    """Significant words in a clause or card span (F11)."""
+    return {token for token in _TOKEN.findall(text.lower()) if len(token) > 3}
+
+
+def _clause_for_card(
+    clauses: list[models.Clause], card: models.RuleCard, provision: models.Provision
+) -> models.Clause:
+    """Pick the contract clause that shares the most words with the card (F11)."""
+    needles = _tokens(card.interpretation_text)
+    needles |= _tokens(provision.text[card.span_start : card.span_end])
+    requires = card.predicate_json.get("requires") if isinstance(card.predicate_json, dict) else []
+    for item in requires or []:
+        needles |= _tokens(str(item).replace("_", " "))
+
+    def score(clause: models.Clause) -> int:
+        return len(needles & _tokens(f"{clause.heading} {clause.text}"))
+
+    return sorted(clauses, key=lambda clause: (-score(clause), str(clause.id)))[0]
+
+
+def _proof_for_card(
+    claim_id: str, as_of: str, card: models.RuleCard, provision: models.Provision
+) -> dict[str, Any]:
+    """A proof that cites this card's stored span (F11)."""
+    return {
+        "claim_id": claim_id,
+        "as_of": as_of,
+        "premises": [],
+        "steps": [
+            {
+                "kind": "cite_rule",
+                "rule_card_id": str(card.id),
+                "citation": {
+                    "source_version_id": str(provision.source_version_id),
+                    "provision_id": str(provision.id),
+                    "span": [int(card.span_start), int(card.span_end)],
+                    "sha256": str(provision.text_sha256),
+                },
+            },
+            {"kind": "conclude", "conclusion": "holds"},
+        ],
+        "conclusion": "holds",
+    }
+
+
+def ensure_rule_card_findings(session: Session) -> list[str]:
+    """Ensure each loaded rule card has one current dependent finding (F11).
+
+    Impact only marks findings that already depend on a changed provision.
+    Ids, questions and citations come from the card and the clause text, so
+    a new card participates without a special case. Existing rows are kept.
+    """
+    clauses = list(
+        session.execute(sa.select(models.Clause).order_by(models.Clause.id)).scalars().all()
+    )
+    if not clauses:
+        return []
+    created: list[str] = []
+    cards = list(
+        session.execute(sa.select(models.RuleCard).order_by(models.RuleCard.id)).scalars().all()
+    )
+    for card in cards:
+        finding_id = f"FND-{card.id}"
+        if session.get(models.Finding, finding_id) is not None:
+            continue
+        provision = session.get(models.Provision, card.provision_id)
+        if provision is None:
+            continue
+        claim_id = f"C-{card.id}"
+        clause = _clause_for_card(clauses, card, provision)
+        as_of = str(provision.effective_from)
+        if session.get(models.Claim, claim_id) is None:
+            question = " ".join(str(card.interpretation_text).split())
+            session.add(
+                models.Claim(
+                    id=claim_id,
+                    matter_id=MATTER_ID,
+                    clause_id=str(clause.id),
+                    claim_type=str(card.claim_type),
+                    params_json={"requires": list((card.predicate_json or {}).get("requires", []))},
+                    question_text=question,
+                    as_of=as_of,
+                    created_at=SEED_EXTRACT_CREATED_AT,
+                )
+            )
+        band = "low" if card.trust_class == "ai_inferred" else "medium"
+        session.add(
+            models.Finding(
+                id=finding_id,
+                claim_id=claim_id,
+                version_no=1,
+                status="FOLLOWS",
+                confidence_band=band,
+                proof_json=_proof_for_card(claim_id, as_of, card, provision),
+                as_of=as_of,
+                source_version_ids_json=[str(provision.source_version_id)],
+                premise_ids_json=[],
+                rule_card_ids_json=[str(card.id)],
+                checker_report_json=None,
+                run_id=None,
+                created_at=SEED_EXTRACT_CREATED_AT,
+            )
+        )
+        session.add(
+            models.FindingEvent(
+                id=f"FE-{card.id}",
+                finding_id=finding_id,
+                state="CURRENT",
+                reason="seeded from rule card",
+                caused_by_type="rule_card",
+                caused_by_id=str(card.id),
+                created_at=SEED_EXTRACT_CREATED_AT,
+            )
+        )
+        graph.add_edge(
+            session,
+            src_type="finding",
+            src_id=finding_id,
+            dst_type="rule_card",
+            dst_id=str(card.id),
+            rel="DEPENDS_ON",
+        )
+        created.append(finding_id)
+    if created:
+        session.commit()
+    return created
+
+
 def parse_contract(text: str) -> list[tuple[str, str, str]]:
     """Parse `## <ref> <heading>` sections; refs must match EXPECTED_REFS (T1.4)."""
     clauses: list[tuple[str, str, str]] = []
@@ -264,6 +397,7 @@ def seed_demo(
         session.commit()
     ensure_demo_92_claim(session)
     fact_count = _seed_extraction_facts(session, corpus_root)
+    ensure_rule_card_findings(session)
     clause_count = session.execute(
         sa.select(sa.func.count()).select_from(models.Clause)
     ).scalar()

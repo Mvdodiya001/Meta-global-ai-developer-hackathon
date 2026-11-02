@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Health(BaseModel):
@@ -150,7 +150,14 @@ class ProofPremise(BaseModel):
 
 
 class ProofStep(BaseModel):
-    """One checker step (kinds land fully in T3.2)."""
+    """One checker step (kinds land fully in T3.2).
+
+    Gate fix: carries every checker step field (compare/evidence/role
+    included) and allows future kinds, so a proof read back from the API
+    round-trips into /api/proofs/verify without losing its evidence.
+    """
+
+    model_config = ConfigDict(extra="allow")
 
     kind: str
     fact_id: str | None = None
@@ -159,6 +166,13 @@ class ProofStep(BaseModel):
     provision_id: str | None = None
     as_of: str | None = None
     conclusion: str | None = None
+    clause_id: str | None = None
+    quote: str | None = None
+    value: float | None = None
+    op: str | None = None
+    bound: float | None = None
+    party: str | None = None
+    role: str | None = None
 
 
 class Proof(BaseModel):

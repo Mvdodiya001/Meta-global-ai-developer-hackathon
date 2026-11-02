@@ -43,6 +43,7 @@ export function ClauseReviewPage() {
   const [traceEvents, setTraceEvents] = useState<ToolCall[]>([])
   const [finding, setFinding] = useState<Finding | null>(null)
   const [lawyerReviewed, setLawyerReviewed] = useState(false)
+  const [reviewing, setReviewing] = useState(false)
   const [challengerOn, setChallengerOn] = useState(true)
   const [challengerReport, setChallengerReport] = useState<ChallengerReportView | null>(
     null,
@@ -83,6 +84,7 @@ export function ClauseReviewPage() {
     setTraceEvents([])
     setFinding(null)
     setLawyerReviewed(false)
+    setReviewing(false)
     setChallengerReport(null)
     setNotice(null)
 
@@ -112,6 +114,33 @@ export function ClauseReviewPage() {
       setNotice(err instanceof Error ? err.message : 'Verification failed')
     }
   }, [asOf, phase, question, selectedClauseId])
+
+  async function markLawyerReviewed() {
+    if (!finding || lawyerReviewed || reviewing) {
+      return
+    }
+    setReviewing(true)
+    setNotice(null)
+    try {
+      const result = await api.reviewFinding(finding.id, { action: 'approve' })
+      let next = finding
+      try {
+        next = await api.findingById(finding.id)
+      } catch {
+        next = finding
+      }
+      setFinding({
+        ...next,
+        state: result.state || 'REVIEWED',
+        ai_draft_label: 'Reviewed by lawyer',
+      })
+      setLawyerReviewed(true)
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : 'Lawyer review failed')
+    } finally {
+      setReviewing(false)
+    }
+  }
 
   useEffect(() => {
     return () => abortRef.current?.abort()
@@ -164,10 +193,11 @@ export function ClauseReviewPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-900"
-              onClick={() => setLawyerReviewed(true)}
+              disabled={lawyerReviewed || reviewing}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-900"
+              onClick={() => void markLawyerReviewed()}
             >
-              Mark lawyer-reviewed (demo)
+              {lawyerReviewed ? 'Lawyer-reviewed' : reviewing ? 'Saving review…' : 'Mark lawyer-reviewed'}
             </button>
           </div>
           <ProofSyllogism proof={finding.proof} />

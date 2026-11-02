@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClauseTrace",
-    "version": "v2"
+    "version": "v4"
   },
   "paths": {
     "/api/health": {
@@ -17,6 +17,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Alias",
+        "description": "Bare /health alias for load balancers and scanners (gate fix).",
+        "operationId": "health_alias_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Service index so root probes do not 404 (gate fix).",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Root  Get"
                 }
               }
             }
@@ -2412,14 +2454,92 @@
               }
             ],
             "title": "Conclusion"
+          },
+          "clause_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clause Id"
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "op": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Op"
+          },
+          "bound": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound"
+          },
+          "party": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
           }
         },
+        "additionalProperties": true,
         "type": "object",
         "required": [
           "kind"
         ],
         "title": "ProofStep",
-        "description": "One checker step (kinds land fully in T3.2)."
+        "description": "One checker step (kinds land fully in T3.2).\n\nGate fix: carries every checker step field (compare/evidence/role\nincluded) and allows future kinds, so a proof read back from the API\nround-trips into /api/proofs/verify without losing its evidence."
       },
       "ProofVerifyBody": {
         "properties": {

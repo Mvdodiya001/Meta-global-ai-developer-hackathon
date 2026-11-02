@@ -25,6 +25,7 @@ import type {
   Proof,
   ProofVerifyBody,
   ProofVerifyResult,
+  ReviewResult,
   ReverifyResult,
   SourceList,
   SourceVersionList,
@@ -172,6 +173,10 @@ export async function fetchMockChallengeFact(factId: string): Promise<FactAction
 
 export async function fetchMockVerifyProof(body: ProofVerifyBody): Promise<ProofVerifyResult> {
   return verifyProof(mockData.finding.proof, body.proof as Proof)
+}
+
+export async function fetchMockReviewFinding(findingId: string): Promise<ReviewResult> {
+  return { finding_id: findingId, state: 'REVIEWED' }
 }
 
 export async function pollMockRunEvents(

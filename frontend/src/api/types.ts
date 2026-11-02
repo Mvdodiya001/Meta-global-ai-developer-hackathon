@@ -23,6 +23,8 @@ export type ProofVerifyBody = components['schemas']['ProofVerifyBody']
 export type DocumentList = components['schemas']['DocumentList']
 export type IngestVersionBody = components['schemas']['IngestVersionBody']
 export type Run = components['schemas']['Run']
+export type ReviewBody = components['schemas']['ReviewBody']
+export type ReviewResult = components['schemas']['ReviewResult']
 
 export type TrustClass =
   | 'document_extracted'

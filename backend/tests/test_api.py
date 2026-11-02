@@ -359,6 +359,133 @@ def test_user_date_question_end_to_end(
     assert current.json()["status"] == "FOLLOWS"
 
 
+def test_demo_question_with_mismatched_clause_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ask-502: question naming clause 9.2 wins over a stale clause_id.
+
+    Regression: the UI sent clause_id CL-03 (clause 3 selected) with the
+    default 9.2 question. The loop prompt embeds the target clause text, so
+    the replay hash missed every cassette and the endpoint returned 502.
+    The claim must be stored against clause 9.2 (CL-10), not clause 3.
+    """
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    created = post(
+        app,
+        "/api/claims",
+        {
+            "clause_id": "CL-03",
+            "question": seed.DEMO_92_QUESTION,
+            "as_of": seed.DEMO_92_AS_OF,
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["finding_id"] is not None
+    assert body["status"] == "FOLLOWS"
+    current = get(app, f"/api/claims/{body['claim_id']}/current")
+    assert current.json()["status"] == "FOLLOWS"
+    engine = init_db(str(tmp_path / "api.db"))
+    session = sessionmaker(bind=engine, future=True)()
+    claim = session.get(models.Claim, body["claim_id"])
+    assert claim is not None
+    assert claim.clause_id == "CL-10"
+    session.close()
+
+
+def test_unknown_question_returns_unknown_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Gate: an UNKNOWN-typed question decides UNKNOWN, never a 502.
+
+    Regression: create_claim ran the agent loop for UNKNOWN claims; the
+    loop has no recorded proof path for them, so replay raised 502 and no
+    finding was stored. The memory service decides UNKNOWN directly.
+    """
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    created = post(
+        app,
+        "/api/claims",
+        {
+            "clause_id": "CL-10",
+            "question": "Is this agreement fair to Nimbus?",
+            "as_of": seed.DEMO_92_AS_OF,
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["status"] == "UNKNOWN"
+    assert body["finding_id"] is not None
+    current = get(app, f"/api/claims/{body['claim_id']}/current")
+    assert current.json()["status"] == "UNKNOWN"
+    assert current.json()["checker_report"] is None
+
+
+def test_challenger_miss_still_decides(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Gate: CHALLENGER=on with no recorded review must not 502 the ask.
+
+    Regression: the 2025-10-17 proof has no challenger cassette, so the
+    second pass raised CassetteMissing inside decide_finding and the
+    whole POST /api/claims returned 502 with no finding stored. An
+    unavailable challenger forces REQUIRES_REVIEW instead.
+    """
+    monkeypatch.setenv("CHALLENGER", "on")
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    created = post(
+        app,
+        "/api/claims",
+        {
+            "clause_id": "CL-10",
+            "question": seed.DEMO_92_QUESTION,
+            "as_of": "2025-10-17",
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["finding_id"] is not None
+    assert body["status"] == "REQUIRES_REVIEW"
+    current = get(app, f"/api/claims/{body['claim_id']}/current")
+    assert current.json()["challenger_report"] is None
+
+
+def test_proof_round_trip_verifies(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Gate: a proof read back from the API verifies as-is; tamper fails.
+
+    Regression: ProofStep dropped checker fields (clause_id, quote) and
+    emitted null keys, so the untampered proof from GET current failed
+    /api/proofs/verify with CITATION_MALFORMED — the Screen 3 tamper demo
+    could not distinguish tampered from untampered.
+    """
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    created = post(
+        app,
+        "/api/claims",
+        {
+            "clause_id": "CL-10",
+            "question": seed.DEMO_92_QUESTION,
+            "as_of": seed.DEMO_92_AS_OF,
+        },
+    )
+    assert created.status_code == 200, created.text
+    claim_id = created.json()["claim_id"]
+    proof = get(app, f"/api/claims/{claim_id}/current").json()["proof"]
+    steps = {step["kind"]: step for step in proof["steps"]}
+    assert steps["contains_element"]["clause_id"] == "CL-10"
+    assert steps["contains_element"]["quote"]
+    good = post(app, "/api/proofs/verify", {"claim_id": claim_id, "proof": proof})
+    assert good.status_code == 200, good.text
+    assert good.json()["valid"] is True, good.text
+    proof["premises"][0]["statement"] = "TAMPERED STATEMENT"
+    bad = post(app, "/api/proofs/verify", {"claim_id": claim_id, "proof": proof})
+    assert bad.json()["valid"] is False
+    codes = [error["code"] for error in bad.json()["errors"]]
+    assert "PREMISE_MISMATCH" in codes
+
+
 def test_challenger_report_returned(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -534,3 +661,65 @@ def test_demo_scenario(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert scenario.json()["scenario"] == "stale-demo"
     assert scenario.json()["steps"][0] == "seeded demo database"
     assert post(app, "/api/demo/scenario/nope", {}).status_code == 404
+
+
+def test_reingest_stored_version_stales_card_dependents(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """F11: ingesting a version that is already stored still marks dependents stale."""
+    monkeypatch.setenv("CHALLENGER", "off")
+    monkeypatch.setenv("LLM_MODE", "replay")
+    app = real_app(tmp_path, monkeypatch, lambda db: seed.seed_demo(db, CORPUS_ROOT))
+    simulated: dict[str, Any] | None = None
+    source_id = ""
+    for source in get(app, "/api/sources").json()["sources"]:
+        versions = get(app, f"/api/sources/{source['id']}/versions").json()["versions"]
+        match = next(
+            (
+                version
+                for version in versions
+                if version["is_simulated"] and version["supersedes_id"]
+            ),
+            None,
+        )
+        if match is not None:
+            simulated = match
+            source_id = str(source["id"])
+            break
+    assert simulated is not None
+    diff = get(
+        app,
+        f"/api/source-versions/{simulated['id']}/diff?against={simulated['supersedes_id']}",
+    ).json()
+    created = post(
+        app,
+        f"/api/sources/{source_id}/ingest",
+        {
+            "version": {
+                "version_label": simulated["version_label"],
+                "published_on": simulated["published_on"],
+                "effective_from": simulated["effective_from"],
+                "provisions": [
+                    {
+                        "key": row["key"],
+                        "text": row["text"],
+                        "effective_from": row["effective_from"],
+                        "effective_until": row["effective_until"],
+                    }
+                    for row in diff["after"]
+                ],
+            }
+        },
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["source_version_id"] == simulated["id"]
+    impact = get(app, f"/api/impact/{created.json()['impact_report_id']}").json()
+    assert impact["affected"]
+    assert {row["state"] for row in impact["affected"]} == {"STALE"}
+    reverified = post(app, f"/api/impact/{impact['id']}/reverify", {"proofs": {}})
+    assert reverified.status_code == 200, reverified.text
+    assert reverified.json()["current"]
+    for finding_id in reverified.json()["current"]:
+        finding = get(app, f"/api/findings/{finding_id}")
+        assert finding.status_code == 200, finding.text
+        assert finding.json()["status"] == "REQUIRES_REVIEW"

@@ -80,8 +80,10 @@ describe('ClauseReviewPage', () => {
     await screen.findByRole('heading', { name: /Finding FND-001/i })
 
     fireEvent.click(screen.getByRole('button', { name: /mark lawyer-reviewed/i }))
-    const finding = screen.getByRole('article', { name: /Finding FND-001/i })
-    expect(finding).toHaveTextContent('Lawyer-reviewed')
+    const finding = await screen.findByRole('article', { name: /Finding FND-001/i })
+    await waitFor(() => {
+      expect(finding).toHaveTextContent('Lawyer-reviewed')
+    })
     expect(finding).not.toHaveTextContent('AI draft')
   })
 })

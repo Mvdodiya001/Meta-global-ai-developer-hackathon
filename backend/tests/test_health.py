@@ -19,3 +19,18 @@ def test_health_returns_ok() -> None:
     response = asyncio.run(_get("/api/health"))
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_root_and_health_alias() -> None:
+    """Gate: GET / and GET /health answer instead of 404.
+
+    Browsers, scanners and load balancers probe the root and bare /health;
+    both point at the canonical /api/health so nothing 404s on arrival.
+    """
+    root = asyncio.run(_get("/"))
+    assert root.status_code == 200
+    assert root.json()["status"] == "ok"
+    assert root.json()["health"] == "/api/health"
+    alias = asyncio.run(_get("/health"))
+    assert alias.status_code == 200
+    assert alias.json() == {"status": "ok"}

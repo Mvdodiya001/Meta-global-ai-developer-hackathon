@@ -466,6 +466,21 @@ def _checker_stores(session: Session) -> dict[str, dict[str, Any]]:
     }
 
 
+def _drop_null_fields(value: Any) -> Any:
+    """Copy a proof without explicit null fields (gate fix).
+
+    Proofs read back from the API carry `citation: null` etc. from the
+    response schema; JSON null means "absent" at this service boundary.
+    The checker itself stays strict for direct callers — a non-object
+    citation still fails there.
+    """
+    if isinstance(value, dict):
+        return {k: _drop_null_fields(v) for k, v in value.items() if v is not None}
+    if isinstance(value, list):
+        return [_drop_null_fields(item) for item in value]
+    return value
+
+
 def verify_proof(
     session: Session, matter_id: str, claim_id: Any, proof: Any
 ) -> dict[str, Any]:
@@ -497,7 +512,7 @@ def verify_proof(
         }
     stores = _checker_stores(session)
     report = checker.verify(
-        proof,
+        _drop_null_fields(proof),
         premises,
         stores["provisions"],
         stores["rule_cards"],

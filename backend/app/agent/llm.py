@@ -96,7 +96,11 @@ def load_cassette(cache_dir: str | Path, request_sha: str) -> dict[str, Any]:
     """Load a raw cached response or raise (T2.1)."""
     path = cache_file(cache_dir, request_sha)
     if not path.exists():
-        raise CassetteMissing(f"no cassette for request {request_sha} in {cache_dir}")
+        raise CassetteMissing(
+            f"no cassette for request {request_sha} in {cache_dir}: "
+            "replay only serves recorded requests — run with LLM_MODE=live "
+            "and a key, or `make reset-demo` then `make record`"
+        )
     payload = cast("dict[str, Any]", json.loads(path.read_text(encoding="utf-8")))
     return cast("dict[str, Any]", payload["response"])
 

@@ -9,6 +9,7 @@ SQLAlchemy calls are short demo queries.
 """
 
 import functools
+import re
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -445,6 +446,32 @@ async def extract_document(
     }
 
 
+_CLAUSE_REF_RE = re.compile(r"\bclause\s+(\d+(?:\.\d+)?)\b", re.IGNORECASE)
+
+
+def _resolve_clause(
+    session: Session, clause: models.Clause, question: str
+) -> models.Clause:
+    """Target the clause the question names, when it names one (ask-502).
+
+    The loop prompt embeds the target clause text verbatim, so a claim
+    stored against the wrong clause can never replay (502) and any proof
+    would be about the wrong text. An explicit "clause <ref>" in the
+    question is authoritative: resolve it inside the same document
+    version. No ref (or an unknown ref) keeps the caller's clause.
+    """
+    match = _CLAUSE_REF_RE.search(question)
+    if match is None or match.group(1) == clause.ref:
+        return clause
+    target = session.execute(
+        sa.select(models.Clause).where(
+            models.Clause.document_version_id == clause.document_version_id,
+            models.Clause.ref == match.group(1),
+        )
+    ).scalars().first()
+    return target if target is not None else clause
+
+
 @router.post("/api/claims", response_model=schemas.ClaimCreated)
 @endpoint
 async def create_claim(body: schemas.ClaimRequest, session: Session = Depends(db_session)) -> Any:
@@ -454,6 +481,7 @@ async def create_claim(body: schemas.ClaimRequest, session: Session = Depends(db
     clause = session.get(models.Clause, body.clause_id)
     if clause is None:
         raise SourceUnavailable(f"unknown clause: {body.clause_id}")
+    clause = _resolve_clause(session, clause, body.question)
     inventory = claims.default_inventory()
     draft = claims.structure_claim(
         body.question, inventory, body.as_of, session=session, cache_dir=CASSETTES_DIR
@@ -481,6 +509,29 @@ async def create_claim(body: schemas.ClaimRequest, session: Session = Depends(db
         )
     )
     session.commit()
+    if draft.claim_type not in memory.SUPPORTED_TYPES:
+        # UNKNOWN questions have no proof to draft: the memory service
+        # decides UNKNOWN directly (gate fix; the loop 502'd in replay).
+        finding = memory.decide_finding(
+            session,
+            claim_id=claim_id,
+            proof={
+                "claim_id": claim_id,
+                "as_of": body.as_of,
+                "conclusion": "",
+                "premises": [],
+                "steps": [],
+                "explanation": draft.explanation,
+            },
+            run_id=run_id,
+            challenger_cache_dir=CASSETTES_DIR,
+        )
+        return {
+            "claim_id": claim_id,
+            "run_id": run_id,
+            "finding_id": str(finding.id),
+            "status": str(finding.status),
+        }
     loop_result = loop_agent.run_verify(
         session,
         claim_id=claim_id,
@@ -792,6 +843,7 @@ async def ingest_source(
         )
     ).scalar_one_or_none()
     if same is not None:
+        impact.apply_version(session, str(same))
         return {"source_version_id": str(same), "impact_report_id": f"IMP-{same}"}
     current = session.execute(
         sa.select(models.SourceVersion.id).where(
