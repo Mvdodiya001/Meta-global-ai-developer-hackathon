@@ -45,7 +45,7 @@ def test_seed_demo_matter_and_clauses(tmp_path: Path) -> None:
         assert len(nine_two) == 1
         assert "outside India" in nine_two[0].text
         assert len(result["versions"]) == 5
-        assert len(result["cards"]) == 7
+        assert len(result["cards"]) == 8
     finally:
         session.close()
 
@@ -62,7 +62,7 @@ def test_seed_is_idempotent(tmp_path: Path) -> None:
             (models.Matter, 1),
             (models.Clause, 12),
             (models.SourceVersion, 5),
-            (models.RuleCard, 7),
+            (models.RuleCard, 8),
             (models.Fact, 13),
         ):
             count = conn.execute(

@@ -26,6 +26,12 @@ const STATUS_META: Record<
     className:
       'border-rose-400 bg-rose-50 text-rose-950 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-100',
   },
+  CONFLICTING: {
+    label: 'Conflicting',
+    icon: '≠',
+    className:
+      'border-violet-400 bg-violet-50 text-violet-950 dark:border-violet-600 dark:bg-violet-950/40 dark:text-violet-100',
+  },
   STALE: {
     label: 'Stale',
     icon: '↻',

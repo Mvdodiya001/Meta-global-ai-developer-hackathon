@@ -37,3 +37,4 @@ export type FindingStatus =
   | 'RULED_OUT'
   | 'UNKNOWN'
   | 'REQUIRES_REVIEW'
+  | 'CONFLICTING'

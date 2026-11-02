@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClauseTrace",
-    "version": "v4"
+    "version": "v6"
   },
   "paths": {
     "/api/health": {
@@ -1158,7 +1158,7 @@
     "/api/counterfactual": {
       "post": {
         "summary": "Counterfactual",
-        "description": "What-if traversal is stretch; report it as unavailable (F19).",
+        "description": "What-if traversal: dry-run a version, write nothing (T7.3, F19).",
         "operationId": "counterfactual_api_counterfactual_post",
         "requestBody": {
           "content": {
@@ -1185,6 +1185,53 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CounterfactualResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reverify-list": {
+      "get": {
+        "summary": "Reverify List",
+        "description": "Findings awaiting re-verification in a matter (T7.3, T7.4).\n\nSTALE findings (source changed under them) and CONFLICTING findings\n(cited rule cards contradict each other) both need a fresh verified\ndecision before they can be relied on.",
+        "operationId": "reverify_list_api_reverify_list_get",
+        "parameters": [
+          {
+            "name": "matter_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Matter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverifyList"
                 }
               }
             }
@@ -1590,6 +1637,36 @@
         "title": "ClauseList",
         "description": "Stub: clause list example (T0.7)."
       },
+      "CounterfactualAffected": {
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "title": "Finding Id"
+          },
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "would_remain_valid": {
+            "type": "boolean",
+            "title": "Would Remain Valid"
+          },
+          "logic": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Logic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "finding_id",
+          "claim_id",
+          "would_remain_valid",
+          "logic"
+        ],
+        "title": "CounterfactualAffected",
+        "description": "One finding under a counterfactual change (T7.3)."
+      },
       "CounterfactualResult": {
         "properties": {
           "available": {
@@ -1599,6 +1676,41 @@
           "note": {
             "type": "string",
             "title": "Note"
+          },
+          "source_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Version Id"
+          },
+          "changed_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Changed Keys",
+            "default": []
+          },
+          "affected": {
+            "items": {
+              "$ref": "#/components/schemas/CounterfactualAffected"
+            },
+            "type": "array",
+            "title": "Affected",
+            "default": []
+          },
+          "reverify_list": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reverify List",
+            "default": []
           },
           "nodes": {
             "items": {
@@ -1623,7 +1735,7 @@
           "note"
         ],
         "title": "CounterfactualResult",
-        "description": "Read-only what-if traversal (F19, stretch)."
+        "description": "Read-only what-if traversal (F19, stretch T7.3)."
       },
       "DiffResult": {
         "properties": {
@@ -2657,6 +2769,45 @@
         "type": "object",
         "title": "ReverifyBody",
         "description": "Re-verify request body; proofs keyed by stale finding id (F12)."
+      },
+      "ReverifyList": {
+        "properties": {
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/ReverifyListItem"
+            },
+            "type": "array",
+            "title": "Findings",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "ReverifyList",
+        "description": "Findings awaiting re-verification for a matter (T7.3)."
+      },
+      "ReverifyListItem": {
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "title": "Finding Id"
+          },
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "finding_id",
+          "claim_id",
+          "reason"
+        ],
+        "title": "ReverifyListItem",
+        "description": "One finding awaiting re-verification (T7.3)."
       },
       "ReverifyResult": {
         "properties": {

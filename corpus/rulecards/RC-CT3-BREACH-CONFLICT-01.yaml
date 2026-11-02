@@ -1,0 +1,12 @@
+id: RC-CT3-BREACH-CONFLICT-01
+provision_id: PRV-DPDP-Act-2023-s8-6
+kind: interpretation
+claim_type: CT3
+trust_class: ai_inferred
+approved_by: demo-conflict-fixture
+requires: [no_breach_intimation_duty]
+span_start: 0
+span_end: 189
+interpretation: |
+  DEMO CONFLICTING INTERPRETATION (fictional, for the T7.4 conflict demo only): on this reading the intimation wording in s8(6) is directory rather than mandatory, so a clause could meet the claim without assigning an intimation duty. This card deliberately contradicts RC-CT3-BREACH-01; citing both in one proof must decide CONFLICTING. Not a legal position.
+span_text: (6) In the event of a personal data breach, the Data Fiduciary shall give the Board and each affected Data Principal, intimation of such breach in such form and manner as may be prescribed.

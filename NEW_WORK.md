@@ -21,6 +21,8 @@ Judges: this file shows what is new. Fill the "Dates" and "Commit range" columns
 | Challenger (Muse Spark second pass + panel) | 2026-10-30 | `9c65591` | Muse Code / Cursor |
 | Live API wire for the demo path | 2026-10-30 | `9c65591` | Cursor |
 | Seed extraction + ask-flow replay after 13 premises | 2026-11-02 | 82fc307 | Muse Code / Cursor |
-| Scenario tests, deploy | — | not built | — |
+| Stored-version impact, UNKNOWN without the loop, lawyer-review API, contract v4 | 2026-11-02 | 59025a7 | Muse Code / Cursor |
+| Scenario tests (decoy, future provision, stale chain, matter isolation, source failure; UNKNOWN, tamper, and challenger in the API tests) | 2026-11-02 | 59025a7 | Muse Code |
+| Backend image | 2026-11-02 | 59025a7 | Dockerfile only; Compose and an off-machine check are not done |
 ## Third-party material (not new work)
 Open-source libraries and official legal texts are listed with licences and URLs in `NOTICE.md`.

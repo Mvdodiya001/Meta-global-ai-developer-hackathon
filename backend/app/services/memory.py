@@ -29,6 +29,7 @@ from app.core.errors import (
     MemoryServiceError,
 )
 from app.services.graph import is_current_finding, is_current_version
+from checker import proplogic
 from checker import verify as checker
 
 SUPPORTED_TYPES = frozenset({"CT1", "CT2", "CT3", "CT4"})
@@ -36,7 +37,35 @@ SUPPORTED_TYPES = frozenset({"CT1", "CT2", "CT3", "CT4"})
 CONCLUSION_HOLDS = "holds"
 CONCLUSION_FAILS = "does not hold"
 
-STATUSES = ("FOLLOWS", "RULED_OUT", "UNKNOWN", "REQUIRES_REVIEW")
+STATUSES = ("FOLLOWS", "RULED_OUT", "UNKNOWN", "REQUIRES_REVIEW", "CONFLICTING")
+
+
+def _cards_conflict(cards: dict[str, models.RuleCard]) -> bool:
+    """Whether the cited cards' requirements are jointly unsatisfiable (T7.4).
+
+    Each card's `requires` list becomes propositional formulas: `x` asserts
+    requirement x, `no_x`/`not_x` asserts its negation. Two cards conflict
+    when the combined set is inconsistent — decided by truth table in
+    `checker.proplogic`, never by the model.
+    """
+    formulas: list[str] = []
+    for card in cards.values():
+        predicate = card.predicate_json if isinstance(card.predicate_json, dict) else {}
+        requires = predicate.get("requires", []) if isinstance(predicate, dict) else []
+        if not isinstance(requires, list):
+            continue
+        for item in requires:
+            if not isinstance(item, str) or not item:
+                continue
+            if item.startswith("no_"):
+                formulas.append(f"~{item[3:]}")
+            elif item.startswith("not_"):
+                formulas.append(f"~{item[4:]}")
+            else:
+                formulas.append(item)
+    if len(cards) < 2 or not formulas:
+        return False
+    return not proplogic.entails(formulas, "conflict_probe")["consistent"]
 
 
 def _utcnow() -> str:
@@ -430,10 +459,13 @@ def decide_finding(
     provisions = _cited_provisions(session, proof)
     versions = _cited_versions(session, verdict["cited_source_versions"])
 
+    cards_conflict = _cards_conflict(cards)
     if not verdict["valid"]:
         status = "REQUIRES_REVIEW"
     elif any(fact.trust_class == "disputed" for fact in facts.values()):
         status = "REQUIRES_REVIEW"
+    elif cards_conflict:
+        status = "CONFLICTING"
     elif challenger_blocking:
         status = "REQUIRES_REVIEW"
     elif challenger_failed:
@@ -448,7 +480,12 @@ def decide_finding(
         status = "REQUIRES_REVIEW"
 
     band = _confidence_band(
-        as_of, facts, cards, provisions, versions, challenger_note or challenger_failed
+        as_of,
+        facts,
+        cards,
+        provisions,
+        versions,
+        challenger_note or challenger_failed or cards_conflict,
     )
     return _store_decision(
         session,

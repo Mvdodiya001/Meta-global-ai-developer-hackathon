@@ -29,6 +29,9 @@ Before each agent session, commit a checkpoint so `git diff` shows only that ses
 | Day 3 | 9c65591 | CU | T5.3, T6.2, T5.4 | Screen 3, challenger panel, live v1 wire; same commit |
 | 2026-11-02 | 82fc307 | MC | G8 seed + ask replay claim-id bind | Screen 1 FOLLOWS in browser |
 | 2026-11-02 | 82fc307 | CU | Screen 1 defaults, session claim_id, proxy 8001 | vitest 27/27 earlier |
+| 2026-11-02 | 6b62985 | mixed | ask loop + cassettes, contract v2 | pushed before 82fc307 |
+| 2026-11-02 | 6264d22 | docs | progress snapshot | status still said the gate was open |
+| 2026-11-02 | 59025a7 | mixed | stored-version impact, UNKNOWN without the loop, lawyer review, contract v4, T8.1 scenarios, Dockerfile | replay walk after reset: FOLLOWS, STALE, REQUIRES_REVIEW. $0 |
 
 ## Decisions and incidents
 | Date | What happened / decided | Action taken |
@@ -46,6 +49,7 @@ Before each agent session, commit a checkpoint so `git diff` shows only that ses
 | Day 3 | `make record` loads `.env` and fails fast with no key | key not printed |
 | Day 3 | Contract v0 → v1 in 9c65591 | real router when `API_STUB=0`; stub stays the default |
 | Day 3 | `POST /api/claims` does not start the agent loop | Screen 1 cannot finish a finding; core gate not green |
+| 2026-11-02 | That claims gap was fixed in 6b62985. Gate closed in 59025a7 | Replay after `make reset-demo`: 9.2 Ask FOLLOWS, simulated ingest STALE, re-verify REQUIRES_REVIEW. Approving facts before the next Ask 502s |
 | Day 3 | Template is `env.example`, not `.env.example` | no secret in that file; `.env` stays gitignored |
 | Day 3 | Logged model spend about $0.88 | billing page not re-checked |
 
@@ -55,5 +59,5 @@ Before each agent session, commit a checkpoint so `git diff` shows only that ses
 | SP1 contract v1 | 2026-10-30 | T4.5 log | `openapi` info.version v1; commit 9c65591 |
 | SP2 vertical slice | 2026-10-30 | T2.5 log | clause 9.2 proof accepted in replay tests; commit 9c65591; `python -m app.cli` not checked |
 | SP3 impact API | 2026-10-30 | T4.5 log | impact ids `IMP-{version}` from STALE events; commit 9c65591 |
-| SP4 core gate | | | not reached. Claims route does not run the loop. Browser not verified on this app |
+| SP4 core gate | 2026-11-02 | replay walk on a reset database | FOLLOWS, then STALE on the s8(6) dependent only, then REQUIRES_REVIEW. Commit 59025a7. Server was `API_STUB=0` `LLM_MODE=replay` `CHALLENGER=on` |
 | SP5 freeze | | | |

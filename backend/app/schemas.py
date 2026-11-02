@@ -422,13 +422,40 @@ class ProofVerifyResult(BaseModel):
     cited_source_versions: list[str]
 
 
+class CounterfactualAffected(BaseModel):
+    """One finding under a counterfactual change (T7.3)."""
+
+    finding_id: str
+    claim_id: str
+    would_remain_valid: bool
+    logic: dict[str, Any]
+
+
 class CounterfactualResult(BaseModel):
-    """Read-only what-if traversal (F19, stretch)."""
+    """Read-only what-if traversal (F19, stretch T7.3)."""
 
     available: bool
     note: str
+    source_version_id: str | None = None
+    changed_keys: list[str] = []
+    affected: list[CounterfactualAffected] = []
+    reverify_list: list[str] = []
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
+
+
+class ReverifyListItem(BaseModel):
+    """One finding awaiting re-verification (T7.3)."""
+
+    finding_id: str
+    claim_id: str
+    reason: str
+
+
+class ReverifyList(BaseModel):
+    """Findings awaiting re-verification for a matter (T7.3)."""
+
+    findings: list[ReverifyListItem] = []
 
 
 class DemoResetResult(BaseModel):

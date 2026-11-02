@@ -298,3 +298,36 @@ At session start: read `docs/logs/MUSE_CODE_LOG.md` (read-only). If the latest `
 ## [impact-reingest] VERIFIED · 2026-11-02 11:36 IST
 - Ingest on the Source change page returned 200 for the stored simulated version. Impact listed `FND-RC-CT3-BREACH-01` as STALE; the other findings stayed current. Debug logging removed after that run.
 - Credit spend: $0
+
+## [docs-gate] DONE · 2026-11-02 12:02 IST
+- Task: Bring status docs in line with the green core gate and commit 59025a7
+- Built against: contract v4
+- Files changed: `PROGRESS.md`, `docs/logs/HUMAN_LOG.md`, `NEW_WORK.md`, `docs/TASKS.md`, `docs/logs/CURSOR_LOG.md`
+- What changed: PROGRESS now says the replay gate is green and contract is v4. HUMAN_LOG records 59025a7 and SP4. NEW_WORK lists the impact/UNKNOWN/review work, the scenario tests, and the Dockerfile-only deploy gap. T8.1 is ticked. T7 and T8.2–T9 stay open.
+- Checks run: none (docs only)
+- Decisions / assumptions: human asked for the docs update. Did not rewrite old agent-log entries.
+- Contract change: none
+- Requests: none
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Record the green core gate and contract v4`
+
+## [T7.4-ui] STARTED · 2026-11-02 13:24 IST
+- Task: CONFLICTING status badge + regenerate API types for contract v6
+- Built against: contract v6
+
+## [T7.4-ui] DONE · 2026-11-02 13:25 IST
+- Task: CONFLICTING status badge + regenerate API types for contract v6
+- Built against: contract v6
+- Files changed: `frontend/src/api/schema.d.ts`, `frontend/src/api/types.ts`, `frontend/src/components/badges/StatusBadge.tsx`, `docs/logs/CURSOR_LOG.md`
+- What changed: regenerated types from openapi v6. FindingStatus now includes CONFLICTING. StatusBadge shows "≠ Conflicting" with light/dark violet border classes. CONFLICTING is a status, not a state, so STALE/SUPERSEDED still win only on those states. No demo finding added; no exhaustive mock list needed updating.
+- Checks run: `make check-frontend` → pass (oxlint 0; vitest 28/28). Extra: `npx tsc -b` → pass.
+- Decisions / assumptions: memory service sets CONFLICTING; the UI only displays it. Copy is "Conflicting", not legal advice.
+- Contract change: none (consumed v6; did not edit openapi)
+- Requests: none
+- UI rules checked: status is text + icon, not color alone; light and dark classes present; disclaimer unchanged
+- New-work note: none
+- Third-party added: none
+- Credit spend: $0
+- Ready for human commit: yes — suggested message: `Show CONFLICTING findings with a text badge; regenerate API types for v6`

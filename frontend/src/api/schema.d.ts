@@ -24,6 +24,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Health Alias
+         * @description Bare /health alias for load balancers and scanners (gate fix).
+         */
+        get: operations["health_alias_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Root
+         * @description Service index so root probes do not 404 (gate fix).
+         */
+        get: operations["root__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/matters/{id}": {
         parameters: {
             query?: never;
@@ -515,9 +555,33 @@ export interface paths {
         put?: never;
         /**
          * Counterfactual
-         * @description What-if traversal is stretch; report it as unavailable (F19).
+         * @description What-if traversal: dry-run a version, write nothing (T7.3, F19).
          */
         post: operations["counterfactual_api_counterfactual_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reverify-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reverify List
+         * @description Findings awaiting re-verification in a matter (T7.3, T7.4).
+         *
+         *     STALE findings (source changed under them) and CONFLICTING findings
+         *     (cited rule cards contradict each other) both need a fresh verified
+         *     decision before they can be relied on.
+         */
+        get: operations["reverify_list_api_reverify_list_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -695,14 +759,47 @@ export interface components {
             clauses: components["schemas"]["Clause"][];
         };
         /**
+         * CounterfactualAffected
+         * @description One finding under a counterfactual change (T7.3).
+         */
+        CounterfactualAffected: {
+            /** Finding Id */
+            finding_id: string;
+            /** Claim Id */
+            claim_id: string;
+            /** Would Remain Valid */
+            would_remain_valid: boolean;
+            /** Logic */
+            logic: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * CounterfactualResult
-         * @description Read-only what-if traversal (F19, stretch).
+         * @description Read-only what-if traversal (F19, stretch T7.3).
          */
         CounterfactualResult: {
             /** Available */
             available: boolean;
             /** Note */
             note: string;
+            /** Source Version Id */
+            source_version_id?: string | null;
+            /**
+             * Changed Keys
+             * @default []
+             */
+            changed_keys: string[];
+            /**
+             * Affected
+             * @default []
+             */
+            affected: components["schemas"]["CounterfactualAffected"][];
+            /**
+             * Reverify List
+             * @default []
+             */
+            reverify_list: string[];
             /**
              * Nodes
              * @default []
@@ -1125,6 +1222,29 @@ export interface components {
             };
         };
         /**
+         * ReverifyList
+         * @description Findings awaiting re-verification for a matter (T7.3).
+         */
+        ReverifyList: {
+            /**
+             * Findings
+             * @default []
+             */
+            findings: components["schemas"]["ReverifyListItem"][];
+        };
+        /**
+         * ReverifyListItem
+         * @description One finding awaiting re-verification (T7.3).
+         */
+        ReverifyListItem: {
+            /** Finding Id */
+            finding_id: string;
+            /** Claim Id */
+            claim_id: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
          * ReverifyResult
          * @description Re-run outcome for stale findings (F12).
          */
@@ -1294,6 +1414,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    health_alias_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    root__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
         };
@@ -2090,6 +2252,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CounterfactualResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reverify_list_api_reverify_list_get: {
+        parameters: {
+            query?: {
+                matter_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReverifyList"];
                 };
             };
             /** @description Validation Error */

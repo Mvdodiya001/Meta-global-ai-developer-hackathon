@@ -37,6 +37,7 @@ from app.core.errors import (
     ToolError,
 )
 from app.db import default_db_path, get_engine
+from app.services import counterfactual as counterfactual_service
 from app.services import graph, impact, memory, premises, reverify, seed, sources
 
 router = APIRouter()
@@ -1143,15 +1144,57 @@ async def verify_proof(
 
 @router.post("/api/counterfactual", response_model=schemas.CounterfactualResult)
 @endpoint
-async def counterfactual(body: dict[str, Any] | None = None) -> Any:
-    """What-if traversal is stretch; report it as unavailable (F19)."""
-    _ = body
-    return {
-        "available": False,
-        "note": "Counterfactual mode lands after v1; use /api/graph for traversal.",
-        "nodes": [],
-        "edges": [],
-    }
+async def counterfactual(
+    body: dict[str, Any] | None = None, session: Session = Depends(db_session)
+) -> Any:
+    """What-if traversal: dry-run a version, write nothing (T7.3, F19)."""
+    payload = body or {}
+    version_id = payload.get("source_version_id")
+    if not isinstance(version_id, str) or not version_id:
+        return {
+            "available": False,
+            "note": "counterfactual needs a source_version_id to simulate",
+            "nodes": [],
+            "edges": [],
+        }
+    return counterfactual_service.run_counterfactual(session, version_id)
+
+
+@router.get("/api/reverify-list", response_model=schemas.ReverifyList)
+@endpoint
+async def reverify_list(
+    matter_id: str | None = None, session: Session = Depends(db_session)
+) -> Any:
+    """Findings awaiting re-verification in a matter (T7.3, T7.4).
+
+    STALE findings (source changed under them) and CONFLICTING findings
+    (cited rule cards contradict each other) both need a fresh verified
+    decision before they can be relied on.
+    """
+    if matter_id is None:
+        raise ValueError("matter_id is required")
+    _require_matter(session, matter_id)
+    findings = session.execute(
+        sa.select(models.Finding)
+        .join(models.Claim, models.Finding.claim_id == models.Claim.id)
+        .where(models.Claim.matter_id == matter_id)
+    ).scalars().all()
+    items = []
+    for finding in findings:
+        if _finding_state(session, str(finding.id)) == "STALE":
+            reason = "STALE"
+        elif str(finding.status) == "CONFLICTING":
+            reason = "CONFLICTING"
+        else:
+            continue
+        items.append(
+            {
+                "finding_id": str(finding.id),
+                "claim_id": str(finding.claim_id),
+                "reason": reason,
+            }
+        )
+    return {"findings": sorted(items, key=lambda item: item["finding_id"])}
 
 
 @router.post("/api/demo/reset")

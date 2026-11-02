@@ -570,3 +570,54 @@ _(no entries yet)_
 - Third-party added: none
 - Credit spend: none
 - Ready for human commit: yes — suggested message: `Add root and bare health routes so probes do not 404; contract v4`
+
+## [T7.3] STARTED · 2026-11-02 13:05 IST
+- Task: T7.3 Counterfactual mode (read-only graph traversal) + user additions
+- Scope: `backend/checker/proplogic.py` (new pure propositional-logic entailment: truth-table over parsed formulas, deterministic valid/not-valid with counterexample), `backend/app/services/counterfactual.py` (read-only dry run of impact: diff + dependents + per-finding entailment under the hypothetical change, NO writes), real `POST /api/counterfactual` + new `GET /api/reverify-list` (STALE findings awaiting re-verify; counterfactual response also returns its hypothetical `reverify_list`), tests first. Order T7.3 → T7.4 → T7.2 → T7.1 approved by user; T7.5 excluded. Checker core `verify.py` untouched; proplogic lives in `checker/` under the same isolation rules.
+
+## [T7.3] DONE · 2026-11-02 13:20 IST
+- Task: T7.3 Counterfactual mode + propositional-logic validity + reverify list
+- [CONTRACT v4 → v5] `POST /api/counterfactual` is real; new `GET /api/reverify-list`; Cursor: `npm run gen:api`
+- Files changed: `backend/checker/proplogic.py` (new: parser for `~ & | -> <->`, truth-table `entails` returning `{valid, consistent, counterexample, atoms}`, 20-atom cap, `PropLogicError`; pure stdlib, isolation scan passes), `backend/app/services/counterfactual.py` (new: read-only diff + dependent traversal; per-finding propositions — premise/rule/force/evidence atoms plus the proof's inference rule `(all atoms) -> conclusion_holds` — decided by `proplogic.entails`; atoms tied to changed provisions withheld so entailment fails deterministically), `backend/app/api.py` (counterfactual endpoint wired; new `GET /api/reverify-list?matter_id=` listing STALE findings), `backend/app/schemas.py` (CounterfactualResult extended additively; ReverifyList models), `backend/app/main.py` (v5), `backend/tests/test_proplogic.py` (new, 6 tests), `backend/tests/test_counterfactual.py` (new, 4 tests incl. no-writes row-count proof and endpoint tests), `backend/tests/test_contract_v0.py` (pin v5), `openapi/openapi.json` (regenerated, 31 paths), `openapi/examples/counterfactual.json` (regenerated), `docs/logs/MUSE_CODE_LOG.md`
+- Checks run: `make check-backend` → ruff clean, mypy clean, pytest **227/227**. Live on :8001 after `make reset-demo`: counterfactual for SV-DPDP-ACT-V2SIM → changed `[DPDP-Act-2023_s8(6)]`, affected `FND-RC-CT3-BREACH-01` with `would_remain_valid: false` and counterexample `{rule_RC_CT3_BREACH_01: false, conclusion_holds: false}`, `reverify_list: [FND-RC-CT3-BREACH-01]`; persistent `/api/reverify-list` stays empty (nothing actually staled — read-only proven live and by row-count test).
+- Decisions / assumptions: propositional validity is entailment, not checker re-run — the checker still decides real findings; counterfactual only asks whether the conclusion still *follows* if the changed provisions' atoms fall. Inconsistent premises never entail validity. Seeded per-card findings (from 59025a7) are legitimately part of the affected set. `GET /api/reverify-list` lists STALE today; CONFLICTING findings join it in T7.4.
+- Contract change: [CONTRACT v4 → v5] additive (new endpoint + optional fields on CounterfactualResult)
+- Requests: [REQ → CU] run `npm run gen:api` for v5; Screen 2 can now call `POST /api/counterfactual` with `{source_version_id}` and show `reverify_list` + the counterexample. [REQ → H] T7.4 decision still open: new CONFLICTING finding status (my recommendation) vs reuse REQUIRES_REVIEW.
+- New-work note: propositional-logic entailment engine + counterfactual dry run 2026-11-02
+- Third-party added: none (stdlib only)
+- Credit spend: none (deterministic; no model calls)
+- Ready for human commit: yes — suggested message: `T7.3: counterfactual dry run with propositional entailment and reverify list; contract v5`
+
+## [T7.4] STARTED · 2026-11-02 13:15 IST
+- Task: T7.4 CONFLICTING state (two rule cards) — new finding status per user-approved recommendation
+- Scope: deterministic conflict detection in `services/memory.py` only (checker untouched): cited cards' `requires` become propositional formulas (`no_<x>`/`not_<x>` = negation of `<x>`), `checker.proplogic` decides consistency; inconsistent cited-card set on an otherwise valid proof → status CONFLICTING (band low). CONFLICTING findings join `GET /api/reverify-list` (reason CONFLICTING). Tests first in `backend/tests/test_conflicting.py`. No corpus card added (would change the 7-card count and the human's seeded gate); demo pair lives in test fixtures until H approves an 8th card.
+
+## [T7.4] DONE · 2026-11-02 13:32 IST
+- Task: T7.4 CONFLICTING state (two rule cards)
+- [CONTRACT v5 → v6] new finding status value CONFLICTING (status is a free string in the schema; no shape change); Cursor: `npm run gen:api` + a CONFLICTING badge
+- Files changed: `backend/app/services/memory.py` (`STATUSES` gains CONFLICTING; `_cards_conflict` builds propositional formulas from cited cards' `requires` — `no_x`/`not_x` negate `x` — and asks `checker.proplogic.entails` for consistency; precedence: checker-invalid → REQUIRES_REVIEW, disputed → REQUIRES_REVIEW, conflict → CONFLICTING, then challenger/tool-log/conclusion; conflict forces low band), `backend/app/api.py` (reverify-list also lists CONFLICTING findings with reason CONFLICTING), `backend/app/main.py` (v6), `backend/tests/test_conflicting.py` (new, 4 tests: conflict decides CONFLICTING + low band + card edges; agreeing cards still FOLLOWS; tampered proof still REQUIRES_REVIEW; CONFLICTING appears in reverify-list endpoint), `backend/tests/test_contract_v0.py` (pin v6), `openapi/openapi.json` (regenerated v6), `docs/logs/MUSE_CODE_LOG.md`
+- Checks run: conflict test failed first (decided FOLLOWS), then `make check-backend` → ruff clean, mypy clean, pytest **231/231**. Live :8001 restarted on v6: health ok, openapi v6, reverify-list ok (empty on the clean demo DB — no conflicting pair exists in the shipped corpus, see requests).
+- Decisions / assumptions: conflict is defined over *cited* cards only, on an otherwise checker-valid proof — an invalid proof is REQUIRES_REVIEW, never CONFLICTING. Negation convention is the `no_`/`not_` prefix on requirement names, documented in `_cards_conflict`. No corpus card added: an 8th (conflicting) card would change the seeded card count (7) and the human's gate fixtures; the demo pair is proven in tests instead.
+- Contract change: [CONTRACT v5 → v6] additive status value
+- Requests: [REQ → H] approve adding one demo conflicting card (e.g. `RC-CT3-BREACH-CONFLICT-01`, `requires: [no_breach_intimation_duty]`, same s8(6) span) so Screen demos can produce CONFLICTING live — this changes card count 7 → 8 and seed expectations, so it needs your go-ahead. [REQ → CU] `npm run gen:api` for v6 and add a CONFLICTING status badge (text + icon, not color-only).
+- New-work note: propositional conflict detection in the memory service 2026-11-02
+- Third-party added: none
+- Credit spend: none (deterministic)
+- Ready for human commit: yes — suggested message: `T7.4: CONFLICTING status from propositional rule-card conflict; contract v6`
+
+## [T7.4-demo-card] STARTED · 2026-11-02 13:27 IST
+- Task: Add approved demo conflicting card and prove CONFLICTING works end-to-end (user-approved)
+- Scope: `corpus/rulecards/RC-CT3-BREACH-CONFLICT-01.yaml` (same s8(6) span, `requires: [no_breach_intimation_duty]`, kind interpretation, labelled demo), seed/test count updates 7 → 8 cards, live decide test on a scratch seeded DB: checker-valid proof citing both breach cards + fresh lookup → expect CONFLICTING in reverify-list
+
+## [T7.4-demo-card] DONE · 2026-11-02 13:45 IST
+- Task: Add approved demo conflicting card and prove CONFLICTING works end-to-end (user-approved)
+- Files changed: `corpus/rulecards/RC-CT3-BREACH-CONFLICT-01.yaml` (new: same s8(6) verbatim span as RC-CT3-BREACH-01, kind interpretation, `requires: [no_breach_intimation_duty]`, interpretation text explicitly labelled a fictional demo reading, `approved_by: demo-conflict-fixture`), `backend/tests/test_seed.py` (card counts 7 → 8), `backend/tests/test_counterfactual.py` (affected set gains the new card's seeded finding), `backend/tests/test_conflicting.py` (new `test_demo_conflict_card_end_to_end` on the real corpus cards), 2 new cassettes in `corpus/cassettes/` (challenger hashes changed because card lines now include the 8th card), `docs/logs/MUSE_CODE_LOG.md`
+- What changed / verified: citing BOTH real breach cards in one checker-valid proof (fresh lookup, v1-only corpus so the Act version is current) decides **CONFLICTING**; citing only RC-CT3-BREACH-01 decides **FOLLOWS** — the conflict path works and does not fire spuriously. The 8th card also enters challenger prompts, so its two review cassettes were re-recorded with the one approved `make record` for this task (after `make reset-demo`).
+- Checks run: `make record` once → ask chains FOLLOWS from cache, ask-flow review re-recorded (blocking=False), tampered-proof review blocking=True, latest call cost $0.000420. `make check-backend` → ruff clean, mypy clean, pytest **232/232** (was 231 + 1 new demo-card test). Live: dev DB reseeded (8 cards), :8001 restarted; graph for MAT-01 now shows `RC-CT3-BREACH-CONFLICT-01` and its seeded finding.
+- Decisions / assumptions: the demo card is fictional and says so in its interpretation text; it is `ai_inferred` like the other unreviewed cards. Note the full demo seed also loads simulated v2, which supersedes Act v1 — a cite_rule proof against the real pair therefore decides CONFLICTING only in a v1-current context (as in the test); the seeded per-card finding exists for the impact/counterfactual demo regardless.
+- Contract change: none (v6 stands; no schema change)
+- Requests: [REQ → CU] the conflict card is now in the demo DB; Screen 3 can surface CONFLICTING from the reverify-list (badge request from [T7.4] still open)
+- New-work note: demo conflicting rule card 2026-11-02
+- Third-party added: none
+- Credit spend: ~$0.0004 (one `make record`: 2 challenger calls on muse-spark-1.2, rest cached)
+- Ready for human commit: yes — suggested message: `Add demo conflicting rule card and prove CONFLICTING end-to-end`

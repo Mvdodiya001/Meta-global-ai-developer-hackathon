@@ -128,7 +128,7 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
   - Done when: one challenger run succeeds on open weights and the README states exactly where it is used. If access is not granted, skip it; nothing else depends on it.
 
 ## M8 — Reliability and deploy (Day 7) — **feature freeze at end of day**
-- [ ] **T8.1 Scenario tests** (MC) · T — decoy, future provision, UNKNOWN, tamper, stale chain, matter isolation, source failure, challenger objection.
+- [x] **T8.1 Scenario tests** (MC) · T — decoy, future provision, UNKNOWN, tamper, stale chain, matter isolation, source failure, challenger objection. Landed in `backend/tests/test_scenarios.py` and `backend/tests/test_api.py`, commit 59025a7.
 - [ ] **T8.2 Cassettes + deploy** (MC) · D — Full demo path in replay; Docker Compose on your VM; test from a different network; `make reset-demo` under 60 s.
 - [ ] **T8.3 Rough demo video** (H) · D — Record the full 3-minute script once; list what feels slow or unclear.
 - [ ] **T8.4 Judge simulation** (H) — Run the judge prompt in `DEMO_AND_SUBMISSION.md` §8 on README + script; apply the top 3 fixes.
