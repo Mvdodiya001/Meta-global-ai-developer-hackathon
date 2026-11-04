@@ -737,3 +737,11 @@ _(no entries yet)_
 - Requests: none. Remaining finish list: F4 + F6 (human), F5 deploy (MC backend + human VM/Vercel), F7 README/video/submit.
 - Credit spend: ≈ $0.004 (one `make record` + 4 one-line probes)
 - Ready for human commit: yes — suggested message: `F1-F3: amended-section diff, Already confirmed, real server UNKNOWN`
+
+## [CI mypy optional-deps] DONE · 2026-11-04 09:08 IST
+- Task: `make check-backend` failed in GitHub CI (mypy `import-not-found` for `falkordb` in `app/modules/evidence/graph_projection.py:26` and `pypdf` in `app/modules/intake/pdf.py:87`, `tests/test_mixed_pdf.py:74`). Root cause: CI installs only `.[dev]`; `falkordb`/`pypdf` are optional prod extras imported lazily, and the existing `# type: ignore[import-untyped]` only covers the installed-but-unstubbed case, not the module-absent case.
+- Files changed: `backend/pyproject.toml` — added `[[tool.mypy.overrides]]` with `ignore_missing_imports = true` for `falkordb`, `falkordb.*`, `pypdf`, `pypdf.*`.
+- Checks run: `make check-backend` → ruff clean, mypy "no issues found in 103 source files", pytest **282 passed, 2 skipped** (baseline skips; 4 pre-existing DeprecationWarnings in docx intake, untouched).
+- Decisions: config-only fix; no runtime, schema, contract, or test changes. No new dependency.
+- Credit spend: none.
+- Ready for human commit: yes — suggested message: `Fix CI mypy: ignore missing optional imports (falkordb, pypdf)`

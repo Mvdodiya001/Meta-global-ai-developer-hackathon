@@ -46,3 +46,11 @@ select = ["E", "F", "I", "UP"]
 python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
+
+# Optional production dependencies (CI installs only `.[dev]`, so these
+# modules may be absent). Code imports them lazily inside functions with
+# `# type: ignore[import-untyped]` for the installed-but-unstubbed case;
+# this override covers the not-installed-at-all case.
+[[tool.mypy.overrides]]
+module = ["falkordb", "falkordb.*", "pypdf", "pypdf.*"]
+ignore_missing_imports = true
