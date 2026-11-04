@@ -279,6 +279,74 @@ def build_challenger_input(
     )
 
 
+EXTRACTION_TOOL_GENERIC = {
+    "type": "function",
+    "name": "emit_extraction",
+    "description": (
+        "Emit the segmented clauses of an uploaded document plus one "
+        "candidate fact per clause. Quote every clause body verbatim."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "clauses": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "ref": {"type": "string"},
+                        "heading": {"type": "string"},
+                        "text": {"type": "string"},
+                    },
+                    "required": ["ref", "heading", "text"],
+                    "additionalProperties": False,
+                },
+            },
+            "facts": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "statement": {"type": "string"},
+                        "clause_ref": {"type": "string"},
+                        "structured": {"type": "object"},
+                    },
+                    "required": ["statement", "clause_ref", "structured"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "required": ["clauses", "facts"],
+        "additionalProperties": False,
+    },
+}
+
+
+def build_extraction_input_generic(document_text: str) -> str:
+    """Build the extraction input for an arbitrary upload (P-C).
+
+    Same contract as the seed path (one fact per clause, verbatim
+    quotes, service-side span validation) but without the 12-clause
+    Master DPA shape: segment whatever numbered clauses are present.
+    """
+    return (
+        "Segment the document below into its numbered clauses, however "
+        "many there are (use each clause's printed number as ref). "
+        "Page markers like `--- page 2 ---` separate pages; never quote "
+        "them, but cover every page: a new page starts new clauses, never "
+        "a continuation of the previous page's clause. "
+        "Call emit_extraction exactly once with ALL clauses and facts in that call. "
+        "Quote each clause body verbatim: copy the exact characters, do not reword, "
+        "summarise, or fix punctuation. "
+        "For each clause give exactly one candidate fact: a concise statement of the "
+        "clause's operative content, with clause_ref naming its clause and structured "
+        "carrying at least {\"clause_ref\": ref} plus any numbers, dates, time limits, "
+        "or party roles stated in the clause.\n\n"
+        f"{document_text}"
+    )
+
+
 def build_extraction_input(document_text: str) -> str:
     """Build the single-shot extraction input for the Master DPA (T2.2, F3)."""
     return (

@@ -132,6 +132,103 @@ class DictationResult(BaseModel):
     trust_class: str
 
 
+class FactCorrectBody(BaseModel):
+    """Lawyer wording correction for one fact (P3)."""
+
+    statement: str
+    reviewer: str | None = None
+
+
+class UploadDocumentRequest(BaseModel):
+    """One uploaded document as base64 JSON (P3)."""
+
+    title: str
+    file_base64: str
+    media_type: str = "text/plain"
+
+
+class UploadResult(BaseModel):
+    """Upload stored; extraction runs as a job (P3)."""
+
+    document_id: str
+    job_id: str
+    status: str
+
+
+class DocumentPage(BaseModel):
+    """One page's origin for spot-checking (P-C)."""
+
+    page: int
+    source: str
+
+
+class DocumentPages(BaseModel):
+    """Per-page origins of a document's latest completed intake (P-C)."""
+
+    document_id: str
+    pages: list[DocumentPage] = []
+
+
+class JobStatus(BaseModel):
+    """One intake job's progress (P3)."""
+
+    id: str
+    kind: str
+    status: str
+    stage: str
+    document_id: str | None = None
+    result: dict[str, Any] | None = None
+    error: str | None = None
+
+
+class AdminOverview(BaseModel):
+    """Internal overview counts for staff (P5)."""
+
+    tenant_id: str
+    matters: int
+    findings_by_status: dict[str, int]
+    facts_by_trust: dict[str, int]
+    spend_usd: float
+    jobs: dict[str, int]
+
+
+class RegisterRequest(BaseModel):
+    """Create one sign-in account (Identity)."""
+
+    email: str
+    password: str
+    name: str = ""
+
+
+class LoginRequest(BaseModel):
+    """Sign in with email + password (Identity)."""
+
+    email: str
+    password: str
+
+
+class AuthResult(BaseModel):
+    """Session token plus the signed-in user (Identity)."""
+
+    token: str
+    email: str
+    name: str
+    tenant_id: str
+
+
+class TranscribeResult(BaseModel):
+    """Transcript text only (no fact stored) (Identity of voice input)."""
+
+    transcript: str
+
+
+class ClauseUpdateRequest(BaseModel):
+    """Edited wording for one clause (stored as a new version)."""
+
+    text: str
+    heading: str | None = None
+
+
 class ClaimCreated(BaseModel):
     """Structured claim plus run handle, loop finding when accepted (F4, F5)."""
 

@@ -34,6 +34,13 @@ export type ScanRequest = components['schemas']['ScanRequest']
 export type ScanResult = components['schemas']['ScanResult']
 export type DictationRequest = components['schemas']['DictationRequest']
 export type DictationResult = components['schemas']['DictationResult']
+export type FindingHistory = components['schemas']['FindingHistory']
+export type IntakeJob = components['schemas']['JobStatus']
+export type AdminOverview = components['schemas']['AdminOverview']
+export type AuthResult = components['schemas']['AuthResult']
+export type TranscribeResult = components['schemas']['TranscribeResult']
+export type UploadResult = components['schemas']['UploadResult']
+export type DocumentPages = components['schemas']['DocumentPages']
 
 export type CounterfactualBody = {
   source_version_id: string

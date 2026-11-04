@@ -224,6 +224,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/matters/{id}/documents/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Document
+         * @description Store an uploaded document and queue its extraction job (P3).
+         *
+         *     Text is decoded directly; PDFs go through the page pipeline (text
+         *     layer first, vision for image-only pages). Extraction itself runs
+         *     in the background job; poll GET /api/jobs/{id}.
+         */
+        post: operations["upload_document_api_matters__id__documents_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Document Pages
+         * @description Per-page origins from the latest completed intake job (P-C).
+         *
+         *     Lawyers use this to spot-check transcribed pages: `text` pages were
+         *     read from the file, `vision` pages were transcribed from a scan.
+         *     Empty when no completed intake exists for the document.
+         */
+        get: operations["document_pages_api_documents__id__pages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Job
+         * @description One intake job's progress (P3).
+         */
+        get: operations["get_job_api_jobs__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/facts/{id}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Correct Fact
+         * @description Lawyer correction: new fact row with edited wording, same trust (P3).
+         */
+        post: operations["correct_fact_api_facts__id__correct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/scans": {
         parameters: {
             query?: never;
@@ -266,6 +354,131 @@ export interface paths {
          *     POST /api/facts/{id}/approve, which mints the lawyer_confirmed copy.
          */
         post: operations["create_dictation_api_dictations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Overview
+         * @description Internal counts + spend for staff (P5; auth lands with Identity).
+         */
+        get: operations["admin_overview_api_admin_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register
+         * @description Create an account and return a session token (Identity).
+         */
+        post: operations["register_api_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Login
+         * @description Sign in and return a session token (Identity).
+         */
+        post: operations["login_api_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Me
+         * @description Who am I: resolve the bearer token (Identity).
+         */
+        get: operations["me_api_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transcribe Only
+         * @description Transcribe audio to text without storing a fact (dictation page).
+         */
+        post: operations["transcribe_only_api_transcribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/clauses/{clause_id}/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Update Clause
+         * @description Store edited clause wording as a new document version (clauses page).
+         *
+         *     Nothing is edited in place: the new version carries every clause,
+         *     with the target clause's text (and heading, if given) replaced and
+         *     spans rebuilt. Facts recorded against the old clause stay as they
+         *     are; lawyers correct them in the control room.
+         */
+        post: operations["update_clause_api_documents__id__clauses__clause_id__update_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -681,6 +894,30 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AdminOverview
+         * @description Internal overview counts for staff (P5).
+         */
+        AdminOverview: {
+            /** Tenant Id */
+            tenant_id: string;
+            /** Matters */
+            matters: number;
+            /** Findings By Status */
+            findings_by_status: {
+                [key: string]: number;
+            };
+            /** Facts By Trust */
+            facts_by_trust: {
+                [key: string]: number;
+            };
+            /** Spend Usd */
+            spend_usd: number;
+            /** Jobs */
+            jobs: {
+                [key: string]: number;
+            };
+        };
+        /**
          * AffectedFinding
          * @description One finding flagged by the impact engine (F11).
          */
@@ -733,6 +970,20 @@ export interface components {
         AuditTrail: {
             /** Rows */
             rows: components["schemas"]["AuditRow"][];
+        };
+        /**
+         * AuthResult
+         * @description Session token plus the signed-in user (Identity).
+         */
+        AuthResult: {
+            /** Token */
+            token: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            /** Tenant Id */
+            tenant_id: string;
         };
         /**
          * CheckerReport
@@ -815,6 +1066,16 @@ export interface components {
         ClauseList: {
             /** Clauses */
             clauses: components["schemas"]["Clause"][];
+        };
+        /**
+         * ClauseUpdateRequest
+         * @description Edited wording for one clause (stored as a new version).
+         */
+        ClauseUpdateRequest: {
+            /** Text */
+            text: string;
+            /** Heading */
+            heading?: string | null;
         };
         /**
          * CounterfactualAffected
@@ -937,6 +1198,29 @@ export interface components {
             documents: components["schemas"]["Document"][];
         };
         /**
+         * DocumentPage
+         * @description One page's origin for spot-checking (P-C).
+         */
+        DocumentPage: {
+            /** Page */
+            page: number;
+            /** Source */
+            source: string;
+        };
+        /**
+         * DocumentPages
+         * @description Per-page origins of a document's latest completed intake (P-C).
+         */
+        DocumentPages: {
+            /** Document Id */
+            document_id: string;
+            /**
+             * Pages
+             * @default []
+             */
+            pages: components["schemas"]["DocumentPage"][];
+        };
+        /**
          * ExtractResult
          * @description Extraction result: clauses plus candidate facts (F3).
          */
@@ -998,6 +1282,16 @@ export interface components {
             reviewer?: string | null;
             /** Note */
             note?: string | null;
+        };
+        /**
+         * FactCorrectBody
+         * @description Lawyer wording correction for one fact (P3).
+         */
+        FactCorrectBody: {
+            /** Statement */
+            statement: string;
+            /** Reviewer */
+            reviewer?: string | null;
         };
         /**
          * FactLine
@@ -1209,6 +1503,38 @@ export interface components {
             }[];
         };
         /**
+         * JobStatus
+         * @description One intake job's progress (P3).
+         */
+        JobStatus: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Status */
+            status: string;
+            /** Stage */
+            stage: string;
+            /** Document Id */
+            document_id?: string | null;
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Error */
+            error?: string | null;
+        };
+        /**
+         * LoginRequest
+         * @description Sign in with email + password (Identity).
+         */
+        LoginRequest: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /**
          * Matter
          * @description Matter plus context panel (F18).
          */
@@ -1354,6 +1680,21 @@ export interface components {
             effective_until?: string | null;
         };
         /**
+         * RegisterRequest
+         * @description Create one sign-in account (Identity).
+         */
+        RegisterRequest: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
+        /**
          * ReverifyBody
          * @description Re-verify request body; proofs keyed by stale finding id (F12).
          */
@@ -1410,6 +1751,11 @@ export interface components {
             superseded: string[];
             /** Current */
             current: string[];
+            /**
+             * Skipped
+             * @default []
+             */
+            skipped: string[];
         };
         /**
          * ReviewBody
@@ -1559,6 +1905,41 @@ export interface components {
             };
             /** Ok */
             ok: boolean;
+        };
+        /**
+         * TranscribeResult
+         * @description Transcript text only (no fact stored) (Identity of voice input).
+         */
+        TranscribeResult: {
+            /** Transcript */
+            transcript: string;
+        };
+        /**
+         * UploadDocumentRequest
+         * @description One uploaded document as base64 JSON (P3).
+         */
+        UploadDocumentRequest: {
+            /** Title */
+            title: string;
+            /** File Base64 */
+            file_base64: string;
+            /**
+             * Media Type
+             * @default text/plain
+             */
+            media_type: string;
+        };
+        /**
+         * UploadResult
+         * @description Upload stored; extraction runs as a job (P3).
+         */
+        UploadResult: {
+            /** Document Id */
+            document_id: string;
+            /** Job Id */
+            job_id: string;
+            /** Status */
+            status: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -1910,6 +2291,138 @@ export interface operations {
             };
         };
     };
+    upload_document_api_matters__id__documents_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_pages_api_documents__id__pages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentPages"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_job_api_jobs__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_fact_api_facts__id__correct_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FactCorrectBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactAction"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     scan_page_api_scans_post: {
         parameters: {
             query?: never;
@@ -1963,6 +2476,192 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DictationResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_overview_api_admin_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOverview"];
+                };
+            };
+        };
+    };
+    register_api_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    me_api_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_only_api_transcribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DictationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscribeResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_clause_api_documents__id__clauses__clause_id__update_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                clause_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClauseUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Clause"];
                 };
             };
             /** @description Validation Error */

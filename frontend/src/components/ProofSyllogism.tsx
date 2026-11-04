@@ -10,6 +10,10 @@ type ProofSyllogismProps = {
   finding: Finding
 }
 
+/**
+ * Numbered editorial reasoning: each step is a headed section separated by
+ * hairlines, with the quoted source set as document text.
+ */
 export function ProofSyllogism({ finding }: ProofSyllogismProps) {
   const facts = displayFactLines(finding)
   const steps = [
@@ -18,36 +22,46 @@ export function ProofSyllogism({ finding }: ProofSyllogismProps) {
   ]
 
   return (
-    <section className="ct-panel space-y-4 p-4" aria-labelledby="reasoning-heading">
-      <h2 id="reasoning-heading" className="ct-section-title">
-        Reasoning
-      </h2>
-      <ol className="space-y-3">
-        {steps.map((step, index) => (
-          <li key={step.title} className="text-sm">
-            <p className="font-medium">
-              {index + 1}. {step.title}
-            </p>
-            <blockquote className="mt-1 border-l-2 border-slate-300 pl-3 dark:border-slate-600">
-              {step.quote}
-            </blockquote>
-          </li>
-        ))}
-        {facts.map((line, index) => (
-          <li key={`${line.label}-${index}`} className="text-sm">
-            <p className="font-medium">{index + 3}.</p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <TrustChip trustClass={line.trustClass} label={line.trustLabel} />
-              {line.proposed ? (
-                <span className="text-xs text-slate-500">Not relied on</span>
-              ) : null}
-            </div>
-            <blockquote className="mt-1 border-l-2 border-slate-300 pl-3 dark:border-slate-600">
-              {line.label}
-            </blockquote>
-          </li>
-        ))}
-      </ol>
+    <section className="ct-panel" aria-labelledby="reasoning-heading">
+      <div className="ct-panel-head">
+        <div>
+          <h2 id="reasoning-heading" className="ct-panel-title">
+            Reasoning
+          </h2>
+          <p className="ct-panel-desc">
+            Each step is drawn from a quoted source or an accepted fact.
+          </p>
+        </div>
+      </div>
+      <div className="ct-panel-body">
+        <ol className="ct-rows !gap-0">
+          {steps.map((step, index) => (
+            <li key={step.title}>
+              <p className="ct-mono text-xs font-semibold tracking-wide text-ct-accent">
+                {String(index + 1).padStart(2, '0')}
+              </p>
+              <p className="mt-1 font-serif text-lg font-semibold tracking-tight text-ct-ink">
+                {step.title}
+              </p>
+              <blockquote className="ct-quote mt-2">{step.quote}</blockquote>
+            </li>
+          ))}
+          {facts.map((line, index) => (
+            <li key={`${line.label}-${index}`}>
+              <p className="ct-mono text-xs font-semibold tracking-wide text-ct-accent">
+                {String(index + 3).padStart(2, '0')}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <TrustChip trustClass={line.trustClass} label={line.trustLabel} />
+                {line.proposed ? (
+                  <span className="text-xs font-medium text-ct-warn">Not relied on</span>
+                ) : null}
+              </div>
+              <blockquote className="ct-quote mt-2">{line.label}</blockquote>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   )
 }

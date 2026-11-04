@@ -119,10 +119,10 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
 - ✅ **Core gate (end of Day 6):** the full demo path runs end to end on real API in replay mode. If not green: stop all stretch work, fix core on Day 7.
 
 ## M7 — Stretch (only if the core gate is green; pick ONE on Day 7 morning)
-- [ ] **T7.1 Voice dictation → proposed fact** (Muse Voice Transcribe, approval gate) · M
-- [ ] **T7.2 Scanned page → text** (Muse Spark PDF/image input) · M
-- [ ] **T7.3 Counterfactual mode** (read-only graph traversal) · T/D
-- [ ] **T7.4 CONFLICTING state** (two rule cards) · T
+- [x] **T7.1 Voice dictation → proposed fact** (Muse Voice Transcribe, approval gate) · M
+- [x] **T7.2 Scanned page → text** (Muse Spark PDF/image input) · M
+- [x] **T7.3 Counterfactual mode** (read-only graph traversal) · T/D
+- [x] **T7.4 CONFLICTING state** (two rule cards) · T
 - [ ] **T7.5 Open-weights challenger (optional)** (MC + H) · M — Needs partner access (Baseten or Modal; H requests it if the form is still open)
   - Add a provider behind `CHALLENGER_PROVIDER=openweights` using model `meta-models/muse-spark-open-1026` (OpenAI-compatible chat completions); no other code changes. Cassette for replay.
   - Done when: one challenger run succeeds on open weights and the README states exactly where it is used. If access is not granted, skip it; nothing else depends on it.

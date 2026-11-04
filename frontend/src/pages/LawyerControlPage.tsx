@@ -14,6 +14,7 @@ import type { Clause, Fact, Finding, Proof, ProofVerifyResult } from '../api/typ
 import { parseChallengerReport } from '../api/mocks/challenger'
 import { ChallengerPanel } from '../components/ChallengerPanel'
 import { FindingCard } from '../components/FindingCard'
+import { PageHeader } from '../components/layout/PageHeader'
 import { AsOfPanel } from '../components/lawyer/AsOfPanel'
 import { DictationPanel } from '../components/lawyer/DictationPanel'
 import { FactTrustList } from '../components/lawyer/FactTrustList'
@@ -21,7 +22,8 @@ import { FactWordingEditor } from '../components/lawyer/FactWordingEditor'
 import { IllustrationLabel } from '../components/lawyer/IllustrationLabel'
 import { ScanPagePanel } from '../components/lawyer/ScanPagePanel'
 import { UnknownClaimDemo } from '../components/lawyer/UnknownClaimDemo'
-import { AiDraftBadge } from '../components/badges/AiDraftBadge'
+import { Skeleton } from '../components/ui/Skeleton'
+import { StateMessage } from '../components/ui/StateMessage'
 
 export function LawyerControlPage() {
   const [claimId, setClaimId] = useState<string | null>(null)
@@ -40,31 +42,36 @@ export function LawyerControlPage() {
   const [approveNotice, setApproveNotice] = useState<string | null>(null)
   const [unknownBusy, setUnknownBusy] = useState(false)
   const [unknownError, setUnknownError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const stored = lastClaimId()
     setClaimId(stored)
     void (async () => {
-      const docs = await api.documents(DEMO_MATTER_ID)
-      const documentId = docs.documents[0]?.id
-      if (documentId) {
-        setClauses(await api.clauses(documentId))
-      }
-      const nextFacts = await api.facts(DEMO_MATTER_ID)
-      setFacts(nextFacts)
-      setReviewedIds(
-        nextFacts
-          .filter((fact) => fact.trust_class === 'lawyer_confirmed')
-          .map((fact) => fact.id),
-      )
-      if (!stored) {
-        return
-      }
-      const finding = await api.currentFinding(stored)
-      if (finding) {
-        setBaseFinding(finding)
-        setDependent(finding)
-        setFactSentence(finding.proof.premises[0]?.statement ?? '')
+      try {
+        const docs = await api.documents(DEMO_MATTER_ID)
+        const documentId = docs.documents[0]?.id
+        if (documentId) {
+          setClauses(await api.clauses(documentId))
+        }
+        const nextFacts = await api.facts(DEMO_MATTER_ID)
+        setFacts(nextFacts)
+        setReviewedIds(
+          nextFacts
+            .filter((fact) => fact.trust_class === 'lawyer_confirmed')
+            .map((fact) => fact.id),
+        )
+        if (!stored) {
+          return
+        }
+        const finding = await api.currentFinding(stored)
+        if (finding) {
+          setBaseFinding(finding)
+          setDependent(finding)
+          setFactSentence(finding.proof.premises[0]?.statement ?? '')
+        }
+      } finally {
+        setLoading(false)
       }
     })()
   }, [])
@@ -74,20 +81,22 @@ export function LawyerControlPage() {
     facts.find((fact) => baseFinding?.premise_ids.includes(fact.id) && fact.clause_id)
       ?.clause_id ?? 'CL-10'
 
-  async function handleApprove(factId: string) {
+  async function handleApprove(factId: string): Promise<boolean> {
     const fact = facts.find((row) => row.id === factId)
     if (reviewedIds.includes(factId) || fact?.trust_class === 'lawyer_confirmed') {
       setApproveNotice('Already confirmed')
-      return
+      return false
     }
     try {
       const action = await api.approveFact(factId)
       setFacts((current) => applyFactAction(current, action))
       setReviewedIds((ids) => (ids.includes(factId) ? ids : [...ids, factId]))
       setApproveNotice(null)
+      return true
     } catch {
       // A second confirm lands on the superseded row server-side.
       setApproveNotice('Already confirmed')
+      return false
     }
   }
 
@@ -149,25 +158,43 @@ export function LawyerControlPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Your control room</h1>
-        <AiDraftBadge label="AI draft — not yet reviewed" />
-      </header>
+    <div className="ct-page">
+      <PageHeader
+        eyebrow="Governance"
+        title="Your control room"
+        description="Approve the facts behind an answer, test the wording, and see how a changed premise or date affects what follows."
+      />
 
       {!actionsEnabled ? (
-        <p className="ct-panel p-4 text-sm font-medium">Ask about a clause first</p>
+        <div className="ct-notice ct-notice--info">
+          <span className="ct-dot mt-1.5" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-semibold">Ask about a clause first</p>
+            <p className="mt-0.5 text-sm">
+              The approval queue and validity checks open once there is an answer in this
+              session. Review a clause, then come back.
+            </p>
+          </div>
+        </div>
       ) : null}
 
-      <ScanPagePanel />
-      <DictationPanel
-        clauses={clauses}
-        defaultClauseId={defaultClauseId}
-        onFactProposed={(fact) => {
-          setFacts((current) => [fact, ...current.filter((row) => row.id !== fact.id)])
-        }}
-        onApprove={(id) => void handleApprove(id)}
-      />
+      {loading ? (
+        <div className="space-y-2" role="status" aria-label="Loading the control room">
+          <Skeleton lines={4} label="Loading the control room" />
+        </div>
+      ) : null}
+
+      <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
+        <ScanPagePanel />
+        <DictationPanel
+          clauses={clauses}
+          defaultClauseId={defaultClauseId}
+          onFactProposed={(fact) => {
+            setFacts((current) => [fact, ...current.filter((row) => row.id !== fact.id)])
+          }}
+          onApprove={handleApprove}
+        />
+      </div>
 
       <FactTrustList
         facts={facts}
@@ -176,78 +203,79 @@ export function LawyerControlPage() {
         onApprove={(id) => void handleApprove(id)}
         onChallenge={(id) => void handleChallenge(id)}
       />
-      {approveNotice ? (
-        <p role="status" className="text-sm font-medium">
-          {approveNotice}
-        </p>
-      ) : null}
+
+      {approveNotice ? <StateMessage tone="info">{approveNotice}</StateMessage> : null}
 
       {recomputed ? (
-        <p className="text-sm font-medium">
+        <p className="text-sm font-medium text-ct-ink">
           Related answers were updated after you changed this fact.
         </p>
       ) : null}
       {dependent ? (
-        <>
+        <div className="space-y-2">
           {recomputed ? <IllustrationLabel /> : null}
           <FindingCard finding={dependent} title="Current answer" />
-        </>
+        </div>
       ) : null}
 
-      <AsOfPanel
-        asOf={asOf}
-        commencement={COMMENCEMENT_DATE}
-        finding={asOfResult}
-        disabled={!actionsEnabled}
-        onAsOfChange={handleAsOf}
-      />
+      <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
+        <AsOfPanel
+          asOf={asOf}
+          commencement={COMMENCEMENT_DATE}
+          finding={asOfResult}
+          disabled={!actionsEnabled}
+          onAsOfChange={handleAsOf}
+        />
 
-      <UnknownClaimDemo
-        question={unknownQ}
-        finding={unknownResult}
-        disabled={!actionsEnabled || unknownBusy}
-        error={unknownError}
-        onQuestionChange={setUnknownQ}
-        onAsk={() => void handleUnknownAsk()}
-      />
+        <UnknownClaimDemo
+          question={unknownQ}
+          finding={unknownResult}
+          disabled={!actionsEnabled || unknownBusy}
+          error={unknownError}
+          onQuestionChange={setUnknownQ}
+          onAsk={() => void handleUnknownAsk()}
+        />
+      </div>
 
-      <FactWordingEditor
-        sentence={factSentence}
-        result={verifyResult}
-        disabled={!actionsEnabled}
-        onChange={setFactSentence}
-        onReset={() => {
-          if (baseFinding) {
-            setFactSentence(baseFinding.proof.premises[0]?.statement ?? '')
-            setVerifyResult(null)
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] xl:items-start">
+        <FactWordingEditor
+          sentence={factSentence}
+          result={verifyResult}
+          disabled={!actionsEnabled}
+          onChange={setFactSentence}
+          onReset={() => {
+            if (baseFinding) {
+              setFactSentence(baseFinding.proof.premises[0]?.statement ?? '')
+              setVerifyResult(null)
+            }
+          }}
+          onRecheck={() => {
+            if (!claimId || !baseFinding) {
+              return
+            }
+            void (async () => {
+              const proof = proofFromSentence(baseFinding.proof, factSentence)
+              setVerifyResult(await api.verifyProof(claimId, proof))
+            })()
+          }}
+        />
+
+        <ChallengerPanel
+          report={
+            verifyResult && !verifyResult.valid
+              ? parseChallengerReport({
+                  blocking: true,
+                  objections: [
+                    {
+                      severity: 'blocking',
+                      reason: 'Cited premise text does not match the admitted fact statement, so the proof is not using an admitted premise.',
+                    },
+                  ],
+                })
+              : null
           }
-        }}
-        onRecheck={() => {
-          if (!claimId || !baseFinding) {
-            return
-          }
-          void (async () => {
-            const proof = proofFromSentence(baseFinding.proof, factSentence)
-            setVerifyResult(await api.verifyProof(claimId, proof))
-          })()
-        }}
-      />
-
-      <ChallengerPanel
-        report={
-          verifyResult && !verifyResult.valid
-            ? parseChallengerReport({
-                blocking: true,
-                objections: [
-                  {
-                    severity: 'blocking',
-                    reason: 'Cited premise text does not match the admitted fact statement, so the proof is not using an admitted premise.',
-                  },
-                ],
-              })
-            : null
-        }
-      />
+        />
+      </div>
     </div>
   )
 }

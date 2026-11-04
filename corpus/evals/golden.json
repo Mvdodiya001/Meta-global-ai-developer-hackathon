@@ -1,0 +1,7 @@
+[
+  {"id": "ask-92-follows", "kind": "ask", "question": "Does clause 9.2 require Nimbus to keep transfer logs?", "as_of": "2026-11-20", "expect_status": "FOLLOWS"},
+  {"id": "ask-unknown-fairness", "kind": "ask", "question": "Is this agreement fair to Nimbus?", "as_of": "2026-11-20", "expect_status": "UNKNOWN"},
+  {"id": "ask-out-of-corpus", "kind": "ask", "question": "Is it fair that this clause relies on an unrelated telecom circular?", "as_of": "2025-10-01", "expect_status": "UNKNOWN"},
+  {"id": "counterfactual-breach", "kind": "counterfactual", "source_version_id": "SV-DPDP-ACT-V2SIM", "expect_finding": "FND-RC-CT3-BREACH-01", "expect_valid": false},
+  {"id": "decoy-no-dependents", "kind": "decoy", "provision_id": "PRV-DECOY-Emblems-Act-1950-s3"}
+]

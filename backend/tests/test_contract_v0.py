@@ -46,7 +46,7 @@ def client_post(path: str, body: object) -> httpx.Response:
 
 def test_contract_version_is_v1() -> None:
     """Gate: [CONTRACT v2 → v3] — ProofStep carries all checker step fields."""
-    assert load_openapi()["info"]["version"] == "v10"
+    assert load_openapi()["info"]["version"] == "v14"
 
 
 def test_spec_paths_present() -> None:

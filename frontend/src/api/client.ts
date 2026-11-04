@@ -14,6 +14,7 @@ import {
   fetchMockChallengeFact,
   fetchMockCreateClaim,
   fetchMockUnknownFinding,
+  fetchMockHistory,
   fetchMockIngest,
   fetchMockReverify,
   fetchMockRunEvents,
@@ -25,11 +26,23 @@ import {
   fetchMockReverifyList,
   fetchMockScan,
   fetchMockDictation,
+  fetchMockTranscribe,
+  fetchMockUpdateClause,
+  fetchMockUploadDocument,
+  fetchMockJob,
+  fetchMockDocumentPages,
+  fetchMockAuth,
   pollMockRunEvents,
 } from './mocks'
 import type {
   AuditTrail,
+  AuthResult,
   ClaimCreated,
+  DocumentPages,
+  IntakeJob,
+  TranscribeResult,
+  UploadResult,
+  FindingHistory,
   Clause,
   CounterfactualBody,
   CounterfactualResult,
@@ -92,9 +105,36 @@ async function readError(response: Response, path: string): Promise<ApiError> {
   }
 }
 
+const TOKEN_KEY = 'clausetrace.token'
+
+export function storedToken(): string | null {
+  try {
+    return window.localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function storeToken(token: string | null): void {
+  try {
+    if (token) {
+      window.localStorage.setItem(TOKEN_KEY, token)
+    } else {
+      window.localStorage.removeItem(TOKEN_KEY)
+    }
+  } catch {
+    // storage unavailable (tests); sign-in still works for the session
+  }
+}
+
+function authHeaders(): Record<string, string> {
+  const token = storedToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const url = `${getApiBase()}${path}`
-  const response = await fetch(url)
+  const response = await fetch(url, { headers: authHeaders() })
   if (!response.ok) {
     throw await readError(response, path)
   }
@@ -105,7 +145,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   const url = `${getApiBase()}${path}`
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   })
   if (!response.ok) {
@@ -201,6 +241,12 @@ export const api = {
     mocksEnabled()
       ? fetchMockFindingById(findingId)
       : getJson<Finding>(`/api/findings/${encodeURIComponent(findingId)}`),
+  findingHistory: (claimId: string): Promise<Finding[]> =>
+    mocksEnabled()
+      ? fetchMockHistory(claimId)
+      : getJson<FindingHistory>(`/api/claims/${encodeURIComponent(claimId)}/history`).then(
+          (r) => r.versions,
+        ),
   facts: (matterId: string): Promise<Fact[]> =>
     mocksEnabled()
       ? fetchMockFacts()
@@ -292,4 +338,49 @@ export const api = {
     mocksEnabled()
       ? fetchMockDictation(body)
       : postJson<DictationResult>('/api/dictations', body),
+  transcribe: (body: DictationRequest): Promise<TranscribeResult> =>
+    mocksEnabled()
+      ? fetchMockTranscribe(body)
+      : postJson<TranscribeResult>('/api/transcribe', body),
+  updateClause: (
+    documentId: string,
+    clauseId: string,
+    body: { text: string; heading?: string },
+  ): Promise<Clause> =>
+    mocksEnabled()
+      ? fetchMockUpdateClause(documentId, clauseId, body)
+      : postJson<Clause>(
+          `/api/documents/${encodeURIComponent(documentId)}/clauses/${encodeURIComponent(clauseId)}/update`,
+          body,
+        ),
+  uploadDocument: (
+    matterId: string,
+    body: { title: string; file_base64: string; media_type: string },
+  ): Promise<UploadResult> =>
+    mocksEnabled()
+      ? fetchMockUploadDocument()
+      : postJson<UploadResult>(
+          `/api/matters/${encodeURIComponent(matterId)}/documents/upload`,
+          body,
+        ),
+  jobStatus: (jobId: string): Promise<IntakeJob> =>
+    mocksEnabled()
+      ? fetchMockJob()
+      : getJson<IntakeJob>(`/api/jobs/${encodeURIComponent(jobId)}`),
+  documentPages: (documentId: string): Promise<DocumentPages> =>
+    mocksEnabled()
+      ? fetchMockDocumentPages()
+      : getJson<DocumentPages>(
+          `/api/documents/${encodeURIComponent(documentId)}/pages`,
+        ),
+  register: (body: { email: string; password: string; name: string }): Promise<AuthResult> =>
+    mocksEnabled()
+      ? fetchMockAuth(body.email, body.name)
+      : postJson<AuthResult>('/api/auth/register', body),
+  login: (body: { email: string; password: string }): Promise<AuthResult> =>
+    mocksEnabled()
+      ? fetchMockAuth(body.email, '')
+      : postJson<AuthResult>('/api/auth/login', body),
+  me: (): Promise<AuthResult> =>
+    mocksEnabled() ? fetchMockAuth('lawyer@example.com', 'Lawyer') : getJson<AuthResult>('/api/me'),
 }

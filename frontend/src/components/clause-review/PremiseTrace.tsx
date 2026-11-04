@@ -10,32 +10,39 @@ export function PremiseTrace({ finding }: PremiseTraceProps) {
   const lines = displayFactLines(finding)
 
   return (
-    <section className="ct-panel p-4" aria-labelledby="premise-trace-heading">
-      <h2 id="premise-trace-heading" className="mb-3 ct-section-title">
-        Facts
-      </h2>
-      <ul className="space-y-2">
-        {lines.map((line, index) => (
-          <li
-            key={`${line.label}-${index}`}
-            aria-label={line.label}
-            className="rounded-md border border-slate-200 p-3 dark:border-slate-700"
-          >
-            <div className="mb-1 flex flex-wrap items-center gap-2">
-              <TrustChip trustClass={line.trustClass} label={line.trustLabel} />
-              {line.proposed ? (
-                <span className="text-xs text-slate-500">Not relied on</span>
+    <section className="ct-panel" aria-labelledby="premise-trace-heading">
+      <div className="ct-panel-head">
+        <div>
+          <h2 id="premise-trace-heading" className="ct-panel-title">
+            Facts
+          </h2>
+          <p className="ct-panel-desc">
+            Only confirmed or document-extracted facts can support an answer.
+          </p>
+        </div>
+        <span className="ct-badge">{lines.length}</span>
+      </div>
+      <div className="ct-panel-body">
+        <ul className="ct-rows">
+          {lines.map((line, index) => (
+            <li
+              key={`${line.label}-${index}`}
+              aria-label={line.label}
+            >
+              <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                <TrustChip trustClass={line.trustClass} label={line.trustLabel} />
+                {line.proposed ? (
+                  <span className="text-xs font-medium text-ct-warn">Not relied on</span>
+                ) : null}
+              </div>
+              <p className="text-sm leading-relaxed text-ct-ink">{line.label}</p>
+              {line.confirmedBy ? (
+                <p className="mt-1 text-xs text-ct-muted">Confirmed by {line.confirmedBy}</p>
               ) : null}
-            </div>
-            <p className="text-sm">{line.label}</p>
-            {line.confirmedBy ? (
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                Confirmed by {line.confirmedBy}
-              </p>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   )
 }

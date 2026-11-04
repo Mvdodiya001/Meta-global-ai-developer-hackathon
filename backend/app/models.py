@@ -13,12 +13,36 @@ class Base(DeclarativeBase):
     """Declarative base for ClauseTrace tables (T1.1)."""
 
 
+class Tenant(Base):
+    """One customer organisation; every firm-owned row carries its id (P1)."""
+
+    __tablename__ = "tenants"
+
+    id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    name: Mapped[str] = mapped_column(sa.String, nullable=False)
+
+
+class User(Base):
+    """One sign-in account inside a tenant (Identity)."""
+
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
+    email: Mapped[str] = mapped_column(sa.String, nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(sa.String, nullable=False)
+    password_hash: Mapped[str] = mapped_column(sa.String, nullable=False)
+    role: Mapped[str] = mapped_column(sa.String, nullable=False, default="lawyer")
+    created_at: Mapped[str] = mapped_column(sa.String, nullable=False)
+
+
 class Matter(Base):
     """A client matter (F18)."""
 
     __tablename__ = "matters"
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     client_name: Mapped[str] = mapped_column(sa.String, nullable=False)
     title: Mapped[str] = mapped_column(sa.String, nullable=False)
 
@@ -108,6 +132,7 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     matter_id: Mapped[str] = mapped_column(sa.ForeignKey("matters.id"), nullable=False)
     title: Mapped[str] = mapped_column(sa.String, nullable=False)
     kind: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -147,6 +172,7 @@ class Fact(Base):
     __tablename__ = "facts"
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     matter_id: Mapped[str] = mapped_column(sa.ForeignKey("matters.id"), nullable=False)
     clause_id: Mapped[str | None] = mapped_column(sa.ForeignKey("clauses.id"), nullable=True)
     statement: Mapped[str] = mapped_column(sa.Text, nullable=False)
@@ -165,6 +191,7 @@ class Claim(Base):
     __tablename__ = "claims"
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     matter_id: Mapped[str] = mapped_column(sa.ForeignKey("matters.id"), nullable=False)
     clause_id: Mapped[str] = mapped_column(sa.ForeignKey("clauses.id"), nullable=False)
     claim_type: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -180,6 +207,7 @@ class Finding(Base):
     __tablename__ = "findings"
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     claim_id: Mapped[str] = mapped_column(sa.ForeignKey("claims.id"), nullable=False)
     version_no: Mapped[int] = mapped_column(sa.Integer, nullable=False)
     status: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -296,12 +324,32 @@ class Review(Base):
     created_at: Mapped[str] = mapped_column(sa.String, nullable=False)
 
 
+class IntakeJob(Base):
+    """One async intake job: upload → parse → extract (Rewrite P3)."""
+
+    __tablename__ = "intake_jobs"
+
+    id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
+    matter_id: Mapped[str] = mapped_column(sa.String, nullable=False)
+    kind: Mapped[str] = mapped_column(sa.String, nullable=False)
+    status: Mapped[str] = mapped_column(sa.String, nullable=False, default="queued")
+    stage: Mapped[str] = mapped_column(sa.String, nullable=False, default="queued")
+    document_id: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    input_b64: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    result_json: Mapped[dict | None] = mapped_column(sa.JSON, nullable=True)
+    error: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    created_at: Mapped[str] = mapped_column(sa.String, nullable=False)
+    updated_at: Mapped[str] = mapped_column(sa.String, nullable=False)
+
+
 class AuditLog(Base):
     """Append-only audit trail; never updated (F14)."""
 
     __tablename__ = "audit_log"
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     ts: Mapped[str] = mapped_column(sa.String, nullable=False)
     actor_type: Mapped[str] = mapped_column(sa.String, nullable=False)
     actor_id: Mapped[str] = mapped_column(sa.String, nullable=False)

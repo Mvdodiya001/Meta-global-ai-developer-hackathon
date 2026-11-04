@@ -1,5 +1,6 @@
 import type { Finding } from '../../api/types'
 import { FindingCard } from '../FindingCard'
+import { IconInfo } from '../ui/Icons'
 
 type UnknownClaimDemoProps = {
   question: string
@@ -19,42 +20,50 @@ export function UnknownClaimDemo({
   onAsk,
 }: UnknownClaimDemoProps) {
   return (
-    <section className="ct-panel space-y-3 p-4" aria-labelledby="unknown-heading">
-      <h2 id="unknown-heading" className="ct-section-title">
-        When the file does not cover it
-      </h2>
-      <label htmlFor="unknown-question" className="block text-sm font-medium">
-        Question this file does not cover
-      </label>
-      <textarea
-        id="unknown-question"
-        rows={3}
-        value={question}
-        disabled={disabled}
-        onChange={(event) => onQuestionChange(event.target.value)}
-        className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-      />
-      <button
-        type="button"
-        onClick={onAsk}
-        disabled={disabled}
-        className="rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900 disabled:opacity-50 dark:bg-blue-700"
-      >
-        Ask a question this file does not cover
-      </button>
-      {error ? (
-        <p role="status" className="text-sm font-medium">
-          {error}
-        </p>
-      ) : null}
-      {finding ? (
-        <>
-          <p className="text-sm text-slate-700 dark:text-slate-300">
-            No source on file covers this. No citations were invented.
+    <section className="ct-panel" aria-labelledby="unknown-heading">
+      <div className="ct-panel-head">
+        <div>
+          <h2 id="unknown-heading" className="ct-panel-title">
+            When the file does not cover it
+          </h2>
+          <p className="ct-panel-desc">
+            A question outside the material should return an honest unknown, with no invented
+            citations.
           </p>
-          <FindingCard finding={finding} title="Answer that cannot be determined" />
-        </>
-      ) : null}
+        </div>
+      </div>
+      <div className="ct-panel-body space-y-3">
+        <div className="ct-field">
+          <label htmlFor="unknown-question" className="ct-label">
+            Question this file does not cover
+          </label>
+          <textarea
+            id="unknown-question"
+            rows={3}
+            value={question}
+            disabled={disabled}
+            onChange={(event) => onQuestionChange(event.target.value)}
+            className="ct-textarea"
+          />
+        </div>
+        <button type="button" onClick={onAsk} disabled={disabled} className="ct-btn ct-btn--primary">
+          Ask a question this file does not cover
+        </button>
+        {error ? (
+          <div className="ct-notice ct-notice--danger" role="status">
+            <IconInfo size={16} className="mt-0.5 shrink-0" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        ) : null}
+        {finding ? (
+          <>
+            <p className="text-sm text-ct-soft">
+              No source on file covers this. No citations were invented.
+            </p>
+            <FindingCard finding={finding} title="Answer that cannot be determined" />
+          </>
+        ) : null}
+      </div>
     </section>
   )
 }

@@ -246,6 +246,19 @@ def record_unknown_demo(cassettes: Path, session: Session) -> None:
     print(f"recorded {cassette.name} (unknown demo -> {draft.claim_type})")
 
 
+def record_variant_extraction(cassettes: Path, session: Session) -> None:
+    """Record extraction of the non-seeded variant DPA, live, once (P3 gate)."""
+    raw = (ROOT / "corpus" / "contracts" / "variant_dpa.md").read_text(encoding="utf-8")
+    text, _ = seed.build_document(seed.parse_contract(raw))
+    request = extract.extraction_request(text)
+    cassette = llm.cache_file(cassettes, llm.request_hash(request))
+    if cassette.exists():
+        print(f"cassette already recorded: {cassette.name} (variant extraction)")
+        return
+    result = extract.extract_document(text, mode="live", cache_dir=cassettes, session=session)
+    print(f"recorded {cassette.name} (variant -> {len(result.clauses)} clauses)")
+
+
 def main() -> None:
     """Record the extraction + claim + loop cassettes and print the cost."""
     cassettes = ROOT / "corpus" / "cassettes"
@@ -287,6 +300,7 @@ def main() -> None:
         record_scan(cassettes, session)
         record_dictation(cassettes, session)
         record_unknown_demo(cassettes, session)
+        record_variant_extraction(cassettes, session)
         row = session.execute(
             sa.select(models.LlmCall).order_by(models.LlmCall.id.desc())
         ).scalars().first()

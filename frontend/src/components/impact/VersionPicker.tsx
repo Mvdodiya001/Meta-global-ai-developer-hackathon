@@ -1,4 +1,5 @@
 import type { SourceList, SourceVersion } from '../../api/types'
+import { IconArrowRight, IconBook, IconRefresh } from '../ui/Icons'
 import { SimulatedBadge } from '../badges/SimulatedBadge'
 
 type VersionPickerProps = {
@@ -27,58 +28,77 @@ export function VersionPicker({
   const selected = versions.find((version) => version.id === versionId)
 
   return (
-    <section className="ct-panel flex flex-wrap items-end gap-3 p-4">
-      <div>
-        <label htmlFor="source-picker" className="mb-1 block text-sm font-medium">
-          Legal source
-        </label>
-        <select
-          id="source-picker"
-          value={sourceId}
-          onChange={(event) => onSourceChange(event.target.value)}
-          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
-        >
-          {sources.map((source) => (
-            <option key={source.id} value={source.id}>
-              {source.title}
-            </option>
-          ))}
-        </select>
+    <section className="ct-panel" aria-labelledby="version-picker-heading">
+      <div className="ct-panel-head">
+        <div className="flex items-start gap-2.5">
+          <span className="mt-0.5 text-ct-muted" aria-hidden="true">
+            <IconBook size={17} />
+          </span>
+          <div>
+            <h2 id="version-picker-heading" className="ct-panel-title">
+              Compare a law version
+            </h2>
+            <p className="ct-panel-desc">
+              Preview first, then apply. Previewing never saves anything.
+            </p>
+          </div>
+        </div>
+        {selected?.is_simulated ? <SimulatedBadge /> : null}
       </div>
-      <div>
-        <label htmlFor="version-picker" className="mb-1 block text-sm font-medium">
-          Law version
-        </label>
-        <select
-          id="version-picker"
-          value={versionId}
-          onChange={(event) => onVersionChange(event.target.value)}
-          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
-        >
-          {versions.map((version) => (
-            <option key={version.id} value={version.id}>
-              {version.version_label} · from {version.effective_from}
-            </option>
-          ))}
-        </select>
+      <div className="ct-panel-body">
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="ct-field">
+            <label htmlFor="source-picker" className="ct-label">
+              Legal source
+            </label>
+            <select
+              id="source-picker"
+              value={sourceId}
+              onChange={(event) => onSourceChange(event.target.value)}
+              className="ct-select"
+            >
+              {sources.map((source) => (
+                <option key={source.id} value={source.id}>
+                  {source.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="ct-field">
+            <label htmlFor="version-picker" className="ct-label">
+              Law version
+            </label>
+            <select
+              id="version-picker"
+              value={versionId}
+              onChange={(event) => onVersionChange(event.target.value)}
+              className="ct-select"
+            >
+              {versions.map((version) => (
+                <option key={version.id} value={version.id}>
+                  {version.version_label} · from {version.effective_from}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ct-line pt-3">
+          <button
+            type="button"
+            onClick={onWhatIf}
+            disabled={!versionId || whatIfBusy}
+            aria-label="Preview a law change — nothing is saved"
+            className="ct-btn ct-btn--secondary"
+          >
+            <IconRefresh size={15} />
+            {whatIfBusy ? 'Previewing…' : 'Preview a law change — nothing is saved'}
+          </button>
+          <button type="button" onClick={onIngest} className="ct-btn ct-btn--primary">
+            Apply this law change
+            <IconArrowRight size={15} />
+          </button>
+        </div>
       </div>
-      {selected?.is_simulated ? <SimulatedBadge /> : null}
-      <button
-        type="button"
-        onClick={onWhatIf}
-        disabled={!versionId || whatIfBusy}
-        aria-label="Preview a law change — nothing is saved"
-        className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-900"
-      >
-        {whatIfBusy ? 'Previewing…' : 'Preview a law change — nothing is saved'}
-      </button>
-      <button
-        type="button"
-        onClick={onIngest}
-        className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-900"
-      >
-        Apply this law change
-      </button>
     </section>
   )
 }

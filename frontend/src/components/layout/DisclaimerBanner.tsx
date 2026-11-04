@@ -1,13 +1,15 @@
 import { DISCLAIMER_TEXT } from '../../content/disclaimer'
+import { IconInfo } from '../ui/Icons'
 
 export function DisclaimerBanner() {
   return (
     <aside
       role="note"
       aria-label="Legal disclaimer"
-      className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100"
+      className="ct-disclaimer"
     >
-      {DISCLAIMER_TEXT}
+      <IconInfo size={15} className="mt-0.5 shrink-0" />
+      <p className="min-w-0">{DISCLAIMER_TEXT}</p>
     </aside>
   )
 }

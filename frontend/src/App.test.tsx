@@ -14,6 +14,52 @@ function renderAt(path: string) {
 }
 
 describe('App screens', () => {
+  it('shows the matters home with workflow links', async () => {
+    renderAt('/')
+    expect(screen.getByRole('note', { name: /legal disclaimer/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Your matters' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Your matters' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /Review a clause/i }).length).toBeGreaterThan(1)
+    expect(screen.getAllByRole('link', { name: /Law changes/i }).length).toBeGreaterThan(1)
+    expect(screen.getAllByRole('link', { name: /Your control room/i }).length).toBeGreaterThan(1)
+  })
+
+  it('shows the evidence page for one answer', async () => {
+    renderAt('/evidence/FND-001')
+    expect(await screen.findByRole('heading', { name: 'Evidence for this answer' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Facts relied on/i })).toBeInTheDocument()
+    expect(screen.getAllByText(/Meets the requirement/i).length).toBeGreaterThan(0)
+  })
+
+  it('shows the internal overview page', async () => {
+    renderAt('/admin')
+    expect(await screen.findByRole('heading', { name: 'Internal overview' })).toBeInTheDocument()
+    expect(screen.getByText(/Not part of the lawyer workflow/i)).toBeInTheDocument()
+  })
+
+  it('shows the sign-in page', async () => {
+    renderAt('/signin')
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Email$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument()
+  })
+
+  it('shows the dictation page', async () => {
+    renderAt('/dictate')
+    expect(await screen.findByRole('heading', { name: 'Dictate a fact' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Start recording/i })).toBeInTheDocument()
+    expect(screen.getByText(/not relied on/i)).toBeInTheDocument()
+  })
+
+  it('shows the clause update page', async () => {
+    renderAt('/clauses')
+    expect(
+      await screen.findByRole('heading', { name: 'Update clause wording' }),
+    ).toBeInTheDocument()
+    expect(await screen.findByLabelText(/^Clause$/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Save new wording/i })).toBeInTheDocument()
+  })
+
   it('shows the disclaimer on clause review', async () => {
     renderAt('/review')
     expect(screen.getByRole('note', { name: /legal disclaimer/i })).toHaveTextContent(

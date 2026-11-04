@@ -43,6 +43,11 @@ export function displayStatusLabel(
   state?: string | null,
 ): string {
   const key = state === 'STALE' || state === 'SUPERSEDED' ? state : status
+  // A superseded answer keeps its old status label in the record, but the
+  // label must not imply it is still the current answer.
+  if (state === 'SUPERSEDED') {
+    return STATUS_LABELS.SUPERSEDED
+  }
   return safe(label, STATUS_LABELS[key] ?? STATUS_LABELS.REQUIRES_REVIEW)
 }
 

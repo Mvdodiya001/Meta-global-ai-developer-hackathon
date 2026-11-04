@@ -1,13 +1,18 @@
 import type {
+  AuthResult,
   Clause,
   CounterfactualBody,
   CounterfactualResult,
   DictationRequest,
   DictationResult,
+  DocumentPages,
   Fact,
+  IntakeJob,
   ReverifyList,
   ScanRequest,
   ScanResult,
+  TranscribeResult,
+  UploadResult,
 } from '../types'
 import { ANSWER_WOULD_NOT_FOLLOW, STATUS_LABELS, TRUST_LABELS } from '../../content/glossary'
 
@@ -107,4 +112,52 @@ export async function fetchMockScan(_body: ScanRequest): Promise<ScanResult> {
 
 export async function fetchMockDictation(_body: DictationRequest): Promise<DictationResult> {
   return MOCK_DICTATION
+}
+
+export async function fetchMockTranscribe(_body: DictationRequest): Promise<TranscribeResult> {
+  return { transcript: MOCK_DICTATION.transcript }
+}
+
+export async function fetchMockUploadDocument(): Promise<UploadResult> {
+  return { document_id: 'DOC-UPLOAD-01', job_id: 'JOB-01', status: 'queued' }
+}
+
+export async function fetchMockJob(): Promise<IntakeJob> {
+  return {
+    id: 'JOB-01',
+    kind: 'document_extract',
+    status: 'done',
+    stage: 'done',
+    document_id: 'DOC-UPLOAD-01',
+    result: { document_version_id: 'DV-01', clauses: 2, facts: 2 },
+    error: null,
+  }
+}
+
+export async function fetchMockDocumentPages(): Promise<DocumentPages> {
+  return {
+    document_id: 'DOC-UPLOAD-01',
+    pages: [
+      { page: 1, source: 'text' },
+      { page: 2, source: 'vision' },
+    ],
+  }
+}
+
+export async function fetchMockUpdateClause(
+  _documentId: string,
+  clauseId: string,
+  body: { text: string; heading?: string },
+): Promise<Clause> {
+  return {
+    ...SCAN_CLAUSE,
+    id: clauseId,
+    text: body.text,
+    heading: body.heading ?? SCAN_CLAUSE.heading,
+    span_end: body.text.length,
+  }
+}
+
+export async function fetchMockAuth(email: string, name: string): Promise<AuthResult> {
+  return { token: 'mock-token', email, name: name || 'Lawyer', tenant_id: 'demo' }
 }

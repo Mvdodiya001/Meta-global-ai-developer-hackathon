@@ -8,6 +8,8 @@ import { lawyerError } from '../../utils/lawyerCopy'
 import { asTrustClass } from '../../utils/trustClass'
 import { AiDraftBadge } from '../badges/AiDraftBadge'
 import { TrustChip } from '../TrustChip'
+import { IconFile } from '../ui/Icons'
+import { StateMessage } from '../ui/StateMessage'
 
 export function ScanPagePanel() {
   const [busy, setBusy] = useState(false)
@@ -43,47 +45,67 @@ export function ScanPagePanel() {
   }
 
   return (
-    <section className="ct-panel space-y-3 p-4" aria-labelledby="scan-heading">
-      <h2 id="scan-heading" className="ct-section-title">
-        Add a scanned clause page
-      </h2>
-      <p className="text-sm text-slate-700 dark:text-slate-300">
-        The extract is an AI draft — not yet reviewed, and not legal advice.
-      </p>
-      <label htmlFor="scan-page-file" className="block text-sm font-medium">
-        Add a scanned clause page
-      </label>
-      <input
-        id="scan-page-file"
-        type="file"
-        accept="image/png,image/jpeg"
-        disabled={busy}
-        className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium dark:file:border-slate-600 dark:file:bg-slate-900"
-        onChange={(event) => {
-          const file = event.target.files?.[0]
-          void handleFile(file)
-          event.target.value = ''
-        }}
-      />
-      {busy ? <p className="text-sm">Reading the page…</p> : null}
-      {error ? (
-        <p role="alert" className="text-sm font-medium text-rose-800 dark:text-rose-200">
-          {error}
-        </p>
-      ) : null}
-      {result ? (
-        <div className="space-y-2 rounded-md border border-slate-200 p-3 dark:border-slate-700">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium">Clause {result.clause.ref}</span>
-            <TrustChip
-              trustClass={asTrustClass(result.fact.trust_class)}
-              label={result.fact.trust_label}
-            />
-            <AiDraftBadge label="AI draft — not yet reviewed" />
-          </div>
-          <p className="text-sm">{result.fact.statement}</p>
+    <section className="ct-panel" aria-labelledby="scan-heading">
+      <div className="ct-panel-head">
+        <div>
+          <h2 id="scan-heading" className="ct-panel-title">
+            Add a scanned clause page
+          </h2>
+          <p className="ct-panel-desc">
+            The extract is an AI draft — not yet reviewed, and not legal advice.
+          </p>
         </div>
-      ) : null}
+      </div>
+      <div className="ct-panel-body space-y-3">
+        <div className="ct-field">
+          <label htmlFor="scan-page-file" className="ct-label">
+            Add a scanned clause page
+          </label>
+          <input
+            id="scan-page-file"
+            type="file"
+            accept="image/png,image/jpeg"
+            disabled={busy}
+            className="block w-full text-sm text-ct-soft file:mr-3 file:cursor-pointer file:rounded file:border file:border-ct-lineStrong file:bg-ct-surface file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-ct-soft"
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              void handleFile(file)
+              event.target.value = ''
+            }}
+          />
+        </div>
+        {busy ? (
+          <p className="flex items-center gap-2 text-sm text-ct-muted" role="status">
+            <span className="ct-spinner" aria-hidden="true" />
+            Reading the page…
+          </p>
+        ) : null}
+        {error ? (
+          <StateMessage tone="danger" live="alert">
+            {error}
+          </StateMessage>
+        ) : null}
+        {result ? (
+          <div className="border-t border-ct-line pt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-ct-ink">
+                Clause {result.clause.ref}
+              </span>
+              <TrustChip
+                trustClass={asTrustClass(result.fact.trust_class)}
+                label={result.fact.trust_label}
+              />
+              <AiDraftBadge label="AI draft — not yet reviewed" />
+            </div>
+            <p className="text-sm leading-relaxed text-ct-soft">{result.fact.statement}</p>
+          </div>
+        ) : (
+          <p className="flex items-start gap-2 text-xs text-ct-muted">
+            <IconFile size={14} className="mt-0.5 shrink-0" />
+            Nothing is added to the matter until you confirm the extracted wording.
+          </p>
+        )}
+      </div>
     </section>
   )
 }

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClauseTrace",
-    "version": "v10"
+    "version": "v14"
   },
   "paths": {
     "/api/health": {
@@ -455,6 +455,186 @@
         }
       }
     },
+    "/api/matters/{id}/documents/upload": {
+      "post": {
+        "summary": "Upload Document",
+        "description": "Store an uploaded document and queue its extraction job (P3).\n\nText is decoded directly; PDFs go through the page pipeline (text\nlayer first, vision for image-only pages). Extraction itself runs\nin the background job; poll GET /api/jobs/{id}.",
+        "operationId": "upload_document_api_matters__id__documents_upload_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/pages": {
+      "get": {
+        "summary": "Document Pages",
+        "description": "Per-page origins from the latest completed intake job (P-C).\n\nLawyers use this to spot-check transcribed pages: `text` pages were\nread from the file, `vision` pages were transcribed from a scan.\nEmpty when no completed intake exists for the document.",
+        "operationId": "document_pages_api_documents__id__pages_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentPages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{id}": {
+      "get": {
+        "summary": "Get Job",
+        "description": "One intake job's progress (P3).",
+        "operationId": "get_job_api_jobs__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/facts/{id}/correct": {
+      "post": {
+        "summary": "Correct Fact",
+        "description": "Lawyer correction: new fact row with edited wording, same trust (P3).",
+        "operationId": "correct_fact_api_facts__id__correct_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FactCorrectBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactAction"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/scans": {
       "post": {
         "summary": "Scan Page",
@@ -516,6 +696,248 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DictationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/overview": {
+      "get": {
+        "summary": "Admin Overview",
+        "description": "Internal counts + spend for staff (P5; auth lands with Identity).",
+        "operationId": "admin_overview_api_admin_overview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register",
+        "description": "Create an account and return a session token (Identity).",
+        "operationId": "register_api_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login",
+        "description": "Sign in and return a session token (Identity).",
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "summary": "Me",
+        "description": "Who am I: resolve the bearer token (Identity).",
+        "operationId": "me_api_me_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transcribe": {
+      "post": {
+        "summary": "Transcribe Only",
+        "description": "Transcribe audio to text without storing a fact (dictation page).",
+        "operationId": "transcribe_only_api_transcribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DictationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscribeResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/clauses/{clause_id}/update": {
+      "post": {
+        "summary": "Update Clause",
+        "description": "Store edited clause wording as a new document version (clauses page).\n\nNothing is edited in place: the new version carries every clause,\nwith the target clause's text (and heading, if given) replaced and\nspans rebuilt. Facts recorded against the old clause stay as they\nare; lawyers correct them in the control room.",
+        "operationId": "update_clause_api_documents__id__clauses__clause_id__update_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "clause_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clause Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClauseUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Clause"
                 }
               }
             }
@@ -1435,6 +1857,54 @@
   },
   "components": {
     "schemas": {
+      "AdminOverview": {
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          },
+          "matters": {
+            "type": "integer",
+            "title": "Matters"
+          },
+          "findings_by_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Findings By Status"
+          },
+          "facts_by_trust": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Facts By Trust"
+          },
+          "spend_usd": {
+            "type": "number",
+            "title": "Spend Usd"
+          },
+          "jobs": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Jobs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "matters",
+          "findings_by_status",
+          "facts_by_trust",
+          "spend_usd",
+          "jobs"
+        ],
+        "title": "AdminOverview",
+        "description": "Internal overview counts for staff (P5)."
+      },
       "AffectedFinding": {
         "properties": {
           "claim_id": {
@@ -1535,6 +2005,35 @@
         ],
         "title": "AuditTrail",
         "description": "Stub: audit rows example (T0.7)."
+      },
+      "AuthResult": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "tenant_id": {
+            "type": "string",
+            "title": "Tenant Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "email",
+          "name",
+          "tenant_id"
+        ],
+        "title": "AuthResult",
+        "description": "Session token plus the signed-in user (Identity)."
       },
       "CheckerReport": {
         "properties": {
@@ -1724,6 +2223,31 @@
         ],
         "title": "ClauseList",
         "description": "Stub: clause list example (T0.7)."
+      },
+      "ClauseUpdateRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ClauseUpdateRequest",
+        "description": "Edited wording for one clause (stored as a new version)."
       },
       "CounterfactualAffected": {
         "properties": {
@@ -1973,6 +2497,47 @@
         "title": "DocumentList",
         "description": "Clause-list parent response (F3)."
       },
+      "DocumentPage": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "source"
+        ],
+        "title": "DocumentPage",
+        "description": "One page's origin for spot-checking (P-C)."
+      },
+      "DocumentPages": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentPage"
+            },
+            "type": "array",
+            "title": "Pages",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id"
+        ],
+        "title": "DocumentPages",
+        "description": "Per-page origins of a document's latest completed intake (P-C)."
+      },
       "ExtractResult": {
         "properties": {
           "clauses": {
@@ -2129,6 +2694,31 @@
         "type": "object",
         "title": "FactActionBody",
         "description": "Lawyer trust-action request body (F15)."
+      },
+      "FactCorrectBody": {
+        "properties": {
+          "statement": {
+            "type": "string",
+            "title": "Statement"
+          },
+          "reviewer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "statement"
+        ],
+        "title": "FactCorrectBody",
+        "description": "Lawyer wording correction for one fact (P3)."
       },
       "FactLine": {
         "properties": {
@@ -2586,6 +3176,88 @@
         "title": "IngestVersionBody",
         "description": "Inline new-version payload for ingest (F11)."
       },
+      "JobStatus": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Id"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "stage"
+        ],
+        "title": "JobStatus",
+        "description": "One intake job's progress (P3)."
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "Sign in with email + password (Identity)."
+      },
       "Matter": {
         "properties": {
           "id": {
@@ -2978,6 +3650,30 @@
         ],
         "title": "Provision",
         "description": "One provision inside a source version (F2)."
+      },
+      "RegisterRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "RegisterRequest",
+        "description": "Create one sign-in account (Identity)."
       },
       "ReverifyBody": {
         "properties": {
@@ -3403,6 +4099,68 @@
         ],
         "title": "ToolCall",
         "description": "One logged tool call (F5)."
+      },
+      "TranscribeResult": {
+        "properties": {
+          "transcript": {
+            "type": "string",
+            "title": "Transcript"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transcript"
+        ],
+        "title": "TranscribeResult",
+        "description": "Transcript text only (no fact stored) (Identity of voice input)."
+      },
+      "UploadDocumentRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "file_base64": {
+            "type": "string",
+            "title": "File Base64"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type",
+            "default": "text/plain"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "file_base64"
+        ],
+        "title": "UploadDocumentRequest",
+        "description": "One uploaded document as base64 JSON (P3)."
+      },
+      "UploadResult": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "job_id",
+          "status"
+        ],
+        "title": "UploadResult",
+        "description": "Upload stored; extraction runs as a job (P3)."
       },
       "ValidationError": {
         "properties": {

@@ -1,0 +1,202 @@
+{
+  "request": {
+    "model": "muse-spark-1.3-contributor",
+    "input": "Segment the document below into its numbered clauses, however many there are (use each clause's printed number as ref). Call emit_extraction exactly once with ALL clauses and facts in that call. Quote each clause body verbatim: copy the exact characters, do not reword, summarise, or fix punctuation. For each clause give exactly one candidate fact: a concise statement of the clause's operative content, with clause_ref naming its clause and structured carrying at least {\"clause_ref\": ref} plus any numbers, dates, time limits, or party roles stated in the clause.\n\n9.2 Nimbus shall keep transfer logs for review. 9.2 Nimbus shall keep transfer logs for review. 9.2 Nimbus shall keep transfer logs for review. 9.2 Nimbus shall keep transfer logs for review. 9.2 Nimbus shall keep transfer logs for review. 9.2 Nimbus shall keep transfer logs for review.\n\nStratus shall keep transfer logs for review for seven years. Beacon may audit the logs on request without undue delay.",
+    "tools": [
+      {
+        "type": "function",
+        "name": "emit_extraction",
+        "description": "Emit the segmented clauses of an uploaded document plus one candidate fact per clause. Quote every clause body verbatim.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "clauses": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ref": {
+                    "type": "string"
+                  },
+                  "heading": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "heading",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "facts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "statement": {
+                    "type": "string"
+                  },
+                  "clause_ref": {
+                    "type": "string"
+                  },
+                  "structured": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "statement",
+                  "clause_ref",
+                  "structured"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "clauses",
+            "facts"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "parallel_tool_calls": false,
+    "temperature": 0
+  },
+  "response": {
+    "top_logprobs": 0,
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "service_tier": "auto",
+    "model": "muse-spark-1.3-contributor",
+    "reasoning": {
+      "effort": "high"
+    },
+    "background": false,
+    "tools": [
+      {
+        "type": "function",
+        "name": "emit_extraction",
+        "description": "Emit the segmented clauses of an uploaded document plus one candidate fact per clause. Quote every clause body verbatim.",
+        "parameters": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "clauses": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "heading": {
+                    "type": "string"
+                  },
+                  "ref": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "heading",
+                  "text"
+                ],
+                "type": "object"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "facts": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "clause_ref": {
+                    "type": "string"
+                  },
+                  "statement": {
+                    "type": "string"
+                  },
+                  "structured": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "statement",
+                  "clause_ref",
+                  "structured"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "clauses",
+            "facts"
+          ]
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "truncation": "disabled",
+    "id": "resp_6ae89ec516ddde44455d4725",
+    "object": "response",
+    "status": "completed",
+    "created_at": 1793629893.0,
+    "completed_at": 1793629893.0,
+    "error": null,
+    "incomplete_details": null,
+    "output": [
+      {
+        "type": "reasoning",
+        "id": "rs_6ae89ec516ddde44455d4725:rs_8a8ba99d-0014-4a38-bee8-c39a1432c742",
+        "summary": [],
+        "status": "completed"
+      },
+      {
+        "type": "message",
+        "id": "rs_3251322d-5e4b-428b-ad8c-d3123db82f66",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "output_text",
+            "text": "Repeating clause noted \u2014 extracting all numbered instances verbatim.",
+            "annotations": [],
+            "logprobs": []
+          }
+        ],
+        "phase": "commentary",
+        "status": "completed"
+      },
+      {
+        "type": "function_call",
+        "id": "fc_3495cf2b-71b3-4ebb-94a4-2615d9b0ebaf",
+        "call_id": "call_3495cf2b-71b3-4ebb-94a4-2615d9b0ebaf",
+        "name": "emit_extraction",
+        "arguments": "{\"clauses\":[{\"heading\":\"9.2\",\"ref\":\"9.2\",\"text\":\"Nimbus shall keep transfer logs for review.\"},{\"heading\":\"9.2\",\"ref\":\"9.2\",\"text\":\"Nimbus shall keep transfer logs for review.\"},{\"heading\":\"9.2\",\"ref\":\"9.2\",\"text\":\"Nimbus shall keep transfer logs for review.\"},{\"heading\":\"9.2\",\"ref\":\"9.2\",\"text\":\"Nimbus shall keep transfer logs for review.\"},{\"heading\":\"9.2\",\"ref\":\"9.2\",\"text\":\"Nimbus shall keep transfer logs for review.\"},{\"heading\":\"9.2\",\"ref\":\"9.2\",\"text\":\"Nimbus shall keep transfer logs for review.\"}],\"facts\":[{\"clause_ref\":\"9.2\",\"statement\":\"Nimbus shall keep transfer logs for review.\",\"structured\":{\"clause_ref\":\"9.2\",\"party\":\"Nimbus\"}},{\"clause_ref\":\"9.2\",\"statement\":\"Nimbus shall keep transfer logs for review.\",\"structured\":{\"clause_ref\":\"9.2\",\"party\":\"Nimbus\"}},{\"clause_ref\":\"9.2\",\"statement\":\"Nimbus shall keep transfer logs for review.\",\"structured\":{\"clause_ref\":\"9.2\",\"party\":\"Nimbus\"}},{\"clause_ref\":\"9.2\",\"statement\":\"Nimbus shall keep transfer logs for review.\",\"structured\":{\"clause_ref\":\"9.2\",\"party\":\"Nimbus\"}},{\"clause_ref\":\"9.2\",\"statement\":\"Nimbus shall keep transfer logs for review.\",\"structured\":{\"clause_ref\":\"9.2\",\"party\":\"Nimbus\"}},{\"clause_ref\":\"9.2\",\"statement\":\"Nimbus shall keep transfer logs for review.\",\"structured\":{\"clause_ref\":\"9.2\",\"party\":\"Nimbus\"}}]}",
+        "status": "completed"
+      }
+    ],
+    "instructions": null,
+    "usage": {
+      "input_tokens": 904,
+      "input_tokens_details": {
+        "cached_tokens": 113
+      },
+      "output_tokens": 3276,
+      "output_tokens_details": {
+        "reasoning_tokens": 2748
+      },
+      "total_tokens": 4180
+    },
+    "parallel_tool_calls": false,
+    "store": true
+  }
+}

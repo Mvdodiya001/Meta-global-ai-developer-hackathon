@@ -1,4 +1,5 @@
 import { displayClauseRef, displayStatusLabel } from '../../utils/displayFields'
+import { IconRefresh } from '../ui/Icons'
 import { StatusBadge } from '../badges/StatusBadge'
 
 export type RecheckRow = {
@@ -15,6 +16,7 @@ type AffectedFindingsProps = {
   rechecked: boolean
 }
 
+/** Simple structured list: one row per answer with a single re-check action. */
 export function AffectedFindings({
   rows,
   onRecheck,
@@ -24,36 +26,69 @@ export function AffectedFindings({
   const staleCount = rows.filter((row) => row.state === 'STALE').length
 
   return (
-    <section className="ct-panel p-4" aria-labelledby="impact-heading">
-      <h2 id="impact-heading" className="mb-3 ct-section-title">
-        Re-check queue
-      </h2>
-      {rows.length === 0 ? (
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          No answers need re-check for this law change.
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {rows.map((row) => (
-            <li key={row.key} className="flex flex-wrap items-center gap-2 text-sm">
-              <span>{displayClauseRef(row.clauseRef)}</span>
-              <StatusBadge
-                status="FOLLOWS"
-                state={row.state}
-                label={displayStatusLabel('FOLLOWS', row.statusLabel, row.state)}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-      <button
-        type="button"
-        onClick={onRecheck}
-        disabled={staleCount === 0 || rechecking || rechecked}
-        className="mt-4 rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900 disabled:opacity-50 dark:bg-blue-700"
-      >
-        {rechecked ? 'Re-checked' : 'Re-check'}
-      </button>
+    <section className="ct-panel" aria-labelledby="impact-heading">
+      <div className="ct-panel-head">
+        <div>
+          <h2 id="impact-heading" className="ct-panel-title">
+            Answers to re-check
+          </h2>
+          <p className="ct-panel-desc">
+            Re-checking drafts a new answer against the current law. The earlier answer stays
+            on file.
+          </p>
+        </div>
+        <span className="ct-badge">{staleCount} waiting</span>
+      </div>
+      <div className="ct-panel-body">
+        {rows.length === 0 ? (
+          <p className="ct-empty">No answers need re-check for this law change.</p>
+        ) : (
+          <ul className="ct-rows">
+            {rows.map((row) => (
+              <li
+                key={row.key}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm"
+              >
+                <span className="font-medium text-ct-ink">
+                  {displayClauseRef(row.clauseRef)}
+                </span>
+                <StatusBadge
+                  status="FOLLOWS"
+                  state={row.state}
+                  label={displayStatusLabel('FOLLOWS', row.statusLabel, row.state)}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-ct-line pt-4">
+          <button
+            type="button"
+            onClick={onRecheck}
+            disabled={staleCount === 0 || rechecking || rechecked}
+            className="ct-btn ct-btn--primary"
+          >
+            {rechecked ? (
+              'Re-checked'
+            ) : rechecking ? (
+              <>
+                <span className="ct-spinner" aria-hidden="true" />
+                Re-checking…
+              </>
+            ) : (
+              <>
+                <IconRefresh size={15} />
+                Re-check
+              </>
+            )}
+          </button>
+          {rechecked ? (
+            <span className="text-xs text-ct-muted">
+              The new answer is shown under Before / after.
+            </span>
+          ) : null}
+        </div>
+      </div>
     </section>
   )
 }

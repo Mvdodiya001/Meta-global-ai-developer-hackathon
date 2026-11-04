@@ -1,15 +1,12 @@
 import type { TrustClass } from '../api/types'
 import { displayTrustLabel } from '../utils/displayFields'
+import { IconAlert, IconCheck, IconFile, IconUser } from './ui/Icons'
 
-const TRUST_STYLES: Record<TrustClass, string> = {
-  document_extracted:
-    'border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-100',
-  lawyer_confirmed:
-    'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-100',
-  ai_inferred:
-    'border-violet-300 bg-violet-50 text-violet-900 dark:border-violet-700 dark:bg-violet-950/40 dark:text-violet-100',
-  disputed:
-    'border-rose-400 bg-rose-50 text-rose-950 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-100',
+const TRUST_STYLES: Record<TrustClass, { className: string; Icon: typeof IconCheck }> = {
+  document_extracted: { className: 'ct-badge--info', Icon: IconFile },
+  lawyer_confirmed: { className: 'ct-badge--ok', Icon: IconCheck },
+  ai_inferred: { className: 'ct-badge--accent', Icon: IconUser },
+  disputed: { className: 'ct-badge--danger', Icon: IconAlert },
 }
 
 type TrustChipProps = {
@@ -18,11 +15,11 @@ type TrustChipProps = {
 }
 
 export function TrustChip({ trustClass, label }: TrustChipProps) {
+  const meta = TRUST_STYLES[trustClass]
   return (
-    <span
-      className={`inline-flex rounded-md border px-2 py-0.5 text-xs font-medium ${TRUST_STYLES[trustClass]}`}
-    >
-      {displayTrustLabel(trustClass, label)}
+    <span className={['ct-badge', meta.className].join(' ')}>
+      <meta.Icon size={12} />
+      <span>{displayTrustLabel(trustClass, label)}</span>
     </span>
   )
 }

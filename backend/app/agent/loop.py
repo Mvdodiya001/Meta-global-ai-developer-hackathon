@@ -21,7 +21,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from app import models
-from app.agent import llm, prompts, tools
+from app.agent import budgets, llm, prompts, tools
 from app.core.errors import LLMRequestFailed, SourceUnavailable, ToolError
 from app.services.seed import (
     DEMO_92_AS_OF,
@@ -220,6 +220,8 @@ def run_verify(
         }
     ]
     resolved = llm.resolve_mode(mode)
+    if resolved == "live":
+        budgets.check_budget(session, str(claim.tenant_id))
     if resolved == "live" and not os.environ.get("MODEL_API_KEY"):
         raise LLMRequestFailed(
             "MODEL_API_KEY is missing: export it or run with .env sourced "

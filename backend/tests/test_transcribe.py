@@ -30,6 +30,35 @@ def test_replay_transcription() -> None:
     assert "seven years" in result.transcript
 
 
+def test_replay_miss_falls_through_to_live(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A real voice is never pre-recorded: miss + key = live, then cached."""
+    from app.core.errors import CassetteMissing
+    from app.modules.intake import transcribe
+
+    audio = bytearray(FIXTURE.read_bytes())
+    audio[-1] ^= 1  # same clip, new hash: no cassette can exist
+    cache = tmp_path / "cassettes"
+    with pytest.raises(CassetteMissing):
+        transcribe.transcribe_audio(bytes(audio), cache_dir=cache)
+
+    monkeypatch.setenv("MODEL_API_KEY", "test-key")
+    monkeypatch.setattr(
+        transcribe,
+        "_post_multipart",
+        lambda _audio, _key: {
+            "transcript": "Nimbus shall keep transfer logs for review for seven years.",
+            "turns": [],
+            "audioDurationMs": 3840,
+        },
+    )
+    live = transcribe.transcribe_audio(bytes(audio), cache_dir=cache)
+    assert live.cached is False
+    assert "transfer logs" in live.transcript
+    replayed = transcribe.transcribe_audio(bytes(audio), cache_dir=cache)
+    assert replayed.cached is True
+    assert replayed.transcript == live.transcript
+
+
 def test_dictation_fact_gate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """T7.1: proposed fact is ai_inferred, checker rejects it, approve admits it."""
     import asyncio

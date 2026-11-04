@@ -22,7 +22,9 @@ import { BeforeAfterSplit } from '../components/impact/BeforeAfterSplit'
 import { ReverifyListPanel } from '../components/impact/ReverifyListPanel'
 import { VersionPicker } from '../components/impact/VersionPicker'
 import { WhatIfPanel } from '../components/impact/WhatIfPanel'
-import { AiDraftBadge } from '../components/badges/AiDraftBadge'
+import { PageHeader } from '../components/layout/PageHeader'
+import { PanelSkeleton } from '../components/ui/Skeleton'
+import { StateMessage } from '../components/ui/StateMessage'
 import { displayAnswerCaption } from '../utils/displayFields'
 import { lawyerError, sectionWording } from '../utils/lawyerCopy'
 
@@ -66,14 +68,20 @@ export function SourceImpactPage() {
   const [before, setBefore] = useState<Finding | null>(null)
   const [after, setAfter] = useState<Finding | null>(null)
   const [reverified, setReverified] = useState(false)
+  const [rechecking, setRechecking] = useState(false)
+  const [ingesting, setIngesting] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [whatIf, setWhatIf] = useState<CounterfactualResult | null>(null)
   const [whatIfBusy, setWhatIfBusy] = useState(false)
   const [whatIfError, setWhatIfError] = useState<string | null>(null)
   const [reverifyList, setReverifyList] = useState<ReverifyList | null>(null)
   const [reverifyListError, setReverifyListError] = useState<string | null>(null)
   const [wording, setWording] = useState<Record<string, string>>({})
+  const [loading, setLoading] = useState(true)
 
   const loadSource = useCallback(async (nextSource: string) => {
+    setLoading(true)
+    setActionError(null)
     const list = await api.sourceVersions(nextSource)
     const preferred =
       list.versions.find((version) => version.is_simulated)?.id ??
@@ -107,6 +115,7 @@ export function SourceImpactPage() {
     setImpact(report)
     setAfter(null)
     setReverified(false)
+    setRechecking(false)
     setWhatIf(null)
     setWhatIfError(null)
     setWording(captions)
@@ -116,19 +125,31 @@ export function SourceImpactPage() {
     }
     const firstId = report?.affected[0]?.finding_id
     setBefore(firstId ? await api.findingById(firstId) : null)
+    setLoading(false)
   }, [])
 
   useEffect(() => {
-    void api.sources().then((sourceList) => {
-      setSources(sourceList.sources)
-      const initial =
-        sourceList.sources.find((row) => row.id === DEMO_SOURCE_ID)?.id ??
-        sourceList.sources[0]?.id
-      if (initial) {
-        setSourceId(initial)
-        void loadSource(initial)
-      }
-    })
+    void api
+      .sources()
+      .then((sourceList) => {
+        setSources(sourceList.sources)
+        const initial =
+          sourceList.sources.find((row) => row.id === DEMO_SOURCE_ID)?.id ??
+          sourceList.sources[0]?.id
+        if (initial) {
+          setSourceId(initial)
+          void loadSource(initial).catch((err: unknown) => {
+            setActionError(lawyerError(err))
+            setLoading(false)
+          })
+        } else {
+          setLoading(false)
+        }
+      })
+      .catch((err: unknown) => {
+        setActionError(lawyerError(err))
+        setLoading(false)
+      })
   }, [loadSource])
 
   const queueRows: RecheckRow[] =
@@ -145,27 +166,40 @@ export function SourceImpactPage() {
 
   async function handleSourceChange(next: string) {
     setSourceId(next)
-    await loadSource(next)
+    try {
+      await loadSource(next)
+    } catch (err) {
+      setActionError(lawyerError(err))
+      setLoading(false)
+    }
   }
 
   async function handleIngest() {
     const selected = versions.find((version) => version.id === versionId)
-    if (!selected || !diff) {
+    if (!selected || !diff || ingesting) {
       return
     }
-    const result = await api.ingest(sourceId, ingestBody(selected, diff))
-    const [report, slice, trail] = await Promise.all([
-      api.impact(result.impact_report_id),
-      api.graph(DEMO_MATTER_ID, sourceId),
-      api.audit(DEMO_MATTER_ID),
-    ])
-    const captions = await wordingFor(report.affected.map((row) => row.finding_id))
-    setImpact(report)
-    setGraph(slice)
-    setAudit(trail)
-    setAfter(null)
-    setReverified(false)
-    setWording((current) => ({ ...current, ...captions }))
+    setIngesting(true)
+    setActionError(null)
+    try {
+      const result = await api.ingest(sourceId, ingestBody(selected, diff))
+      const [report, slice, trail] = await Promise.all([
+        api.impact(result.impact_report_id),
+        api.graph(DEMO_MATTER_ID, sourceId),
+        api.audit(DEMO_MATTER_ID),
+      ])
+      const captions = await wordingFor(report.affected.map((row) => row.finding_id))
+      setImpact(report)
+      setGraph(slice)
+      setAudit(trail)
+      setAfter(null)
+      setReverified(false)
+      setWording((current) => ({ ...current, ...captions }))
+    } catch (err) {
+      setActionError(lawyerError(err))
+    } finally {
+      setIngesting(false)
+    }
   }
 
   async function handleWhatIf() {
@@ -188,29 +222,41 @@ export function SourceImpactPage() {
   }
 
   async function handleReverify() {
-    if (!impact) {
+    if (!impact || rechecking) {
       return
     }
-    const result = await api.reverify(impact.id)
-    const nextId = result.current[0]
-    const [nextFinding, trail] = await Promise.all([
-      nextId ? api.findingById(nextId) : Promise.resolve(null),
-      api.audit(DEMO_MATTER_ID),
-    ])
-    setAfter(nextFinding)
-    setAudit(trail)
-    setReverified(true)
+    setRechecking(true)
+    setActionError(null)
+    try {
+      const result = await api.reverify(impact.id)
+      const nextId = result.current[0]
+      const [nextFinding, trail] = await Promise.all([
+        nextId ? api.findingById(nextId) : Promise.resolve(null),
+        api.audit(DEMO_MATTER_ID),
+      ])
+      setAfter(nextFinding)
+      setAudit(trail)
+      setReverified(true)
+    } catch (err) {
+      setActionError(lawyerError(err))
+    } finally {
+      setRechecking(false)
+    }
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Law changes</h1>
-        <AiDraftBadge label="AI draft — not yet reviewed" />
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          See which answers need a re-check when the law changes.
-        </p>
-      </header>
+    <div className="ct-page">
+      <PageHeader
+        eyebrow="Change analysis"
+        title="Law changes"
+        description="See which earlier answers depended on a section that has changed, and re-check only what needs a fresh decision."
+      />
+
+      {actionError ? (
+        <StateMessage tone="danger" live="alert">
+          {actionError}
+        </StateMessage>
+      ) : null}
 
       <VersionPicker
         sources={sources}
@@ -221,31 +267,41 @@ export function SourceImpactPage() {
         onVersionChange={setVersionId}
         onIngest={() => void handleIngest()}
         onWhatIf={() => void handleWhatIf()}
-        whatIfBusy={whatIfBusy}
+        whatIfBusy={whatIfBusy || ingesting}
       />
 
-      <WhatIfPanel
-        result={whatIf}
-        error={whatIfError}
-        changedWording={changedWording}
-        affectedWording={wording}
-      />
-      <ReverifyListPanel list={reverifyList} error={reverifyListError} />
+      {loading ? <PanelSkeleton label="Loading the change analysis" /> : null}
+
+      {whatIf || whatIfError ? (
+        <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
+          <WhatIfPanel
+            result={whatIf}
+            error={whatIfError}
+            changedWording={changedWording}
+            affectedWording={wording}
+          />
+          <ReverifyListPanel list={reverifyList} error={reverifyListError} />
+        </div>
+      ) : (
+        <ReverifyListPanel list={reverifyList} error={reverifyListError} />
+      )}
 
       {diff ? <DiffView diff={diff} /> : null}
       {graph ? <StaleGraph graph={graph} /> : null}
 
-      {impact ? (
-        <AffectedFindings
-          rows={queueRows}
-          onRecheck={() => void handleReverify()}
-          rechecking={false}
-          rechecked={reverified}
-        />
-      ) : null}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] xl:items-start">
+        {impact ? (
+          <AffectedFindings
+            rows={queueRows}
+            onRecheck={() => void handleReverify()}
+            rechecking={rechecking}
+            rechecked={reverified}
+          />
+        ) : null}
+        {audit ? <AuditList audit={audit} /> : null}
+      </div>
 
       {before ? <BeforeAfterSplit before={before} after={after} /> : null}
-      {audit ? <AuditList audit={audit} /> : null}
     </div>
   )
 }

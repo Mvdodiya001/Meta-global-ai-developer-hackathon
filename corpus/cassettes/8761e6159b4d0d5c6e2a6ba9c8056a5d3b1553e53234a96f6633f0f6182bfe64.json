@@ -1,0 +1,202 @@
+{
+  "request": {
+    "model": "muse-spark-1.3-contributor",
+    "input": "Segment the document below into its numbered clauses, however many there are (use each clause's printed number as ref). Call emit_extraction exactly once with ALL clauses and facts in that call. Quote each clause body verbatim: copy the exact characters, do not reword, summarise, or fix punctuation. For each clause give exactly one candidate fact: a concise statement of the clause's operative content, with clause_ref naming its clause and structured carrying at least {\"clause_ref\": ref} plus any numbers, dates, time limits, or party roles stated in the clause.\n\n1 Parties\nThis Master Data Processing Agreement is entered into by Beacon Retail Pvt Ltd (\"Beacon\", the Data Fiduciary) and Stratus Analytics Pvt Ltd (\"Stratus\", the Data Processor), both fictional companies incorporated in India.\n\n2 Definitions\n\"Personal Data\" means data about an individual who is identifiable by or in relation to such data. \"Processing\" means any operation performed on Personal Data, including collection, storage, analysis and erasure. \"Breach\" means any unauthorised access to or loss of Personal Data.\n\n3 Scope of processing\nStratus shall process Personal Data only for order fulfilment and delivery updates on Beacon's retail platform, and for no other purpose unless this agreement is amended in writing.\n\n4 Purpose limitation\nStratus shall not use Personal Data for advertising, profiling or any purpose incompatible with order fulfilment and delivery updates. Any new purpose requires Beacon's prior written approval.\n\n5 Data categories\nThe Personal Data covered are customer name, contact details, delivery address and order history. Stratus shall not collect or retain any data beyond what these categories require.\n\n6 Security safeguards\nStratus shall protect Personal Data with encryption in transit and at rest, role-based access control, and continuous logging and monitoring of access. Stratus shall review these measures at least once a year and fix gaps without delay.\n\n7 Processor engagement\nStratus acts only on Beacon's documented instructions and only under this valid contract. Stratus shall not appoint a sub-processor without Beacon's prior written consent, and shall flow these obligations down to any approved sub-processor.\n\n8 Sub-processors\nThe approved sub-processors are listed in Schedule 1. Stratus shall inform Beacon before any change to that list and shall remain fully responsible for every sub-processor's compliance.\n\n9.1 Cross-border transfers, general\nStratus shall not transfer Personal Data outside India except under clause 9.2 and only with safeguards that keep the data protected to the same standard as within India.\n\n9.2 Cross-border transfer for fraud screening\nStratus may transfer order data to its analytics cluster outside India for fraud screening. Such transfers are limited to order identifiers and risk scores, and Stratus shall keep transfer logs for review.\n\n10 Breach intimation\nOn becoming aware of a Breach, Stratus shall intimate Beacon within twenty-four hours with a description of the breach and its likely impact. Beacon shall then intimate the Board and each affected individual, with full updated details within seventy-two hours.\n\n11 Retention and erasure\nStratus shall erase Personal Data when Beacon requests it, when consent is withdrawn, or when the purpose is served, unless retention is required by law. Stratus shall retain processing logs for a minimum period of one year and shall cause its sub-processors to erase data likewise.\n\n",
+    "tools": [
+      {
+        "type": "function",
+        "name": "emit_extraction",
+        "description": "Emit the segmented clauses of an uploaded document plus one candidate fact per clause. Quote every clause body verbatim.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "clauses": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "ref": {
+                    "type": "string"
+                  },
+                  "heading": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "heading",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "facts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "statement": {
+                    "type": "string"
+                  },
+                  "clause_ref": {
+                    "type": "string"
+                  },
+                  "structured": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "statement",
+                  "clause_ref",
+                  "structured"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "clauses",
+            "facts"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "parallel_tool_calls": false,
+    "temperature": 0
+  },
+  "response": {
+    "top_logprobs": 0,
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "service_tier": "auto",
+    "model": "muse-spark-1.3-contributor",
+    "reasoning": {
+      "effort": "high"
+    },
+    "background": false,
+    "tools": [
+      {
+        "type": "function",
+        "name": "emit_extraction",
+        "description": "Emit the segmented clauses of an uploaded document plus one candidate fact per clause. Quote every clause body verbatim.",
+        "parameters": {
+          "properties": {
+            "clauses": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "heading": {
+                    "type": "string"
+                  },
+                  "ref": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "heading",
+                  "text"
+                ],
+                "type": "object"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "facts": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "clause_ref": {
+                    "type": "string"
+                  },
+                  "statement": {
+                    "type": "string"
+                  },
+                  "structured": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "statement",
+                  "clause_ref",
+                  "structured"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "clauses",
+            "facts"
+          ],
+          "type": "object",
+          "additionalProperties": false
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "truncation": "disabled",
+    "id": "resp_6ae8a036548f7fb2795e46dc",
+    "object": "response",
+    "status": "completed",
+    "created_at": 1793630262.0,
+    "completed_at": 1793630262.0,
+    "error": null,
+    "incomplete_details": null,
+    "output": [
+      {
+        "type": "reasoning",
+        "id": "rs_6ae8a036548f7fb2795e46dc:rs_f1a75e12-36e8-403f-a669-893a0d6e9b80",
+        "summary": [],
+        "status": "completed"
+      },
+      {
+        "type": "message",
+        "id": "rs_8c41253e-c3b9-48e1-a4ce-1ae7d3d24cca",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "output_text",
+            "text": "Segmenting the agreement into its numbered clauses for verbatim extraction.",
+            "annotations": [],
+            "logprobs": []
+          }
+        ],
+        "phase": "commentary",
+        "status": "completed"
+      },
+      {
+        "type": "function_call",
+        "id": "fc_6a45fbc5-2b85-4dbd-b8f1-b5a3028004e8",
+        "call_id": "call_6a45fbc5-2b85-4dbd-b8f1-b5a3028004e8",
+        "name": "emit_extraction",
+        "arguments": "{\"clauses\":[{\"heading\":\"Parties\",\"ref\":\"1\",\"text\":\"This Master Data Processing Agreement is entered into by Beacon Retail Pvt Ltd (\\\"Beacon\\\", the Data Fiduciary) and Stratus Analytics Pvt Ltd (\\\"Stratus\\\", the Data Processor), both fictional companies incorporated in India.\"},{\"heading\":\"Definitions\",\"ref\":\"2\",\"text\":\"\\\"Personal Data\\\" means data about an individual who is identifiable by or in relation to such data. \\\"Processing\\\" means any operation performed on Personal Data, including collection, storage, analysis and erasure. \\\"Breach\\\" means any unauthorised access to or loss of Personal Data.\"},{\"heading\":\"Scope of processing\",\"ref\":\"3\",\"text\":\"Stratus shall process Personal Data only for order fulfilment and delivery updates on Beacon's retail platform, and for no other purpose unless this agreement is amended in writing.\"},{\"heading\":\"Purpose limitation\",\"ref\":\"4\",\"text\":\"Stratus shall not use Personal Data for advertising, profiling or any purpose incompatible with order fulfilment and delivery updates. Any new purpose requires Beacon's prior written approval.\"},{\"heading\":\"Data categories\",\"ref\":\"5\",\"text\":\"The Personal Data covered are customer name, contact details, delivery address and order history. Stratus shall not collect or retain any data beyond what these categories require.\"},{\"heading\":\"Security safeguards\",\"ref\":\"6\",\"text\":\"Stratus shall protect Personal Data with encryption in transit and at rest, role-based access control, and continuous logging and monitoring of access. Stratus shall review these measures at least once a year and fix gaps without delay.\"},{\"heading\":\"Processor engagement\",\"ref\":\"7\",\"text\":\"Stratus acts only on Beacon's documented instructions and only under this valid contract. Stratus shall not appoint a sub-processor without Beacon's prior written consent, and shall flow these obligations down to any approved sub-processor.\"},{\"heading\":\"Sub-processors\",\"ref\":\"8\",\"text\":\"The approved sub-processors are listed in Schedule 1. Stratus shall inform Beacon before any change to that list and shall remain fully responsible for every sub-processor's compliance.\"},{\"heading\":\"Cross-border transfers, general\",\"ref\":\"9.1\",\"text\":\"Stratus shall not transfer Personal Data outside India except under clause 9.2 and only with safeguards that keep the data protected to the same standard as within India.\"},{\"heading\":\"Cross-border transfer for fraud screening\",\"ref\":\"9.2\",\"text\":\"Stratus may transfer order data to its analytics cluster outside India for fraud screening. Such transfers are limited to order identifiers and risk scores, and Stratus shall keep transfer logs for review.\"},{\"heading\":\"Breach intimation\",\"ref\":\"10\",\"text\":\"On becoming aware of a Breach, Stratus shall intimate Beacon within twenty-four hours with a description of the breach and its likely impact. Beacon shall then intimate the Board and each affected individual, with full updated details within seventy-two hours.\"},{\"heading\":\"Retention and erasure\",\"ref\":\"11\",\"text\":\"Stratus shall erase Personal Data when Beacon requests it, when consent is withdrawn, or when the purpose is served, unless retention is required by law. Stratus shall retain processing logs for a minimum period of one year and shall cause its sub-processors to erase data likewise.\"}],\"facts\":[{\"clause_ref\":\"1\",\"statement\":\"Beacon Retail Pvt Ltd as Data Fiduciary and Stratus Analytics Pvt Ltd as Data Processor enter into this Master Data Processing Agreement.\",\"structured\":{\"clause_ref\":\"1\",\"Data_Fiduciary\":\"Beacon Retail Pvt Ltd\",\"Data_Processor\":\"Stratus Analytics Pvt Ltd\"}},{\"clause_ref\":\"2\",\"statement\":\"Defines Personal Data, Processing and Breach.\",\"structured\":{\"clause_ref\":\"2\"}},{\"clause_ref\":\"3\",\"statement\":\"Stratus may process Personal Data only for order fulfilment and delivery updates unless the agreement is amended in writing.\",\"structured\":{\"clause_ref\":\"3\",\"Data_Processor\":\"Stratus\",\"Data_Fiduciary\":\"Beacon\"}},{\"clause_ref\":\"4\",\"statement\":\"Stratus must not use Personal Data for advertising, profiling or incompatible purposes; any new purpose needs Beacon's prior written approval.\",\"structured\":{\"clause_ref\":\"4\",\"Data_Processor\":\"Stratus\",\"Data_Fiduciary\":\"Beacon\"}},{\"clause_ref\":\"5\",\"statement\":\"Coverage is limited to customer name, contact details, delivery address and order history with no additional collection or retention.\",\"structured\":{\"clause_ref\":\"5\",\"Data_Processor\":\"Stratus\"}},{\"clause_ref\":\"6\",\"statement\":\"Stratus must apply encryption, role-based access control and logging/monitoring, and review measures at least once a year.\",\"structured\":{\"clause_ref\":\"6\",\"Data_Processor\":\"Stratus\",\"review_frequency\":\"at least once a year\"}},{\"clause_ref\":\"7\",\"statement\":\"Stratus acts only on Beacon's documented instructions under this contract and must not appoint a sub-processor without Beacon's prior written consent.\",\"structured\":{\"clause_ref\":\"7\",\"Data_Processor\":\"Stratus\",\"Data_Fiduciary\":\"Beacon\",\"sub-processor_role\":\"sub-processor\"}},{\"clause_ref\":\"8\",\"statement\":\"Approved sub-processors are in Schedule 1; Stratus must notify Beacon before changes and remains fully responsible for sub-processor compliance.\",\"structured\":{\"clause_ref\":\"8\",\"Data_Processor\":\"Stratus\",\"Data_Fiduciary\":\"Beacon\",\"schedule\":\"Schedule 1\"}},{\"clause_ref\":\"9.1\",\"statement\":\"Stratus must not transfer Personal Data outside India except under clause 9.2 with equivalent protection safeguards.\",\"structured\":{\"clause_ref\":\"9.1\",\"Data_Processor\":\"Stratus\",\"exception_clause\":\"9.2\"}},{\"clause_ref\":\"9.2\",\"statement\":\"Stratus may transfer only order identifiers and risk scores outside India for fraud screening and must keep transfer logs.\",\"structured\":{\"clause_ref\":\"9.2\",\"Data_Processor\":\"Stratus\"}},{\"clause_ref\":\"10\",\"statement\":\"Stratus must intimate Beacon within twenty-four hours of a Breach; Beacon must then intimate the Board and affected individuals with full details within seventy-two hours.\",\"structured\":{\"clause_ref\":\"10\",\"Data_Processor\":\"Stratus\",\"Data_Fiduciary\":\"Beacon\",\"notified_parties\":[\"Board\",\"affected individual\"],\"processor_notification_limit\":\"twenty-four hours\",\"fiduciary_notification_limit\":\"seventy-two hours\"}},{\"clause_ref\":\"11\",\"statement\":\"Stratus must erase Personal Data on request, consent withdrawal or purpose fulfilment unless legally required to retain, and must retain logs for minimum one year.\",\"structured\":{\"clause_ref\":\"11\",\"Data_Processor\":\"Stratus\",\"Data_Fiduciary\":\"Beacon\",\"log_retention_minimum\":\"one year\"}}]}",
+        "status": "completed"
+      }
+    ],
+    "instructions": null,
+    "usage": {
+      "input_tokens": 1369,
+      "input_tokens_details": {
+        "cached_tokens": 1265
+      },
+      "output_tokens": 5008,
+      "output_tokens_details": {
+        "reasoning_tokens": 3359
+      },
+      "total_tokens": 6377
+    },
+    "parallel_tool_calls": false,
+    "store": true
+  }
+}

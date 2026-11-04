@@ -8,6 +8,8 @@ import { lawyerError } from '../../utils/lawyerCopy'
 import { asTrustClass } from '../../utils/trustClass'
 import { AiDraftBadge } from '../badges/AiDraftBadge'
 import { TrustChip } from '../TrustChip'
+import { Button } from '../ui/Button'
+import { StateMessage } from '../ui/StateMessage'
 
 const FALLBACK_CLAUSE = 'CL-10'
 
@@ -15,7 +17,7 @@ type DictationPanelProps = {
   clauses: Clause[]
   defaultClauseId: string
   onFactProposed: (fact: Fact) => void
-  onApprove: (factId: string) => void
+  onApprove: (factId: string) => Promise<boolean>
 }
 
 export function DictationPanel({
@@ -28,6 +30,7 @@ export function DictationPanel({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fact, setFact] = useState<Fact | null>(null)
+  const [approving, setApproving] = useState(false)
 
   useEffect(() => {
     setClauseId(defaultClauseId || FALLBACK_CLAUSE)
@@ -74,73 +77,98 @@ export function DictationPanel({
   const approved = fact ? asTrustClass(fact.trust_class) === 'lawyer_confirmed' : false
 
   return (
-    <section className="ct-panel space-y-3 p-4" aria-labelledby="dictation-heading">
-      <h2 id="dictation-heading" className="ct-section-title">
-        Dictate a fact
-      </h2>
-      <label htmlFor="dictation-clause" className="block text-sm font-medium">
-        Clause
-      </label>
-      <select
-        id="dictation-clause"
-        value={clauseId}
-        onChange={(event) => setClauseId(event.target.value)}
-        className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
-      >
-        {clauses.map((clause) => (
-          <option key={clause.id} value={clause.id}>
-            {clause.ref} {clause.heading}
-          </option>
-        ))}
-        {clauses.every((clause) => clause.id !== clauseId) ? (
-          <option value={clauseId}>Current clause</option>
-        ) : null}
-      </select>
-      <label htmlFor="dictation-audio" className="block text-sm font-medium">
-        Dictate a fact
-      </label>
-      <input
-        id="dictation-audio"
-        type="file"
-        accept="audio/wav"
-        disabled={busy}
-        className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium dark:file:border-slate-600 dark:file:bg-slate-900"
-        onChange={(event) => {
-          void handleFile(event.target.files?.[0])
-          event.target.value = ''
-        }}
-      />
-      {busy ? <p className="text-sm">Listening…</p> : null}
-      {error ? (
-        <p role="alert" className="text-sm font-medium text-rose-800 dark:text-rose-200">
-          {error}
-        </p>
-      ) : null}
-      {fact ? (
-        <div className="space-y-2 rounded-md border border-slate-200 p-3 dark:border-slate-700">
-          <div className="flex flex-wrap items-center gap-2">
-            <TrustChip trustClass={asTrustClass(fact.trust_class)} label={fact.trust_label} />
-            {approved ? null : <AiDraftBadge label="AI draft — not yet reviewed" />}
-          </div>
-          <p className="text-sm">{fact.statement}</p>
-          {approved ? null : (
-            <button
-              type="button"
-              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
-              onClick={() => {
-                onApprove(fact.id)
-                setFact({
-                  ...fact,
-                  trust_class: 'lawyer_confirmed',
-                  trust_label: 'Confirmed by you',
-                })
-              }}
-            >
-              Approve
-            </button>
-          )}
+    <section className="ct-panel" aria-labelledby="dictation-heading">
+      <div className="ct-panel-head">
+        <div>
+          <h2 id="dictation-heading" className="ct-panel-title">
+            Dictate a fact
+          </h2>
+          <p className="ct-panel-desc">
+            A recording becomes a proposed fact. It is not relied on until you approve it.
+          </p>
         </div>
-      ) : null}
+      </div>
+      <div className="ct-panel-body space-y-3">
+        <div className="ct-field">
+          <label htmlFor="dictation-clause" className="ct-label">
+            Clause
+          </label>
+          <select
+            id="dictation-clause"
+            value={clauseId}
+            onChange={(event) => setClauseId(event.target.value)}
+            className="ct-select"
+          >
+            {clauses.map((clause) => (
+              <option key={clause.id} value={clause.id}>
+                {clause.ref} {clause.heading}
+              </option>
+            ))}
+            {clauses.every((clause) => clause.id !== clauseId) ? (
+              <option value={clauseId}>Current clause</option>
+            ) : null}
+          </select>
+        </div>
+        <div className="ct-field">
+          <label htmlFor="dictation-audio" className="ct-label">
+            Dictate a fact
+          </label>
+          <input
+            id="dictation-audio"
+            type="file"
+            accept="audio/wav"
+            disabled={busy}
+            className="block w-full text-sm text-ct-soft file:mr-3 file:cursor-pointer file:rounded file:border file:border-ct-lineStrong file:bg-ct-surface file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-ct-soft"
+            onChange={(event) => {
+              void handleFile(event.target.files?.[0])
+              event.target.value = ''
+            }}
+          />
+        </div>
+        {busy ? (
+          <p className="flex items-center gap-2 text-sm text-ct-muted" role="status">
+            <span className="ct-spinner" aria-hidden="true" />
+            Listening…
+          </p>
+        ) : null}
+        {error ? (
+          <StateMessage tone="danger" live="alert">
+            {error}
+          </StateMessage>
+        ) : null}
+        {fact ? (
+          <div className="border-t border-ct-line pt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <TrustChip trustClass={asTrustClass(fact.trust_class)} label={fact.trust_label} />
+              {approved ? null : <AiDraftBadge label="AI draft — not yet reviewed" />}
+            </div>
+            <p className="text-sm leading-relaxed text-ct-soft">{fact.statement}</p>
+            {approved ? null : (
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={approving}
+                onClick={() => {
+                  setApproving(true)
+                  void onApprove(fact.id)
+                    .then((ok) => {
+                      if (ok) {
+                        setFact({
+                          ...fact,
+                          trust_class: 'lawyer_confirmed',
+                          trust_label: 'Confirmed by you',
+                        })
+                      }
+                    })
+                    .finally(() => setApproving(false))
+                }}
+              >
+                Approve
+              </Button>
+            )}
+          </div>
+        ) : null}
+      </div>
     </section>
   )
 }

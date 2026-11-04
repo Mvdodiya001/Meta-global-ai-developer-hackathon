@@ -1,0 +1,101 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 5 0 R /Resources << /Font << /F1 7 0 R /F2 8 0 R >> >> >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 6 0 R /Resources << /Font << /F1 7 0 R /F2 8 0 R >> >> >>
+endobj
+5 0 obj
+<< /Length 3330 >>
+stream
+BT /F1 11 Tf 56 786 Td (Master Data Processing Agreement \(DEMO DATA — fictional contract\)) Tj ET
+BT /F1 11 Tf 56 767 Td (This is a wholly fictional agreement between two fictional companies,) Tj ET
+BT /F1 11 Tf 56 748 Td (written only to demonstrate ClauseTrace. It creates no legal obligations.) Tj ET
+BT /F2 15 Tf 56 729 Td (1 Parties) Tj ET
+BT /F1 11 Tf 56 704 Td (This Master Data Processing Agreement is entered into by Beacon Retail Pvt Ltd) Tj ET
+BT /F1 11 Tf 56 689 Td (\("Beacon", the Data Fiduciary\) and Stratus Analytics Pvt Ltd \("Stratus", the Data) Tj ET
+BT /F1 11 Tf 56 674 Td (Processor\), both fictional companies incorporated in India.) Tj ET
+BT /F2 15 Tf 56 655 Td (2 Definitions) Tj ET
+BT /F1 11 Tf 56 630 Td ("Personal Data" means data about an individual who is identifiable by or in relation) Tj ET
+BT /F1 11 Tf 56 615 Td (to such data. "Processing" means any operation performed on Personal Data,) Tj ET
+BT /F1 11 Tf 56 600 Td (including collection, storage, analysis and erasure. "Breach" means any) Tj ET
+BT /F1 11 Tf 56 585 Td (unauthorised access to or loss of Personal Data.) Tj ET
+BT /F2 15 Tf 56 566 Td (3 Scope of processing) Tj ET
+BT /F1 11 Tf 56 541 Td (Stratus shall process Personal Data only for order fulfilment and delivery) Tj ET
+BT /F1 11 Tf 56 526 Td (updates on Beacon's retail platform, and for no other purpose unless this) Tj ET
+BT /F1 11 Tf 56 511 Td (agreement is amended in writing.) Tj ET
+BT /F2 15 Tf 56 492 Td (4 Purpose limitation) Tj ET
+BT /F1 11 Tf 56 467 Td (Stratus shall not use Personal Data for advertising, profiling or any purpose) Tj ET
+BT /F1 11 Tf 56 452 Td (incompatible with order fulfilment and delivery updates. Any new purpose) Tj ET
+BT /F1 11 Tf 56 437 Td (requires Beacon's prior written approval.) Tj ET
+BT /F2 15 Tf 56 418 Td (5 Data categories) Tj ET
+BT /F1 11 Tf 56 393 Td (The Personal Data covered are customer name, contact details, delivery address) Tj ET
+BT /F1 11 Tf 56 378 Td (and order history. Stratus shall not collect or retain any data beyond what) Tj ET
+BT /F1 11 Tf 56 363 Td (these categories require.) Tj ET
+BT /F2 15 Tf 56 344 Td (6 Security safeguards) Tj ET
+BT /F1 11 Tf 56 319 Td (Stratus shall protect Personal Data with encryption in transit and at rest,) Tj ET
+BT /F1 11 Tf 56 304 Td (role-based access control, and continuous logging and monitoring of access.) Tj ET
+BT /F1 11 Tf 56 289 Td (Stratus shall review these measures at least once a year and fix gaps without) Tj ET
+BT /F1 11 Tf 56 274 Td (delay.) Tj ET
+BT /F2 15 Tf 56 255 Td (7 Processor engagement) Tj ET
+BT /F1 11 Tf 56 230 Td (Stratus acts only on Beacon's documented instructions and only under this valid) Tj ET
+BT /F1 11 Tf 56 215 Td (contract. Stratus shall not appoint a sub-processor without Beacon's prior) Tj ET
+BT /F1 11 Tf 56 200 Td (written consent, and shall flow these obligations down to any approved) Tj ET
+BT /F1 11 Tf 56 185 Td (sub-processor.) Tj ET
+BT /F2 15 Tf 56 166 Td (8 Sub-processors) Tj ET
+BT /F1 11 Tf 56 141 Td (The approved sub-processors are listed in Schedule 1. Stratus shall inform) Tj ET
+BT /F1 11 Tf 56 126 Td (Beacon before any change to that list and shall remain fully responsible for) Tj ET
+BT /F1 11 Tf 56 111 Td (every sub-processor's compliance.) Tj ET
+BT /F2 15 Tf 56 92 Td (9.1 Cross-border transfers, general) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Length 1539 >>
+stream
+BT /F1 11 Tf 56 786 Td (Stratus shall not transfer Personal Data outside India except under clause 9.2) Tj ET
+BT /F1 11 Tf 56 771 Td (and only with safeguards that keep the data protected to the same standard) Tj ET
+BT /F1 11 Tf 56 756 Td (as within India.) Tj ET
+BT /F2 15 Tf 56 737 Td (9.2 Cross-border transfer for fraud screening) Tj ET
+BT /F1 11 Tf 56 712 Td (Stratus may transfer order data to its analytics cluster outside India for fraud) Tj ET
+BT /F1 11 Tf 56 697 Td (screening. Such transfers are limited to order identifiers and risk scores, and) Tj ET
+BT /F1 11 Tf 56 682 Td (Stratus shall keep transfer logs for review.) Tj ET
+BT /F2 15 Tf 56 663 Td (10 Breach intimation) Tj ET
+BT /F1 11 Tf 56 638 Td (On becoming aware of a Breach, Stratus shall intimate Beacon within) Tj ET
+BT /F1 11 Tf 56 623 Td (twenty-four hours with a description of the breach and its likely impact.) Tj ET
+BT /F1 11 Tf 56 608 Td (Beacon shall then intimate the Board and each affected individual, with full) Tj ET
+BT /F1 11 Tf 56 593 Td (updated details within seventy-two hours.) Tj ET
+BT /F2 15 Tf 56 574 Td (11 Retention and erasure) Tj ET
+BT /F1 11 Tf 56 549 Td (Stratus shall erase Personal Data when Beacon requests it, when consent is) Tj ET
+BT /F1 11 Tf 56 534 Td (withdrawn, or when the purpose is served, unless retention is required by law.) Tj ET
+BT /F1 11 Tf 56 519 Td (Stratus shall retain processing logs for a minimum period of one year and shall) Tj ET
+BT /F1 11 Tf 56 504 Td (cause its sub-processors to erase data likewise.) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+8 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000257 00000 n 
+0000000393 00000 n 
+0000003775 00000 n 
+0000005366 00000 n 
+0000005436 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+5511
+%%EOF

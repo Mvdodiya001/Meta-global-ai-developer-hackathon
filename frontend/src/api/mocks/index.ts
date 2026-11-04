@@ -34,10 +34,16 @@ import type {
 } from '../types'
 import { STATUS_LABELS, TRUST_LABELS } from '../../content/glossary'
 import {
+  fetchMockAuth,
   fetchMockCounterfactual,
   fetchMockDictation,
+  fetchMockDocumentPages,
+  fetchMockJob,
   fetchMockReverifyList,
   fetchMockScan,
+  fetchMockTranscribe,
+  fetchMockUpdateClause,
+  fetchMockUploadDocument,
 } from './stretch'
 import {
   afterFindingFrom,
@@ -217,6 +223,13 @@ export async function fetchMockUnknownFinding(): Promise<Finding> {
   return unknownFinding()
 }
 
+export async function fetchMockHistory(claimId: string): Promise<Finding[]> {
+  if (claimId === 'C-UNK') {
+    return [unknownFinding()]
+  }
+  return [mockData.finding]
+}
+
 export async function fetchMockApproveFact(factId: string): Promise<FactAction> {
   const fact = mockData.facts.facts.find((row) => row.id === factId)
   if (fact) {
@@ -239,10 +252,16 @@ export async function fetchMockReviewFinding(findingId: string): Promise<ReviewR
 }
 
 export {
+  fetchMockAuth,
   fetchMockCounterfactual,
   fetchMockDictation,
+  fetchMockDocumentPages,
+  fetchMockJob,
   fetchMockReverifyList,
   fetchMockScan,
+  fetchMockTranscribe,
+  fetchMockUpdateClause,
+  fetchMockUploadDocument,
 }
 
 export async function pollMockRunEvents(

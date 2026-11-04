@@ -26,6 +26,8 @@ from app.models import Base
 APPEND_ONLY_TABLES = ("findings", "source_versions", "provisions", "audit_log")
 
 ALL_TABLES = (
+    "tenants",
+    "users",
     "matters",
     "matter_context",
     "sources",
@@ -46,6 +48,7 @@ ALL_TABLES = (
     "llm_calls",
     "reviews",
     "audit_log",
+    "intake_jobs",
 )
 
 
@@ -86,12 +89,89 @@ def get_engine(path: str | Path) -> Engine:
     return engine
 
 
+def database_url() -> str:
+    """Database URL for this process (Rewrite P1).
+
+    `CLAUSETRACE_DB_URL` (any SQLAlchemy URL, e.g. PostgreSQL) wins;
+    otherwise the demo SQLite file. Demo behaviour is unchanged.
+    """
+    override = os.environ.get("CLAUSETRACE_DB_URL")
+    if override:
+        return override
+    return f"sqlite:///{default_db_path()}"
+
+
+def get_engine_for_url(url: str) -> Engine:
+    """Engine for any SQLAlchemy URL; SQLite files keep NullPool (P1)."""
+    if url.startswith("sqlite"):
+        return sa.create_engine(url, poolclass=sa.pool.NullPool)
+    return sa.create_engine(url, pool_pre_ping=True)
+
+
+ADDITIVE_COLUMNS: dict[str, list[tuple[str, str]]] = {
+    # Columns added after tables first shipped. init_engine adds any that
+    # an older database file is missing, so a demo DB created before a
+    # schema change keeps working instead of 500ing on INSERT.
+    "intake_jobs": [("input_b64", "TEXT")],
+    "matters": [("tenant_id", "TEXT NOT NULL DEFAULT 'demo'")],
+    "documents": [("tenant_id", "TEXT NOT NULL DEFAULT 'demo'")],
+    "facts": [("tenant_id", "TEXT NOT NULL DEFAULT 'demo'")],
+    "claims": [("tenant_id", "TEXT NOT NULL DEFAULT 'demo'")],
+    "findings": [("tenant_id", "TEXT NOT NULL DEFAULT 'demo'")],
+    "audit_log": [("tenant_id", "TEXT NOT NULL DEFAULT 'demo'")],
+}
+
+
+def ensure_columns(engine: Engine) -> None:
+    """ADD any known additive columns missing from an older file (P-C).
+
+    SQLite and Postgres both accept ADD COLUMN for these; Postgres uses
+    IF NOT EXISTS. Tables themselves come from create_all.
+    """
+    with engine.begin() as conn:
+        for table, columns in ADDITIVE_COLUMNS.items():
+            if engine.dialect.name == "sqlite":
+                existing = {
+                    row[1]
+                    for row in conn.execute(sa.text(f"PRAGMA table_info({table})"))
+                }
+            else:
+                existing = {
+                    row[0]
+                    for row in conn.execute(
+                        sa.text(
+                            "SELECT column_name FROM information_schema.columns "
+                            "WHERE table_name = :table"
+                        ),
+                        {"table": table},
+                    )
+                }
+            for name, ddl in columns:
+                if name not in existing:
+                    guard = "IF NOT EXISTS " if engine.dialect.name != "sqlite" else ""
+                    conn.execute(
+                        sa.text(f"ALTER TABLE {table} ADD COLUMN {guard}{name} {ddl}")
+                    )
+
+
+def init_engine(engine: Engine) -> Engine:
+    """Create tables + append-only triggers on an engine (P1).
+
+    Triggers are SQLite/Postgres-compatible (BEFORE UPDATE/DELETE with
+    RAISE is SQLite syntax; on Postgres the DDL is skipped and
+    append-only is enforced by the service layer until P2 adds
+    Postgres-native rules).
+    """
+    Base.metadata.create_all(engine)
+    ensure_columns(engine)
+    if engine.dialect.name == "sqlite":
+        with engine.begin() as conn:
+            for table in APPEND_ONLY_TABLES:
+                for operation in ("UPDATE", "DELETE"):
+                    conn.execute(trigger_ddl(table, operation))
+    return engine
+
+
 def init_db(path: str | Path) -> Engine:
     """Create all §2 tables plus append-only triggers; return the engine (T1.1)."""
-    engine = get_engine(path)
-    Base.metadata.create_all(engine)
-    with engine.begin() as conn:
-        for table in APPEND_ONLY_TABLES:
-            for operation in ("UPDATE", "DELETE"):
-                conn.execute(trigger_ddl(table, operation))
-    return engine
+    return init_engine(get_engine(path))

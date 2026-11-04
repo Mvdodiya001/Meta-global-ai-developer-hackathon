@@ -19,13 +19,13 @@ from pathlib import Path
 from typing import Any
 
 import sqlalchemy as sa
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, Header
 from fastapi.responses import JSONResponse
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import models, schemas
-from app.agent import claims, extract, scan, tools, transcribe
+from app.agent import claims, scan, tools, transcribe
 from app.agent import loop as loop_agent
 from app.core.errors import (
     CassetteMissing,
@@ -38,7 +38,9 @@ from app.core.errors import (
     SourceUnavailable,
     ToolError,
 )
-from app.db import default_db_path, get_engine
+from app.db import default_db_path, init_db
+from app.modules.intake import jobs as intake_jobs
+from app.modules.intake import pdf as pdf_intake
 from app.services import counterfactual as counterfactual_service
 from app.services import graph, impact, memory, premises, reverify, seed, sources
 
@@ -60,10 +62,15 @@ def _new_id(prefix: str) -> str:
 
 
 def _engine_for(path: str) -> Engine:
-    """Cache one engine per database path (T4.5)."""
+    """Cache one engine per database path (T4.5).
+
+    Uses `init_db`, not bare `get_engine`: booting the server must also
+    create missing tables and heal additive columns on an older demo file
+    (otherwise a stale file 500s on INSERT).
+    """
     engine = _engines.get(path)
     if engine is None:
-        engine = get_engine(path)
+        engine = init_db(path)
         _engines[path] = engine
     return engine
 
@@ -504,81 +511,14 @@ async def extract_document(
     document = session.get(models.Document, id)
     if document is None:
         raise SourceUnavailable(f"unknown document: {id}")
-    version = _latest_version(session, id)
-    if version is None:
+    if _latest_version(session, id) is None:
         raise SourceUnavailable(f"document {id} has no versions")
-    result = extract.extract_document(
-        version.text, mode=None, cache_dir=CASSETTES_DIR, session=session
-    )
-    now = _utcnow()
-    new_version = models.DocumentVersion(
-        id=_new_id("DV"),
-        document_id=id,
-        text=version.text,
-        sha256=sources.sha256_text(version.text),
-        created_at=now,
-    )
-    session.add(new_version)
-    clause_ids: dict[str, str] = {}
-    for clause_item in result.clauses:
-        clause_id = _new_id("CL")
-        clause_ids[clause_item.ref] = clause_id
-        session.add(
-            models.Clause(
-                id=clause_id,
-                document_version_id=new_version.id,
-                ref=clause_item.ref,
-                heading=clause_item.heading,
-                text=clause_item.text,
-                span_start=clause_item.span_start,
-                span_end=clause_item.span_end,
-            )
-        )
-    created_facts = []
-    for fact_item in result.facts:
-        fact_id = _new_id("F")
-        created_facts.append(
-            models.Fact(
-                id=fact_id,
-                matter_id=document.matter_id,
-                clause_id=clause_ids.get(fact_item.clause_ref),
-                statement=fact_item.statement,
-                structured_json=dict(fact_item.structured),
-                origin=fact_item.origin,
-                trust_class=fact_item.trust_class,
-                created_at=now,
-            )
-        )
-        session.add(created_facts[-1])
-    session.commit()
+    stored = intake_jobs.extract_and_store(session, id, CASSETTES_DIR)
     return {
-        "clauses": [
-            {
-                "id": cid,
-                "document_version_id": new_version.id,
-                "ref": clause_item.ref,
-                "heading": clause_item.heading,
-                "text": clause_item.text,
-                "span_start": clause_item.span_start,
-                "span_end": clause_item.span_end,
-            }
-            for cid, clause_item in zip(
-                [clause_ids[item.ref] for item in result.clauses], result.clauses
-            )
-        ],
+        "clauses": stored["clauses"],
         "facts": [
-            {
-                "id": row.id,
-                "matter_id": row.matter_id,
-                "clause_id": row.clause_id,
-                "statement": row.statement,
-                "structured": dict(row.structured_json or {}),
-                "origin": row.origin,
-                "trust_class": row.trust_class,
-                "trust_label": _trust_label(str(row.trust_class)),
-                "created_at": row.created_at,
-            }
-            for row in created_facts
+            {**fact, "trust_label": _trust_label(str(fact["trust_class"]))}
+            for fact in stored["facts"]
         ],
     }
 
@@ -607,6 +547,163 @@ def _resolve_clause(
         )
     ).scalars().first()
     return target if target is not None else clause
+
+
+def _run_job_later(job_id: str) -> None:
+    """Background worker entry: fresh session, job records its outcome (P3)."""
+    session = sessionmaker(bind=_engine_for(str(default_db_path())), future=True)()
+    try:
+        intake_jobs.process_job(session, job_id, CASSETTES_DIR)
+    finally:
+        session.close()
+
+
+@router.post("/api/matters/{id}/documents/upload", response_model=schemas.UploadResult)
+@endpoint
+async def upload_document(
+    id: str,
+    body: schemas.UploadDocumentRequest,
+    background: BackgroundTasks,
+    session: Session = Depends(db_session),
+) -> Any:
+    """Store an uploaded document and queue its extraction job (P3).
+
+    Text is decoded directly; PDFs go through the page pipeline (text
+    layer first, vision for image-only pages). Extraction itself runs
+    in the background job; poll GET /api/jobs/{id}.
+    """
+    _require_matter(session, id)
+    try:
+        raw = base64.b64decode(body.file_base64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError("file_base64 is not valid base64") from exc
+    upload_input_b64: str | None = None
+    if body.media_type == "application/pdf":
+        classified = pdf_intake.classify_pages(raw)
+        if not classified:
+            raise ValueError("the uploaded file produced no text")
+        text_pages = sum(1 for page in classified if page.source == "text")
+        if text_pages == len(classified):
+            # All text: deterministic path still resolves synchronously.
+            text = "\n\n".join(page.text for page in classified)
+        else:
+            # Mixed/scanned: transcription happens in the worker with
+            # per-page progress; store a placeholder version meanwhile.
+            text = "pending transcription"
+            upload_input_b64 = body.file_base64
+    elif (
+        body.media_type
+        == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ):
+        from app.modules.intake import docx as docx_intake
+
+        text, _spans = seed.build_document(docx_intake.docx_to_clauses(raw))
+    elif body.media_type == "application/msword":
+        from app.modules.intake import docx as docx_intake
+
+        docx_intake.reject_legacy_doc()
+    elif body.media_type == "text/plain":
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError("text upload must be UTF-8") from exc
+    else:
+        raise ValueError(f"unsupported media type: {body.media_type}")
+    if body.media_type != "application/pdf" and not text.strip():
+        raise ValueError("the uploaded file produced no text")
+    if text.strip():
+        # Contract-shaped text is stored as the built document text (the
+        # same normalization the seed applies), so extraction sees clauses.
+        try:
+            built, _spans = seed.build_document(seed.parse_contract(text))
+            text = built
+        except Exception:
+            pass  # not contract-shaped; store raw and let the job decide
+    now = _utcnow()
+    document_id = _new_id("DOC")
+    session.add(
+        models.Document(id=document_id, matter_id=id, title=body.title, kind="upload")
+    )
+    session.add(
+        models.DocumentVersion(
+            id=_new_id("DV"),
+            document_id=document_id,
+            text=text,
+            sha256=sources.sha256_text(text),
+            created_at=now,
+        )
+    )
+    session.commit()
+    job = intake_jobs.create_job(
+        session,
+        kind="document_extract",
+        matter_id=id,
+        document_id=document_id,
+        input_b64=upload_input_b64,
+    )
+    background.add_task(_run_job_later, str(job.id))
+    return {"document_id": document_id, "job_id": str(job.id), "status": str(job.status)}
+
+
+@router.get("/api/documents/{id}/pages", response_model=schemas.DocumentPages)
+@endpoint
+async def document_pages(id: str, session: Session = Depends(db_session)) -> Any:
+    """Per-page origins from the latest completed intake job (P-C).
+
+    Lawyers use this to spot-check transcribed pages: `text` pages were
+    read from the file, `vision` pages were transcribed from a scan.
+    Empty when no completed intake exists for the document.
+    """
+    if session.get(models.Document, id) is None:
+        raise SourceUnavailable(f"unknown document: {id}")
+    job = session.execute(
+        sa.select(models.IntakeJob)
+        .where(
+            models.IntakeJob.document_id == id,
+            models.IntakeJob.status == "done",
+        )
+        .order_by(models.IntakeJob.updated_at.desc(), models.IntakeJob.id.desc())
+    ).scalars().first()
+    pages: list[dict[str, object]] = []
+    if job is not None and isinstance(job.result_json, dict):
+        raw_pages = job.result_json.get("pages", [])
+        if isinstance(raw_pages, list):
+            pages = [
+                {"page": item.get("page"), "source": item.get("source")}
+                for item in raw_pages
+                if isinstance(item, dict)
+            ]
+    return {"document_id": id, "pages": pages}
+
+
+@router.get("/api/jobs/{id}", response_model=schemas.JobStatus)
+@endpoint
+async def get_job(id: str, session: Session = Depends(db_session)) -> Any:
+    """One intake job's progress (P3)."""
+    job = session.get(models.IntakeJob, id)
+    if job is None:
+        raise SourceUnavailable(f"unknown job: {id}")
+    return {
+        "id": job.id,
+        "kind": job.kind,
+        "status": job.status,
+        "stage": job.stage,
+        "document_id": job.document_id,
+        "result": dict(job.result_json) if isinstance(job.result_json, dict) else None,
+        "error": job.error,
+    }
+
+
+@router.post("/api/facts/{id}/correct", response_model=schemas.FactAction)
+@endpoint
+async def correct_fact(
+    id: str, body: schemas.FactCorrectBody, session: Session = Depends(db_session)
+) -> Any:
+    """Lawyer correction: new fact row with edited wording, same trust (P3)."""
+    new = premises.correct_fact(
+        session, fact_id=id, statement=body.statement, reviewer=body.reviewer or "lawyer"
+    )
+    return {"fact_id": new.id, "trust_class": new.trust_class, "supersedes_id": new.supersedes_id}
 
 
 @router.post("/api/scans", response_model=schemas.ScanResult)
@@ -721,6 +818,203 @@ async def create_dictation(
         "fact_id": fact_id,
         "transcript": result.transcript,
         "trust_class": "ai_inferred",
+    }
+
+
+@router.get("/api/admin/overview", response_model=schemas.AdminOverview)
+@endpoint
+async def admin_overview(session: Session = Depends(db_session)) -> Any:
+    """Internal counts + spend for staff (P5; auth lands with Identity)."""
+    from app.agent.budgets import spend_for_tenant
+
+    tenant_id = "demo"
+    findings = session.execute(
+        sa.select(models.Finding.status, sa.func.count())
+        .join(models.Claim, models.Finding.claim_id == models.Claim.id)
+        .where(models.Claim.tenant_id == tenant_id)
+        .group_by(models.Finding.status)
+    ).all()
+    facts = session.execute(
+        sa.select(models.Fact.trust_class, sa.func.count())
+        .where(models.Fact.tenant_id == tenant_id)
+        .group_by(models.Fact.trust_class)
+    ).all()
+    jobs = session.execute(
+        sa.select(models.IntakeJob.status, sa.func.count()).group_by(models.IntakeJob.status)
+    ).all()
+    matters = session.execute(
+        sa.select(sa.func.count()).select_from(models.Matter).where(
+            models.Matter.tenant_id == tenant_id
+        )
+    ).scalar() or 0
+    return {
+        "tenant_id": tenant_id,
+        "matters": int(matters),
+        "findings_by_status": {str(k): int(v) for k, v in findings},
+        "facts_by_trust": {str(k): int(v) for k, v in facts},
+        "spend_usd": spend_for_tenant(session, tenant_id),
+        "jobs": {str(k): int(v) for k, v in jobs},
+    }
+
+
+@router.post("/api/auth/register", response_model=schemas.AuthResult)
+@endpoint
+async def register(body: schemas.RegisterRequest, session: Session = Depends(db_session)) -> Any:
+    """Create an account and return a session token (Identity)."""
+    from app.modules.identity import auth
+
+    try:
+        user = auth.register_user(
+            session, email=body.email, password=body.password, name=body.name
+        )
+    except auth.AuthError as exc:
+        return _error(400, "AUTH_FAILED", str(exc))
+    return {
+        "token": auth.issue_token(user),
+        "email": user.email,
+        "name": user.name,
+        "tenant_id": user.tenant_id,
+    }
+
+
+@router.post("/api/auth/login", response_model=schemas.AuthResult)
+@endpoint
+async def login(body: schemas.LoginRequest, session: Session = Depends(db_session)) -> Any:
+    """Sign in and return a session token (Identity)."""
+    from app.modules.identity import auth
+
+    try:
+        user = auth.authenticate(session, email=body.email, password=body.password)
+    except auth.AuthError as exc:
+        return _error(401, "AUTH_FAILED", str(exc))
+    return {
+        "token": auth.issue_token(user),
+        "email": user.email,
+        "name": user.name,
+        "tenant_id": user.tenant_id,
+    }
+
+
+@router.get("/api/me", response_model=schemas.AuthResult)
+@endpoint
+async def me(
+    authorization: str | None = Header(default=None),
+    session: Session = Depends(db_session),
+) -> Any:
+    """Who am I: resolve the bearer token (Identity)."""
+    return _me(authorization, session)
+
+
+def _me(authorization: str | None, session: Session) -> Any:
+    """Token resolution shared by /api/me and tests (Identity)."""
+    from app.modules.identity import auth
+
+    if not authorization or not authorization.startswith("Bearer "):
+        return _error(401, "AUTH_REQUIRED", "sign-in required")
+    user = auth.verify_token(session, authorization.removeprefix("Bearer "))
+    if user is None:
+        return _error(401, "AUTH_REQUIRED", "sign-in required")
+    return {"token": "", "email": user.email, "name": user.name, "tenant_id": user.tenant_id}
+
+
+@router.post("/api/transcribe", response_model=schemas.TranscribeResult)
+@endpoint
+async def transcribe_only(
+    body: schemas.DictationRequest, session: Session = Depends(db_session)
+) -> Any:
+    """Transcribe audio to text without storing a fact (dictation page)."""
+    _require_matter(session, body.matter_id)
+    try:
+        audio_bytes = base64.b64decode(body.audio_base64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError("audio_base64 is not valid base64") from exc
+    result = transcribe.transcribe_audio(audio_bytes, cache_dir=CASSETTES_DIR, session=session)
+    return {"transcript": result.transcript}
+
+
+@router.post("/api/documents/{id}/clauses/{clause_id}/update", response_model=schemas.Clause)
+@endpoint
+async def update_clause(
+    id: str,
+    clause_id: str,
+    body: schemas.ClauseUpdateRequest,
+    session: Session = Depends(db_session),
+) -> Any:
+    """Store edited clause wording as a new document version (clauses page).
+
+    Nothing is edited in place: the new version carries every clause,
+    with the target clause's text (and heading, if given) replaced and
+    spans rebuilt. Facts recorded against the old clause stay as they
+    are; lawyers correct them in the control room.
+    """
+    if session.get(models.Document, id) is None:
+        raise SourceUnavailable(f"unknown document: {id}")
+    version = _latest_version(session, id)
+    if version is None:
+        raise SourceUnavailable(f"document {id} has no versions")
+    rows = session.execute(
+        sa.select(models.Clause)
+        .where(models.Clause.document_version_id == version.id)
+        .order_by(models.Clause.id)
+    ).scalars().all()
+    target = next((row for row in rows if str(row.id) == clause_id), None)
+    if target is None:
+        raise SourceUnavailable(f"unknown clause: {clause_id}")
+    if not body.text.strip():
+        raise ValueError("clause text must not be empty")
+    triples = [
+        (
+            str(row.ref),
+            body.heading if row.id == clause_id and body.heading else str(row.heading),
+            body.text if row.id == clause_id else str(row.text),
+        )
+        for row in rows
+    ]
+    text, spans = seed.build_document(triples)
+    now = _utcnow()
+    if now <= str(version.created_at):
+        from datetime import datetime, timedelta
+
+        parsed = datetime.strptime(str(version.created_at), "%Y-%m-%dT%H:%M:%SZ")
+        now = (parsed + timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    new_version = models.DocumentVersion(
+        id=_new_id("DV"),
+        document_id=id,
+        text=text,
+        sha256=sources.sha256_text(text),
+        created_at=now,
+    )
+    session.add(new_version)
+    for (ref, heading, clause_text), (start, end) in zip(triples, spans, strict=True):
+        new_id = _new_id("CL")
+        session.add(
+            models.Clause(
+                id=new_id,
+                document_version_id=new_version.id,
+                ref=ref,
+                heading=heading,
+                text=clause_text,
+                span_start=start,
+                span_end=end,
+            )
+        )
+    session.commit()
+    # Re-read the created target clause from the new version.
+    created_row = session.execute(
+        sa.select(models.Clause).where(
+            models.Clause.document_version_id == new_version.id,
+            models.Clause.ref == target.ref,
+        )
+    ).scalars().first()
+    assert created_row is not None
+    return {
+        "id": created_row.id,
+        "document_version_id": created_row.document_version_id,
+        "ref": created_row.ref,
+        "heading": created_row.heading,
+        "text": created_row.text,
+        "span_start": created_row.span_start,
+        "span_end": created_row.span_end,
     }
 
 
