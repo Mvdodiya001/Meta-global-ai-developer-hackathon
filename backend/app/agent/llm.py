@@ -214,7 +214,13 @@ def _call_live(
             time.sleep(attempt + 1)
             continue
         latency_ms = (time.monotonic() - started) * 1000.0
-        save_cassette(cache_dir, request_sha, payload, raw)
+        try:
+            save_cassette(cache_dir, request_sha, payload, raw)
+        except OSError as exc:
+            # Caching is best-effort: a read-only cassette dir (e.g. the
+            # container image) must never lose a transcript that was
+            # already paid for. The live response below still stands.
+            print(f"warning: cassette not written to {cache_dir}: {exc}")
         return parse_response(raw, model, request_sha, cached=False, latency_ms=latency_ms)
     raise LLMRequestFailed(f"live call failed after {MAX_RETRIES + 1} attempts: {last_error}")
 

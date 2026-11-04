@@ -187,8 +187,13 @@ def transcribe_audio(
     started = time.monotonic()
     raw = _post_multipart(audio_bytes, api_key)
     latency_ms = (time.monotonic() - started) * 1000.0
-    cassette.parent.mkdir(parents=True, exist_ok=True)
-    cassette.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
+    try:
+        cassette.parent.mkdir(parents=True, exist_ok=True)
+        cassette.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
+    except OSError as exc:
+        # Caching is best-effort: a read-only cassette dir (e.g. the
+        # container image) must never lose a paid-for transcript.
+        print(f"warning: ASR cassette not written to {cassette}: {exc}")
     result = _parse_response(raw, request_sha, cached=False)
     _log_call(session, result, latency_ms)
     return result

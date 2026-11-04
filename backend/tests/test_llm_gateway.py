@@ -84,6 +84,28 @@ def test_replay_missing_cassette_raises(tmp_path: Path) -> None:
         llm.call_llm(REQUEST, mode="replay", cache_dir=tmp_path / "empty")
 
 
+def test_live_unwritable_cache_still_returns_transcript(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Live responses survive an unwritable cassette dir (read-only image).
+
+    Regression: in Docker the app runs as non-root while corpus/ belongs to
+    root, so save_cassette raised PermissionError and killed the request/WS
+    message instead of returning the paid-for transcript.
+    """
+    monkeypatch.setattr(
+        llm,
+        "_post_json",
+        lambda *args, **kwargs: RAW_RESPONSE,
+    )
+    monkeypatch.setenv("MODEL_API_KEY", "test-key")
+    readonly_file = tmp_path / "not-a-dir"
+    readonly_file.write_text("x")
+    response = llm._call_live(REQUEST, "muse-spark-1.3", "req-test-1", readonly_file)
+    assert response.text == "Clause 9.2 holds."
+    assert "warning: cassette not written" in capsys.readouterr().out
+
+
 def test_live_blocked_under_pytest(tmp_path: Path) -> None:
     """T2.1: Done when live calls are blocked under pytest."""
     assert "PYTEST_CURRENT_TEST" in os.environ

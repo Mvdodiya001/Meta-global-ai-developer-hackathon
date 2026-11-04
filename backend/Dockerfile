@@ -11,11 +11,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /repo/backend
-COPY backend/pyproject.toml ./
-COPY backend/app ./app
-COPY backend/checker ./checker
-COPY corpus /repo/corpus
-COPY scripts /repo/scripts
+COPY --chown=app:app backend/pyproject.toml ./
+COPY --chown=app:app backend/app ./app
+COPY --chown=app:app backend/checker ./checker
+COPY --chown=app:app corpus /repo/corpus
+COPY --chown=app:app scripts /repo/scripts
 
 # prod extras: psycopg (Postgres), pypdf (PDF text layer), falkordb (graph projection).
 RUN pip install --no-cache-dir .[prod]

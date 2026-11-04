@@ -195,6 +195,18 @@ export function SourceImpactPage() {
       setAfter(null)
       setReverified(false)
       setWording((current) => ({ ...current, ...captions }))
+      // The Before/After comparison anchors on the first affected answer.
+      // At page load nothing is affected yet, so capture it here — after
+      // applying the change — or the split never renders post-recheck.
+      const firstAffectedId = report.affected[0]?.finding_id
+      if (firstAffectedId) {
+        try {
+          const first = await api.findingById(firstAffectedId)
+          setBefore((prev) => prev ?? first)
+        } catch {
+          // Comparison is best-effort; the re-check queue already rendered.
+        }
+      }
     } catch (err) {
       setActionError(lawyerError(err))
     } finally {

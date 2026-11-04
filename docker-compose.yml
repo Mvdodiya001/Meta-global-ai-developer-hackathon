@@ -17,8 +17,11 @@ services:
       - "8000:8000"
     environment:
       API_STUB: 0
-      LLM_MODE: replay
+      LLM_MODE: ${LLM_MODE:-replay}
+      MODEL_API_KEY: ${MODEL_API_KEY:-}
       DEMO_MODE: 1
+      CHALLENGER: ${CHALLENGER:-on}
+      CHALLENGER_PROVIDER: meta
       CLAUSETRACE_DB_URL: postgresql+psycopg://clausetrace:${PGPASSWORD:-clausetrace_pw}@postgres:5432/clausetrace
       CT_GRAPH_HOST: falkordb
       CT_GRAPH_PORT: 6379

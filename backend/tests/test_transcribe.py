@@ -22,6 +22,37 @@ def test_transcribe_rejects_non_wav() -> None:
         transcribe.transcribe_audio(b"not audio", cache_dir=CASSETTES)
 
 
+def test_live_unwritable_asr_cache_still_transcribes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Live ASR survives an unwritable cassette dir (read-only image).
+
+    Regression: transcribe_audio wrote the ASR cassette with a bare
+    write_text, so in Docker (non-root app, root-owned corpus) a paid
+    transcription 500'd instead of returning text. Same class as the
+    llm.save_cassette guard.
+    """
+    from app.modules.intake import transcribe
+
+    monkeypatch.setenv("MODEL_API_KEY", "test-key")
+    monkeypatch.setattr(
+        transcribe,
+        "_post_multipart",
+        lambda _audio, _key: {
+            "transcript": "Nimbus shall keep transfer logs for review for seven years.",
+            "turns": [],
+            "audioDurationMs": 3840,
+        },
+    )
+    not_a_dir = tmp_path / "not-a-dir"
+    not_a_dir.write_text("x")
+    audio = bytearray(FIXTURE.read_bytes())
+    audio[-1] ^= 1  # new hash: forces the live path
+    result = transcribe.transcribe_audio(bytes(audio), cache_dir=not_a_dir)
+    assert "transfer logs" in result.transcript
+    assert "warning: ASR cassette not written" in capsys.readouterr().out
+
+
 def test_replay_transcription() -> None:
     """T7.1: the fictional dictation transcribes from the ASR cassette."""
     result = transcribe.transcribe_audio(FIXTURE.read_bytes(), cache_dir=CASSETTES)

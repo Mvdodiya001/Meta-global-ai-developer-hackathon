@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { api } from '../api/client'
-import { DEMO_MATTER_ID, getApiBase } from '../api/config'
+import { DEMO_MATTER_ID, getApiBase, mocksEnabled } from '../api/config'
 import type { Clause, DictationResult } from '../api/types'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -295,13 +295,19 @@ export function DictationPage() {
                 id="dictate-live"
                 type="checkbox"
                 checked={liveEnabled}
-                disabled={recording || busy}
+                disabled={recording || busy || mocksEnabled()}
                 onChange={(event) => setLiveEnabled(event.target.checked)}
               />
               <label htmlFor="dictate-live" className="text-xs text-ct-soft">
                 Transcribe live
               </label>
             </div>
+            {mocksEnabled() ? (
+              <p className="ct-help">
+                Live transcription needs the real backend — restart without
+                VITE_USE_MOCKS to use it.
+              </p>
+            ) : null}
           </div>
 
           {liveEnabled ? (

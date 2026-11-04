@@ -834,3 +834,36 @@ _(no entries yet)_
 - Checks: backend 297 passed/3 skipped, mypy+ruff clean; frontend lint 0, 47 passed, build green. Live server stopped via PID kill (pkill self-matches this shell — use PIDs).
 - Credit spend: ≈ $0.003 live walkthrough.
 - Ready for human commit: yes — suggested message: `Live QA: websockets dep for WS transcribe; verified ask/extract/scan/transcribe/challenger live`
+
+## [Server-ready .env + compose live wiring] DONE · 2026-11-04 IST
+- Task: user wants the env server-ready: only paste the API key, then one docker compose up. Rewrote .env clean (MODEL_API_KEY empty placeholder, LLM_MODE=live, API_STUB=0, DEMO_MODE=1, CHALLENGER=on, fresh 24-char alphanumeric PGPASSWORD generated via openssl). Compose api now interpolates LLM_MODE/MODEL_API_KEY/CHALLENGER from .env (defaults replay/off). Fresh volumes (old ones used the weak dev password) + rebuild + up: all healthy, seeded, /api/models=live, /api/graph backend=falkordb. Key arrives empty as expected — user pastes it, then one `docker compose up -d` to recreate api with the key.
+- Credit spend: none (no model calls; only verified plumbing + key-length check).
+
+## [Live-transcribe stuck on Listening] DONE · 2026-11-04 IST
+- Symptom (user on :5173, old dev server): live toggle stuck at "Listening…" forever, no error. Root cause: the toggle opens ws://<dev-host>/api/transcribe/stream, but vite.config proxy lacked `ws: true`, so the dev server never proxied the WS upgrade (hangs instead of failing loudly). Direct backend WS was verified working.
+- Fix: `ws: true` on the /api proxy in frontend/vite.config.ts; plus mock-mode guard on the Dictate live toggle (disabled + note when VITE_USE_MOCKS=1, since mocks have no socket). Verified: node WS client through :5174 gets a proper protocol reply; lint 0, vitest 47/47, build green (run before this log entry).
+- Note: the user's own :5173 dev server predates the config fix and Vite only reads config at startup — they must restart it (`npm run dev`) or use :5174 (fresh, fixed, live-proxied), which I left running.
+- Credit spend: none.
+
+## [Kill stale :5174 + prove WS on user server] DONE · 2026-11-04 IST
+- Task: user said live toggle still broken; asked to kill the :5174 process. Found: my own dev servers already dead; :5174 was serving the user's own :5173-configured vite (auto-bumped port). Killed only stale processes (PIDs verified, no user terminal touched); their fresh bare `vite` (started 13:45, after the ws:true fix) now holds :5173 cleanly.
+- Root cause of "still not works": their :5173 predated the vite ws:true fix (config loads at startup; code hot-reloads but proxy config does not). Fix verified on THEIR running server: node WS client through :5173 gets a proper protocol reply (upgrade OK). Also added mock-mode guard on the toggle earlier (disabled + note under VITE_USE_MOCKS).
+- Lesson for shell hygiene: pkill/pgrep -f with the literal target string self-matches this agent shell (SIGTERM x3); use explicit PIDs or bracket-regex (e.g. "vit[e]") instead.
+- Credit spend: none.
+
+## [Live transcription PermissionError in Docker] DONE · 2026-11-04 IST
+- Symptom: live toggle stuck on "Listening…" forever; container log showed PermissionError writing /repo/corpus/cassettes/*.asr.json then a dead-connection traceback. Root cause: llm._call_live saves every live response as a cassette, but the image copies corpus/ as root while the app runs as non-root `app` — the write crashed the request/WS message. (Local .venv runs as the user, which is why live worked locally but died in Docker.)
+- Fix (3 layers): (1) `_call_live` catches OSError around save_cassette — warn + return the transcript; caching is best-effort and must never lose a paid response. Fixes REST + WS + scan + dictation at once. (2) Hardened the two bare WS reply sends (interim ok:true/false) to break cleanly instead of raising out of the loop. (3) Dockerfile COPY --chown=app:app for corpus/scripts; added `websockets>=14.0` base dep (uvicorn had no WS support: WS routes 404d live; tests masked it via starlette TestClient).
+- Tests: new `test_live_unwritable_cache_still_returns_transcript`; full gate green (backend 298 passed/3 skipped — count includes new test; frontend untouched since last green).
+- Verified live in rebuilt container: REST transcribe OK, WS partial→interim "Nimbus shall keep."→final full sentence, zero PermissionErrors in logs.
+- Credit spend: only the earlier $0.003 walkthrough; this fix verified on cached/cheap paths.
+- Ready for human commit: yes — suggested message: `Fix live transcription in Docker: best-effort cassette writes, WS send guards, chown corpus`
+
+## [Full E2E: Docker + browser, DEMO_MODE off] DONE · 2026-11-04 IST
+- Setup: compose stack rebuilt with test override DEMO_MODE=0 (container verified), seeded externally via reset_demo.sh against compose PG (host :5543), frontend dev server on :5173 (ws:true proxy). LLM_MODE=live in container.
+- API phase: 27/27 (health, models+v1 alias, demo/reset+scenario both 403 DEMO_DISABLED, matter/documents/12 clauses/facts, graph backend=falkordb, sources/versions/diff, audit, reverify-list, ask->FOLLOWS->current/history/finding/review REVIEWED, REST transcribe verbatim, dictation proposed->approve lawyer_confirmed, counterfactual, register/login/me, admin overview). Two initial script-shape mistakes (diff needs ?against=, history key=versions, duplicate-register 400) — not app bugs.
+- Browser phase (headless Chrome, every nav link + 29 structured steps): 24/29 first pass, then targeted re-runs all pass. Covered: nav routing, theme toggle, sidebar hide/show, workflow cards, live upload extract (Done — 1 clauses), clause search, ask->finding, mark reviewed, evidence, impact preview/graph-caption/apply/recheck, control approve/challenge/as-of/unknown/wording/scan/dictate-file, clauses save+dictate wording, dictate LIVE WS (interim "Nimbus shall keep" -> final -> save -> confirm), signin register, admin, evidence error+retry, 390px dark no-overflow.
+- Real bugs found + fixed: (1) transcribe.py ASR cassette write bare write_text -> same read-only-image PermissionError class as llm fix; now best-effort + regression test. (2) SourceImpactPage: Before anchor captured only at load (affected empty pre-apply) so Before/After never rendered on fresh seed after Apply->Re-check; now captured post-ingest. (3 test-harness artifacts: sidebar selector hit DisclaimerBanner aside; scan wait text; stale impact state.)
+- Gates: backend 299 passed/3 skipped (ruff+mypy clean), frontend lint 0, vitest 47/47, build green. Zero tracebacks/500s in final logs. DB reset pristine (13 facts) and stack left running with DEMO_MODE=0 for user testing at :5173.
+- Credit spend: live calls during E2E were mostly cassette-served; ASR/agent spend negligible (<$0.01 on final DB).
+- Ready for human commit: yes — suggested message: `E2E fixes: best-effort ASR cassette write; capture Before anchor after ingest`

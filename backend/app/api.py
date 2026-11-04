@@ -1043,13 +1043,19 @@ async def transcribe_stream(websocket: WebSocket) -> None:
                         audio_bytes, cache_dir=CASSETTES_DIR, session=None
                     )
                 except Exception as exc:
-                    await websocket.send_json(
-                        {"type": "interim", "ok": False, "reason": str(exc) or "listening…"}
-                    )
+                    try:
+                        await websocket.send_json(
+                            {"type": "interim", "ok": False, "reason": str(exc) or "listening…"}
+                        )
+                    except Exception:
+                        break
                     continue
-                await websocket.send_json(
-                    {"type": "interim", "ok": True, "transcript": result.transcript}
-                )
+                try:
+                    await websocket.send_json(
+                        {"type": "interim", "ok": True, "transcript": result.transcript}
+                    )
+                except Exception:
+                    break
             elif kind == "finalize":
                 if latest is None:
                     try:
