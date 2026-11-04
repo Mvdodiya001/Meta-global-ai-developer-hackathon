@@ -1,1 +1,518 @@
-{"sources": [{"id": "SRC-DPDP-ACT", "jurisdiction": "IN", "key": "dpdp-act-2023", "publisher": "MeitY / Gazette of India", "title": "The Digital Personal Data Protection Act, 2023", "url": "https://www.meity.gov.in/static/uploads/2024/06/2bf1f0e9f04e6fb4f8fef35e82c42aa5.pdf"}, {"id": "SRC-DPDP-RULES", "jurisdiction": "IN", "key": "dpdp-rules-2025", "publisher": "MeitY / Gazette of India", "title": "The Digital Personal Data Protection Rules, 2025", "url": "https://www.meity.gov.in/static/uploads/2025/11/53450e6e5dc0bfa85ebd78686cadad39.pdf"}, {"id": "SRC-GSR-843E", "jurisdiction": "IN", "key": "commencement-gsr-843e-2025", "publisher": "MeitY / Gazette of India", "title": "Commencement Notification G.S.R. 843(E)", "url": "https://www.meity.gov.in/static/uploads/2025/11/c56ceae6c383460ca69577428d36828b.pdf"}, {"id": "SRC-DECOY", "jurisdiction": "IN", "key": "emblems-act-1950", "publisher": "Legislative Department / NIC", "title": "The Emblems and Names (Prevention of Improper Use) Act, 1950", "url": "https://thc.nic.in/Central%20Governmental%20Acts/Emblems%20and%20Names%20(Prevention%20of%20Improper%20Use)%20Act,%201950.pdf"}], "versions": [{"id": "SV-DPDP-ACT-V1", "is_simulated": false, "published_on": "2023-08-11", "provisions": [{"effective_from": "2025-11-13", "effective_until": null, "file": "DPDP-Act-2023_s1.txt", "id": "PRV-DPDP-Act-2023-s1", "key": "DPDP-Act-2023_s1"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Act-2023_s8-1-2.txt", "id": "PRV-DPDP-Act-2023-s8-1-2", "key": "DPDP-Act-2023_s8(1)-(2)"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Act-2023_s8-4-5.txt", "id": "PRV-DPDP-Act-2023-s8-4-5", "key": "DPDP-Act-2023_s8(4)-(5)"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Act-2023_s8-6.txt", "id": "PRV-DPDP-Act-2023-s8-6", "key": "DPDP-Act-2023_s8(6)"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Act-2023_s8-7-8-s12.txt", "id": "PRV-DPDP-Act-2023-s8-7-8-s12", "key": "DPDP-Act-2023_s8(7)-(8)_s12"}], "retrieved_at": "2026-10-29", "source_id": "SRC-DPDP-ACT", "supersedes_id": null, "version_label": "v1"}, {"id": "SV-DPDP-ACT-V2SIM", "is_simulated": true, "provisions": [{"effective_from": "2025-11-13", "effective_until": null, "file": "DPDP-Act-2023_s1.txt", "id": "PRV-DPDP-Act-2023-s1-V2SIM", "key": "DPDP-Act-2023_s1"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Act-2023_s8-1-2.txt", "id": "PRV-DPDP-Act-2023-s8-1-2-V2SIM", "key": "DPDP-Act-2023_s8(1)-(2)"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Act-2023_s8-4-5.txt", "id": "PRV-DPDP-Act-2023-s8-4-5-V2SIM", "key": "DPDP-Act-2023_s8(4)-(5)"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Act-2023_s8-6.v2sim.txt", "id": "PRV-DPDP-Act-2023-s8-6-V2SIM", "key": "DPDP-Act-2023_s8(6)"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Act-2023_s8-7-8-s12.txt", "id": "PRV-DPDP-Act-2023-s8-7-8-s12-V2SIM", "key": "DPDP-Act-2023_s8(7)-(8)_s12"}], "published_on": "2026-12-01", "retrieved_at": "2026-10-29", "source_id": "SRC-DPDP-ACT", "supersedes_id": "SV-DPDP-ACT-V1", "version_label": "v2-simulated"}, {"id": "SV-DPDP-RULES-V1", "is_simulated": false, "published_on": "2025-11-13", "provisions": [{"effective_from": "2025-11-13", "effective_until": null, "file": "DPDP-Rules-2025_r1.txt", "id": "PRV-DPDP-Rules-2025-r1", "key": "DPDP-Rules-2025_r1"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Rules-2025_r6.txt", "id": "PRV-DPDP-Rules-2025-r6", "key": "DPDP-Rules-2025_r6"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Rules-2025_r7.txt", "id": "PRV-DPDP-Rules-2025-r7", "key": "DPDP-Rules-2025_r7"}, {"effective_from": "2027-05-13", "effective_until": null, "file": "DPDP-Rules-2025_r8.txt", "id": "PRV-DPDP-Rules-2025-r8", "key": "DPDP-Rules-2025_r8"}], "retrieved_at": "2026-10-29", "source_id": "SRC-DPDP-RULES", "supersedes_id": null, "version_label": "v1"}, {"id": "SV-GSR-843E-V1", "is_simulated": false, "published_on": "2025-11-13", "provisions": [{"effective_from": "2025-11-13", "effective_until": null, "file": "GSR-843E-2025.txt", "id": "PRV-GSR-843E-2025", "key": "GSR-843E-2025"}], "retrieved_at": "2026-10-29", "source_id": "SRC-GSR-843E", "supersedes_id": null, "version_label": "v1"}, {"id": "SV-DECOY-V1", "is_simulated": false, "published_on": "1950-03-01", "provisions": [{"effective_from": "1950-09-01", "effective_until": null, "file": "DECOY_Emblems-Act-1950_s3.txt", "id": "PRV-DECOY-Emblems-Act-1950-s3", "key": "DECOY_Emblems-Act-1950_s3"}], "retrieved_at": "2026-10-29", "source_id": "SRC-DECOY", "supersedes_id": null, "version_label": "v1"}]}
+{
+  "sources": [
+    {
+      "id": "SRC-DPDP-ACT",
+      "jurisdiction": "IN",
+      "key": "dpdp-act-2023",
+      "publisher": "MeitY / Gazette of India",
+      "title": "The Digital Personal Data Protection Act, 2023",
+      "url": "https://www.meity.gov.in/static/uploads/2024/06/2bf1f0e9f04e6fb4f8fef35e82c42aa5.pdf"
+    },
+    {
+      "id": "SRC-DPDP-RULES",
+      "jurisdiction": "IN",
+      "key": "dpdp-rules-2025",
+      "publisher": "MeitY / Gazette of India",
+      "title": "The Digital Personal Data Protection Rules, 2025",
+      "url": "https://www.meity.gov.in/static/uploads/2025/11/53450e6e5dc0bfa85ebd78686cadad39.pdf"
+    },
+    {
+      "id": "SRC-GSR-843E",
+      "jurisdiction": "IN",
+      "key": "commencement-gsr-843e-2025",
+      "publisher": "MeitY / Gazette of India",
+      "title": "Commencement Notification G.S.R. 843(E)",
+      "url": "https://www.meity.gov.in/static/uploads/2025/11/c56ceae6c383460ca69577428d36828b.pdf"
+    },
+    {
+      "id": "SRC-DECOY",
+      "jurisdiction": "IN",
+      "key": "emblems-act-1950",
+      "publisher": "Legislative Department / NIC",
+      "title": "The Emblems and Names (Prevention of Improper Use) Act, 1950",
+      "url": "https://thc.nic.in/Central%20Governmental%20Acts/Emblems%20and%20Names%20(Prevention%20of%20Improper%20Use)%20Act,%201950.pdf"
+    },
+    {
+      "id": "SRC-IT-ACT",
+      "jurisdiction": "IN",
+      "key": "it-act-2000",
+      "publisher": "MeitY / Gazette of India",
+      "title": "The Information Technology Act, 2000",
+      "url": "https://indiacode.ecourtsindia.com/it-act/"
+    },
+    {
+      "id": "SRC-COPYRIGHT-ACT",
+      "jurisdiction": "IN",
+      "key": "copyright-act-1957",
+      "publisher": "Ministry of Commerce and Industry",
+      "title": "The Copyright Act, 1957",
+      "url": "https://indiacode.ecourtsindia.com/copyright-act/"
+    }
+  ],
+  "versions": [
+    {
+      "id": "SV-DPDP-ACT-V1",
+      "is_simulated": false,
+      "published_on": "2023-08-11",
+      "provisions": [
+        {
+          "effective_from": "2025-11-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s1.txt",
+          "id": "PRV-DPDP-Act-2023-s1",
+          "key": "DPDP-Act-2023_s1"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s8-1-2.txt",
+          "id": "PRV-DPDP-Act-2023-s8-1-2",
+          "key": "DPDP-Act-2023_s8(1)-(2)"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s8-4-5.txt",
+          "id": "PRV-DPDP-Act-2023-s8-4-5",
+          "key": "DPDP-Act-2023_s8(4)-(5)"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s8-6.txt",
+          "id": "PRV-DPDP-Act-2023-s8-6",
+          "key": "DPDP-Act-2023_s8(6)"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s8-7-8-s12.txt",
+          "id": "PRV-DPDP-Act-2023-s8-7-8-s12",
+          "key": "DPDP-Act-2023_s8(7)-(8)_s12"
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s3",
+          "key": "DPDP-Act-2023_s3",
+          "file": "DPDP-Act-2023_s3.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s4",
+          "key": "DPDP-Act-2023_s4",
+          "file": "DPDP-Act-2023_s4.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s5",
+          "key": "DPDP-Act-2023_s5",
+          "file": "DPDP-Act-2023_s5.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s6",
+          "key": "DPDP-Act-2023_s6",
+          "file": "DPDP-Act-2023_s6.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s7",
+          "key": "DPDP-Act-2023_s7",
+          "file": "DPDP-Act-2023_s7.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s9",
+          "key": "DPDP-Act-2023_s9",
+          "file": "DPDP-Act-2023_s9.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s10",
+          "key": "DPDP-Act-2023_s10",
+          "file": "DPDP-Act-2023_s10.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s11",
+          "key": "DPDP-Act-2023_s11",
+          "file": "DPDP-Act-2023_s11.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s12",
+          "key": "DPDP-Act-2023_s12",
+          "file": "DPDP-Act-2023_s12.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s13",
+          "key": "DPDP-Act-2023_s13",
+          "file": "DPDP-Act-2023_s13.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s16",
+          "key": "DPDP-Act-2023_s16",
+          "file": "DPDP-Act-2023_s16.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s17",
+          "key": "DPDP-Act-2023_s17",
+          "file": "DPDP-Act-2023_s17.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s33",
+          "key": "DPDP-Act-2023_s33",
+          "file": "DPDP-Act-2023_s33.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        }
+      ],
+      "retrieved_at": "2026-10-29",
+      "source_id": "SRC-DPDP-ACT",
+      "supersedes_id": null,
+      "version_label": "v1"
+    },
+    {
+      "id": "SV-DPDP-ACT-V2SIM",
+      "is_simulated": true,
+      "provisions": [
+        {
+          "effective_from": "2025-11-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s1.txt",
+          "id": "PRV-DPDP-Act-2023-s1-V2SIM",
+          "key": "DPDP-Act-2023_s1"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s8-1-2.txt",
+          "id": "PRV-DPDP-Act-2023-s8-1-2-V2SIM",
+          "key": "DPDP-Act-2023_s8(1)-(2)"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s8-4-5.txt",
+          "id": "PRV-DPDP-Act-2023-s8-4-5-V2SIM",
+          "key": "DPDP-Act-2023_s8(4)-(5)"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s8-6.v2sim.txt",
+          "id": "PRV-DPDP-Act-2023-s8-6-V2SIM",
+          "key": "DPDP-Act-2023_s8(6)"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Act-2023_s8-7-8-s12.txt",
+          "id": "PRV-DPDP-Act-2023-s8-7-8-s12-V2SIM",
+          "key": "DPDP-Act-2023_s8(7)-(8)_s12"
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s3-V2SIM",
+          "key": "DPDP-Act-2023_s3",
+          "file": "DPDP-Act-2023_s3.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s4-V2SIM",
+          "key": "DPDP-Act-2023_s4",
+          "file": "DPDP-Act-2023_s4.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s5-V2SIM",
+          "key": "DPDP-Act-2023_s5",
+          "file": "DPDP-Act-2023_s5.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s6-V2SIM",
+          "key": "DPDP-Act-2023_s6",
+          "file": "DPDP-Act-2023_s6.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s7-V2SIM",
+          "key": "DPDP-Act-2023_s7",
+          "file": "DPDP-Act-2023_s7.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s9-V2SIM",
+          "key": "DPDP-Act-2023_s9",
+          "file": "DPDP-Act-2023_s9.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s10-V2SIM",
+          "key": "DPDP-Act-2023_s10",
+          "file": "DPDP-Act-2023_s10.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s11-V2SIM",
+          "key": "DPDP-Act-2023_s11",
+          "file": "DPDP-Act-2023_s11.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s12-V2SIM",
+          "key": "DPDP-Act-2023_s12",
+          "file": "DPDP-Act-2023_s12.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s13-V2SIM",
+          "key": "DPDP-Act-2023_s13",
+          "file": "DPDP-Act-2023_s13.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s16-V2SIM",
+          "key": "DPDP-Act-2023_s16",
+          "file": "DPDP-Act-2023_s16.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s17-V2SIM",
+          "key": "DPDP-Act-2023_s17",
+          "file": "DPDP-Act-2023_s17.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-DPDP-Act-2023-s33-V2SIM",
+          "key": "DPDP-Act-2023_s33",
+          "file": "DPDP-Act-2023_s33.txt",
+          "effective_from": "2027-05-13",
+          "effective_until": null
+        }
+      ],
+      "published_on": "2026-12-01",
+      "retrieved_at": "2026-10-29",
+      "source_id": "SRC-DPDP-ACT",
+      "supersedes_id": "SV-DPDP-ACT-V1",
+      "version_label": "v2-simulated"
+    },
+    {
+      "id": "SV-DPDP-RULES-V1",
+      "is_simulated": false,
+      "published_on": "2025-11-13",
+      "provisions": [
+        {
+          "effective_from": "2025-11-13",
+          "effective_until": null,
+          "file": "DPDP-Rules-2025_r1.txt",
+          "id": "PRV-DPDP-Rules-2025-r1",
+          "key": "DPDP-Rules-2025_r1"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Rules-2025_r6.txt",
+          "id": "PRV-DPDP-Rules-2025-r6",
+          "key": "DPDP-Rules-2025_r6"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Rules-2025_r7.txt",
+          "id": "PRV-DPDP-Rules-2025-r7",
+          "key": "DPDP-Rules-2025_r7"
+        },
+        {
+          "effective_from": "2027-05-13",
+          "effective_until": null,
+          "file": "DPDP-Rules-2025_r8.txt",
+          "id": "PRV-DPDP-Rules-2025-r8",
+          "key": "DPDP-Rules-2025_r8"
+        }
+      ],
+      "retrieved_at": "2026-10-29",
+      "source_id": "SRC-DPDP-RULES",
+      "supersedes_id": null,
+      "version_label": "v1"
+    },
+    {
+      "id": "SV-GSR-843E-V1",
+      "is_simulated": false,
+      "published_on": "2025-11-13",
+      "provisions": [
+        {
+          "effective_from": "2025-11-13",
+          "effective_until": null,
+          "file": "GSR-843E-2025.txt",
+          "id": "PRV-GSR-843E-2025",
+          "key": "GSR-843E-2025"
+        }
+      ],
+      "retrieved_at": "2026-10-29",
+      "source_id": "SRC-GSR-843E",
+      "supersedes_id": null,
+      "version_label": "v1"
+    },
+    {
+      "id": "SV-DECOY-V1",
+      "is_simulated": false,
+      "published_on": "1950-03-01",
+      "provisions": [
+        {
+          "effective_from": "1950-09-01",
+          "effective_until": null,
+          "file": "DECOY_Emblems-Act-1950_s3.txt",
+          "id": "PRV-DECOY-Emblems-Act-1950-s3",
+          "key": "DECOY_Emblems-Act-1950_s3"
+        }
+      ],
+      "retrieved_at": "2026-10-29",
+      "source_id": "SRC-DECOY",
+      "supersedes_id": null,
+      "version_label": "v1"
+    },
+    {
+      "id": "SV-IT-ACT-V1",
+      "source_id": "SRC-IT-ACT",
+      "version_label": "v1",
+      "published_on": "2000-06-09",
+      "effective_from": "2000-10-17",
+      "retrieved_at": "2026-11-04T00:00:00Z",
+      "is_simulated": false,
+      "supersedes_id": null,
+      "provisions": [
+        {
+          "id": "PRV-IT-Act-2000-s43",
+          "key": "IT-Act-2000_s43",
+          "file": "IT-Act-2000_s43.txt",
+          "effective_from": "2000-10-17",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-IT-Act-2000-s43A",
+          "key": "IT-Act-2000_s43A",
+          "file": "IT-Act-2000_s43A.txt",
+          "effective_from": "2000-10-17",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-IT-Act-2000-s65",
+          "key": "IT-Act-2000_s65",
+          "file": "IT-Act-2000_s65.txt",
+          "effective_from": "2000-10-17",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-IT-Act-2000-s66",
+          "key": "IT-Act-2000_s66",
+          "file": "IT-Act-2000_s66.txt",
+          "effective_from": "2000-10-17",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-IT-Act-2000-s69",
+          "key": "IT-Act-2000_s69",
+          "file": "IT-Act-2000_s69.txt",
+          "effective_from": "2000-10-17",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-IT-Act-2000-s72A",
+          "key": "IT-Act-2000_s72A",
+          "file": "IT-Act-2000_s72A.txt",
+          "effective_from": "2000-10-17",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-IT-Act-2000-s79",
+          "key": "IT-Act-2000_s79",
+          "file": "IT-Act-2000_s79.txt",
+          "effective_from": "2000-10-17",
+          "effective_until": null
+        }
+      ]
+    },
+    {
+      "id": "SV-COPYRIGHT-ACT-V1",
+      "source_id": "SRC-COPYRIGHT-ACT",
+      "version_label": "v1",
+      "published_on": "1957-06-04",
+      "effective_from": "1958-01-21",
+      "retrieved_at": "2026-11-04T00:00:00Z",
+      "is_simulated": false,
+      "supersedes_id": null,
+      "provisions": [
+        {
+          "id": "PRV-Copyright-Act-1957-s17",
+          "key": "Copyright-Act-1957_s17",
+          "file": "Copyright-Act-1957_s17.txt",
+          "effective_from": "1958-01-21",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-Copyright-Act-1957-s18",
+          "key": "Copyright-Act-1957_s18",
+          "file": "Copyright-Act-1957_s18.txt",
+          "effective_from": "1958-01-21",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-Copyright-Act-1957-s19",
+          "key": "Copyright-Act-1957_s19",
+          "file": "Copyright-Act-1957_s19.txt",
+          "effective_from": "1958-01-21",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-Copyright-Act-1957-s30",
+          "key": "Copyright-Act-1957_s30",
+          "file": "Copyright-Act-1957_s30.txt",
+          "effective_from": "1958-01-21",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-Copyright-Act-1957-s51",
+          "key": "Copyright-Act-1957_s51",
+          "file": "Copyright-Act-1957_s51.txt",
+          "effective_from": "1958-01-21",
+          "effective_until": null
+        },
+        {
+          "id": "PRV-Copyright-Act-1957-s52",
+          "key": "Copyright-Act-1957_s52",
+          "file": "Copyright-Act-1957_s52.txt",
+          "effective_from": "1958-01-21",
+          "effective_until": null
+        }
+      ]
+    }
+  ]
+}
