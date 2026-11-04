@@ -64,6 +64,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/matters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Matters
+         * @description Matters visible to the caller (Phase 0).
+         */
+        get: operations["list_matters_api_matters_get"];
+        put?: never;
+        /**
+         * Create Matter
+         * @description Create a matter; the creator becomes its owner (Phase 0).
+         */
+        post: operations["create_matter_api_matters_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/matters/{id}": {
         parameters: {
             query?: never;
@@ -218,6 +242,46 @@ export interface paths {
          * @description Run extraction and persist a new version with clauses + facts (F3).
          */
         post: operations["extract_document_api_documents__id__extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/explain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Explain Document
+         * @description Generate tone-guarded per-clause explanations (Phase 4).
+         */
+        post: operations["explain_document_api_documents__id__explain_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/summarize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Summarize Document
+         * @description Generate one suggestion-labelled document summary (Phase 4).
+         */
+        post: operations["summarize_document_api_documents__id__summarize_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -727,6 +791,192 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/source-versions/{id}/provisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Provisions
+         * @description Provisions of one source version, for card drafting (Phase 2a).
+         */
+        get: operations["list_provisions_api_source_versions__id__provisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/matters/{id}/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare Documents
+         * @description Align two documents' clauses by reference (Phase 5).
+         */
+        get: operations["compare_documents_api_matters__id__compare_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/matters/{id}/compare/flag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Flag Clause Pair
+         * @description Flag one differing clause pair for lawyer review (Phase 5).
+         *
+         *     Records a Review row — it never creates a finding: only the memory
+         *     service can decide a finding's status, via a checked proof.
+         */
+        post: operations["flag_clause_pair_api_matters__id__compare_flag_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Document Coverage
+         * @description Per-clause matched provision + latest finding state (Phase 5).
+         */
+        get: operations["document_coverage_api_documents__id__coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/provisions/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Provisions
+         * @description Ranked provisions for any clause or question text (Phase 3).
+         *
+         *     `rerank=true` adds the semantic layer: one gateway call re-orders
+         *     the lexical shortlist by meaning (silent lexical fallback).
+         */
+        get: operations["search_provisions_api_provisions_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rule-cards/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Card Drafts
+         * @description Open ai_inferred card drafts awaiting lawyer review (Phase 2a).
+         */
+        get: operations["list_card_drafts_api_rule_cards_drafts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rule-cards/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Card
+         * @description Model-draft one ai_inferred card for a provision (Phase 2a).
+         */
+        post: operations["draft_card_api_rule_cards_draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rule-cards/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Card
+         * @description Lawyer-confirm a draft; mints the confirmed successor (Phase 2a).
+         */
+        post: operations["confirm_card_api_rule_cards__id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rule-cards/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Card
+         * @description Lawyer-reject a draft; it leaves the queue (Phase 2a).
+         */
+        post: operations["reject_card_api_rule_cards__id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/impact/{id}": {
         parameters: {
             query?: never;
@@ -779,6 +1029,26 @@ export interface paths {
          * @description Nodes + edges for React Flow, optionally focused (F10).
          */
         get: operations["get_graph_api_graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/matters/{id}/audit-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Audit Export
+         * @description Downloadable audit export for one matter (Phase 6).
+         */
+        get: operations["audit_export_api_matters__id__audit_export_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -962,6 +1232,18 @@ export interface components {
             clause_ref: string;
         };
         /**
+         * AuditExport
+         * @description Downloadable per-matter audit export (Phase 6).
+         */
+        AuditExport: {
+            /** Matter Id */
+            matter_id: string;
+            /** Exported At */
+            exported_at: string;
+            /** Rows */
+            rows: components["schemas"]["AuditRow"][];
+        };
+        /**
          * AuditRow
          * @description One append-only audit row (F14).
          */
@@ -1100,6 +1382,48 @@ export interface components {
             heading?: string | null;
         };
         /**
+         * ComparePair
+         * @description One aligned clause pair across two documents (Phase 5).
+         */
+        ComparePair: {
+            /** Ref */
+            ref: string;
+            /** A Text */
+            a_text: string;
+            /** B Text */
+            b_text: string;
+            /** Changed */
+            changed: boolean;
+        };
+        /**
+         * CompareReport
+         * @description Clause-level comparison of two documents (Phase 5).
+         */
+        CompareReport: {
+            /** Document A */
+            document_a: string;
+            /** Document B */
+            document_b: string;
+            /** Pairs */
+            pairs: components["schemas"]["ComparePair"][];
+            /** Only A */
+            only_a: string[];
+            /** Only B */
+            only_b: string[];
+        };
+        /**
+         * ConfirmCardRequest
+         * @description Confirm-a-card body; edits are optional (Phase 2a).
+         */
+        ConfirmCardRequest: {
+            /** Reviewer */
+            reviewer?: string | null;
+            /** Interpretation */
+            interpretation?: string | null;
+            /** Claim Type */
+            claim_type?: string | null;
+        };
+        /**
          * CounterfactualAffected
          * @description One finding under a counterfactual change (T7.3).
          */
@@ -1156,6 +1480,36 @@ export interface components {
              * @default []
              */
             edges: components["schemas"]["GraphEdge"][];
+        };
+        /**
+         * CoverageReport
+         * @description Contract-vs-law roll-up for one document (Phase 5).
+         */
+        CoverageReport: {
+            /** Document Id */
+            document_id: string;
+            /** Rows */
+            rows: components["schemas"]["CoverageRow"][];
+        };
+        /**
+         * CoverageRow
+         * @description One clause with its matched provision + finding state (Phase 5).
+         */
+        CoverageRow: {
+            /** Clause Id */
+            clause_id: string;
+            /** Ref */
+            ref: string;
+            /** Heading */
+            heading: string;
+            /** Provision Key */
+            provision_key: string;
+            /** Source Title */
+            source_title: string;
+            /** Score */
+            score: number;
+            /** Finding Status */
+            finding_status?: string | null;
         };
         /**
          * DictationRequest
@@ -1228,6 +1582,11 @@ export interface components {
             page: number;
             /** Source */
             source: string;
+            /**
+             * Confidence
+             * @default high
+             */
+            confidence: string;
         };
         /**
          * DocumentPages
@@ -1241,6 +1600,22 @@ export interface components {
              * @default []
              */
             pages: components["schemas"]["DocumentPage"][];
+        };
+        /**
+         * DraftCardRequest
+         * @description Draft-a-card body (Phase 2a).
+         */
+        DraftCardRequest: {
+            /** Provision Id */
+            provision_id: string;
+        };
+        /**
+         * ExplainResult
+         * @description Per-clause explanations generated for one document (Phase 4).
+         */
+        ExplainResult: {
+            /** Explained */
+            explained: number;
         };
         /**
          * ExtractResult
@@ -1280,6 +1655,8 @@ export interface components {
             trust_label: string;
             /** Created At */
             created_at: string;
+            /** Supersedes Id */
+            supersedes_id?: string | null;
         };
         /**
          * FactAction
@@ -1425,6 +1802,16 @@ export interface components {
         FindingHistory: {
             /** Versions */
             versions: components["schemas"]["Finding"][];
+        };
+        /**
+         * FlagResult
+         * @description A clause pair flagged for lawyer review (Phase 5).
+         */
+        FlagResult: {
+            /** Flagged */
+            flagged: boolean;
+            /** Clause Ref */
+            clause_ref: string;
         };
         /**
          * GraphEdge
@@ -1594,6 +1981,36 @@ export interface components {
             source_label: string;
         };
         /**
+         * MatterCreateRequest
+         * @description New matter body (Phase 0).
+         */
+        MatterCreateRequest: {
+            /** Title */
+            title: string;
+            /** Client Name */
+            client_name: string;
+        };
+        /**
+         * MatterList
+         * @description Matters visible to the caller (Phase 0).
+         */
+        MatterList: {
+            /** Matters */
+            matters: components["schemas"]["MatterSummary"][];
+        };
+        /**
+         * MatterSummary
+         * @description One matter in the workspace list (Phase 0).
+         */
+        MatterSummary: {
+            /** Id */
+            id: string;
+            /** Client Name */
+            client_name: string;
+            /** Title */
+            title: string;
+        };
+        /**
          * ModelInfo
          * @description One model served by the LLM gateway (v15).
          */
@@ -1727,6 +2144,65 @@ export interface components {
             effective_until?: string | null;
         };
         /**
+         * ProvisionHit
+         * @description One ranked provision from retrieval search (Phase 3).
+         */
+        ProvisionHit: {
+            /** Provision Id */
+            provision_id: string;
+            /** Key */
+            key: string;
+            /** Source Id */
+            source_id: string;
+            /** Source Title */
+            source_title: string;
+            /** Source Version Id */
+            source_version_id: string;
+            /** Version Label */
+            version_label: string;
+            /** Score */
+            score: number;
+            /** Text */
+            text: string;
+            /** Why */
+            why?: string | null;
+            /**
+             * Reranked
+             * @default false
+             */
+            reranked: boolean;
+        };
+        /**
+         * ProvisionList
+         * @description Provisions of one source version (Phase 2a).
+         */
+        ProvisionList: {
+            /** Provisions */
+            provisions: components["schemas"]["ProvisionSummary"][];
+        };
+        /**
+         * ProvisionSearchResult
+         * @description Ranked provisions for a query (Phase 3).
+         */
+        ProvisionSearchResult: {
+            /** Query */
+            query: string;
+            /** Hits */
+            hits: components["schemas"]["ProvisionHit"][];
+        };
+        /**
+         * ProvisionSummary
+         * @description One provision row for pickers (Phase 2a).
+         */
+        ProvisionSummary: {
+            /** Id */
+            id: string;
+            /** Key */
+            key: string;
+            /** Source Version Id */
+            source_version_id: string;
+        };
+        /**
          * RegisterRequest
          * @description Create one sign-in account (Identity).
          */
@@ -1825,6 +2301,36 @@ export interface components {
             finding_id: string;
             /** State */
             state: string;
+        };
+        /**
+         * RuleCardDraftList
+         * @description Open ai_inferred drafts awaiting lawyer review (Phase 2a).
+         */
+        RuleCardDraftList: {
+            /** Drafts */
+            drafts: components["schemas"]["RuleCardSummary"][];
+        };
+        /**
+         * RuleCardSummary
+         * @description One rule-card draft or confirmed card (Phase 2a).
+         */
+        RuleCardSummary: {
+            /** Id */
+            id: string;
+            /** Provision Id */
+            provision_id: string;
+            /** Provision Key */
+            provision_key: string;
+            /** Claim Type */
+            claim_type: string;
+            /** Interpretation */
+            interpretation: string;
+            /** Span Text */
+            span_text: string;
+            /** Trust Class */
+            trust_class: string;
+            /** Created At */
+            created_at: string;
         };
         /**
          * Run
@@ -1932,6 +2438,16 @@ export interface components {
         SourceVersionList: {
             /** Versions */
             versions: components["schemas"]["SourceVersion"][];
+        };
+        /**
+         * SummaryResult
+         * @description One suggestion-labelled document summary (Phase 4).
+         */
+        SummaryResult: {
+            /** Fact Id */
+            fact_id: string;
+            /** Summary */
+            summary: string;
         };
         /**
          * ToolCall
@@ -2068,6 +2584,72 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    list_matters_api_matters_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatterList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_matter_api_matters_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MatterCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatterSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2325,6 +2907,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExtractResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    explain_document_api_documents__id__explain_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExplainResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summarize_document_api_documents__id__summarize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SummaryResult"];
                 };
             };
             /** @description Validation Error */
@@ -3084,6 +3728,292 @@ export interface operations {
             };
         };
     };
+    list_provisions_api_source_versions__id__provisions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvisionList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compare_documents_api_matters__id__compare_get: {
+        parameters: {
+            query?: {
+                a?: string;
+                b?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompareReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    flag_clause_pair_api_matters__id__compare_flag_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                } | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlagResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_coverage_api_documents__id__coverage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_provisions_api_provisions_search_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                source_id?: string | null;
+                limit?: number;
+                rerank?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvisionSearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_card_drafts_api_rule_cards_drafts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleCardDraftList"];
+                };
+            };
+        };
+    };
+    draft_card_api_rule_cards_draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftCardRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleCardSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_card_api_rule_cards__id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmCardRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleCardSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_card_api_rule_cards__id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleCardSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_impact_api_impact__id__get: {
         parameters: {
             query?: never;
@@ -3169,6 +4099,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GraphSlice"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    audit_export_api_matters__id__audit_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditExport"];
                 };
             };
             /** @description Validation Error */

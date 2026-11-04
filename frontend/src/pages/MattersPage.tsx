@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { api } from '../api/client'
-import { DEMO_MATTER_ID } from '../api/config'
+import { preferredMatterId } from '../api/demoSession'
 import type { Matter } from '../api/types'
+import { UnderstandingPanel } from '../components/documents/UnderstandingPanel'
 import { UploadPanel } from '../components/documents/UploadPanel'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -41,7 +42,12 @@ export function MattersPage() {
     setLoading(true)
     setError(null)
     try {
-      setMatter(await api.matter(DEMO_MATTER_ID))
+      const list = await api.matters()
+      const picked =
+        preferredMatterId(list.matters.map((row) => row.id)) ?? list.matters[0]?.id
+      if (picked) {
+        setMatter(await api.matter(picked))
+      }
     } catch {
       setError('The matter could not be loaded.')
     } finally {
@@ -148,6 +154,8 @@ export function MattersPage() {
       </section>
 
       {matter ? <UploadPanel /> : null}
+
+      {matter ? <UnderstandingPanel /> : null}
     </div>
   )
 }

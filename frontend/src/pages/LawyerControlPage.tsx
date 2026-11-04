@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { api } from '../api/client'
-import { DEMO_MATTER_ID } from '../api/config'
-import { lastClaimId } from '../api/demoSession'
+import { currentMatterId, lastClaimId, preferredDocumentId } from '../api/demoSession'
 import {
   COMMENCEMENT_DATE,
   UNKNOWN_QUESTION,
@@ -20,6 +19,7 @@ import { DictationPanel } from '../components/lawyer/DictationPanel'
 import { FactTrustList } from '../components/lawyer/FactTrustList'
 import { FactWordingEditor } from '../components/lawyer/FactWordingEditor'
 import { IllustrationLabel } from '../components/lawyer/IllustrationLabel'
+import { RuleCardQueue } from '../components/lawyer/RuleCardQueue'
 import { ScanPagePanel } from '../components/lawyer/ScanPagePanel'
 import { UnknownClaimDemo } from '../components/lawyer/UnknownClaimDemo'
 import { Skeleton } from '../components/ui/Skeleton'
@@ -49,12 +49,12 @@ export function LawyerControlPage() {
     setClaimId(stored)
     void (async () => {
       try {
-        const docs = await api.documents(DEMO_MATTER_ID)
-        const documentId = docs.documents[0]?.id
+        const docs = await api.documents(currentMatterId())
+        const documentId = preferredDocumentId(docs.documents.map((doc) => doc.id))
         if (documentId) {
           setClauses(await api.clauses(documentId))
         }
-        const nextFacts = await api.facts(DEMO_MATTER_ID)
+        const nextFacts = await api.facts(currentMatterId())
         setFacts(nextFacts)
         setReviewedIds(
           nextFacts
@@ -195,6 +195,8 @@ export function LawyerControlPage() {
           onApprove={handleApprove}
         />
       </div>
+
+      <RuleCardQueue />
 
       <FactTrustList
         facts={facts}

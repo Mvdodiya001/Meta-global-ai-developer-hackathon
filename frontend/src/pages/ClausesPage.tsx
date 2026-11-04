@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { api } from '../api/client'
-import { DEMO_MATTER_ID } from '../api/config'
-import type { Clause, DocumentPages } from '../api/types'
+import { currentMatterId, preferredDocumentId } from '../api/demoSession'
+import type { Clause, DocumentPages, Fact } from '../api/types'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Button } from '../components/ui/Button'
 import { IconFile, IconMic, IconStop } from '../components/ui/Icons'
@@ -22,13 +22,40 @@ export function ClausesPage() {
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState<string | null>(null)
   const [noticeTone, setNoticeTone] = useState<'info' | 'danger'>('info')
+  const [explanations, setExplanations] = useState<Fact[]>([])
+  const [explaining, setExplaining] = useState(false)
   const recorderRef = useRef<WavRecorder | null>(null)
+
+  const loadExplanations = useCallback(async (clauseIds: string[]) => {
+    try {
+      const facts = await api.facts(currentMatterId())
+      // Confirming mints a successor fact; the draft it supersedes (and
+      // any dismissed/disputed copy) leaves the reading list.
+      const superseded = new Set(
+        facts
+          .map((fact) => fact.supersedes_id)
+          .filter((id): id is string => typeof id === 'string'),
+      )
+      setExplanations(
+        facts.filter(
+          (fact) =>
+            (fact.structured as { kind?: unknown } | undefined)?.kind === 'explanation' &&
+            fact.clause_id !== null &&
+            clauseIds.includes(fact.clause_id) &&
+            fact.trust_class !== 'disputed' &&
+            !superseded.has(fact.id),
+        ),
+      )
+    } catch {
+      setExplanations([])
+    }
+  }, [])
 
   useEffect(() => {
     void (async () => {
       try {
-        const docs = await api.documents(DEMO_MATTER_ID)
-        const id = docs.documents[0]?.id ?? ''
+        const docs = await api.documents(currentMatterId())
+        const id = preferredDocumentId(docs.documents.map((doc) => doc.id)) ?? ''
         setDocumentId(id)
         if (id) {
           const list = await api.clauses(id)
@@ -43,6 +70,7 @@ export function ClausesPage() {
             setSelectedId(first.id)
             setText(first.text)
           }
+          await loadExplanations(list.map((clause) => clause.id))
         }
       } catch {
         setNotice('The clause list could not be loaded. Try again.')
@@ -69,7 +97,7 @@ export function ClausesPage() {
       if (base64) {
         try {
           const heard = await api.transcribe({
-            matter_id: DEMO_MATTER_ID,
+            matter_id: currentMatterId(),
             audio_base64: base64,
           })
           setText(heard.transcript)
@@ -118,6 +146,34 @@ export function ClausesPage() {
   }
 
   const changed = Boolean(selected) && text.trim() !== original.trim()
+
+  async function generateExplanations() {
+    if (!documentId || explaining) {
+      return
+    }
+    setExplaining(true)
+    try {
+      await api.explainDocument(documentId)
+      await loadExplanations(clauses.map((clause) => clause.id))
+      setNotice('Explanations drafted below. They are suggestions — check each one.')
+      setNoticeTone('info')
+    } catch {
+      setNotice('Explanations could not be drafted. Try again.')
+      setNoticeTone('danger')
+    } finally {
+      setExplaining(false)
+    }
+  }
+
+  async function confirmExplanation(fact: Fact) {
+    await api.approveFact(fact.id).catch(() => null)
+    await loadExplanations(clauses.map((clause) => clause.id))
+  }
+
+  async function dismissExplanation(fact: Fact) {
+    await api.rejectFact(fact.id).catch(() => null)
+    await loadExplanations(clauses.map((clause) => clause.id))
+  }
 
   return (
     <div className="ct-page">
@@ -252,6 +308,9 @@ export function ClausesPage() {
                         ? 'transcribed from a scan'
                         : 'read from the file'}
                     </span>
+                    {page.confidence === 'low' ? (
+                      <span className="ct-badge ct-badge--warn">Check this page</span>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -259,6 +318,81 @@ export function ClausesPage() {
           ) : null}
         </div>
       </div>
+
+      <Panel
+        heading="Plain-language explanations"
+        headingId="clauses-explain"
+        description="AI suggestion — may be wrong. This is not legal advice. Confirm only what you have checked against the clause."
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={!documentId || explaining}
+            loading={explaining}
+            onClick={() => void generateExplanations()}
+          >
+            Explain all clauses
+          </Button>
+        }
+      >
+        {explanations.length === 0 ? (
+          <p className="ct-empty">
+            No explanations yet. Draft them and each clause gets a plain-language reading
+            you can confirm or dismiss.
+          </p>
+        ) : (
+          <ul className="ct-rows">
+            {explanations.map((fact) => {
+              const structured = fact.structured as Record<string, string>
+              const confirmed = fact.trust_class === 'lawyer_confirmed'
+              return (
+                <li key={fact.id}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-ct-ink">
+                      Clause {structured.clause_ref ?? ''}
+                    </span>
+                    {confirmed ? (
+                      <span className="ct-badge ct-badge--ok">Confirmed by you</span>
+                    ) : (
+                      <span className="ct-badge ct-badge--accent">
+                        AI draft — not yet reviewed
+                      </span>
+                    )}
+                  </div>
+                  <dl className="mt-1.5 space-y-1 text-sm text-ct-soft">
+                    <div>
+                      <dt className="font-semibold text-ct-ink">What this says</dt>
+                      <dd>{structured.says}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-ct-ink">Who it binds</dt>
+                      <dd>{structured.binds}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-ct-ink">What triggers it</dt>
+                      <dd>{structured.triggers}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-ct-ink">Worth checking</dt>
+                      <dd>{structured.check}</dd>
+                    </div>
+                  </dl>
+                  {!confirmed ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button size="sm" variant="primary" onClick={() => void confirmExplanation(fact)}>
+                        Confirm
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => void dismissExplanation(fact)}>
+                        Dismiss
+                      </Button>
+                    </div>
+                  ) : null}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </Panel>
     </div>
   )
 }

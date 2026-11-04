@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { api } from '../../api/client'
-import { DEMO_MATTER_ID } from '../../api/config'
+import { currentMatterId, rememberDocumentId } from '../../api/demoSession'
 import type { DocumentPages, IntakeJob } from '../../api/types'
 import { fileToBase64 } from '../../utils/fileBase64'
 import { isLawyerSafeText } from '../../utils/lawyerCopy'
@@ -95,11 +95,13 @@ export function UploadPanel() {
     setJob(null)
     setPages(null)
     try {
-      const created = await api.uploadDocument(DEMO_MATTER_ID, {
+      const created = await api.uploadDocument(currentMatterId(), {
         title: title.trim() || fileName || 'Uploaded document',
         file_base64: payload.base64,
         media_type: payload.mediaType,
       })
+      // From here on, every screen works on this document.
+      rememberDocumentId(created.document_id)
       const poll = async () => {
         const status = await api.jobStatus(created.job_id)
         setJob(status)
@@ -283,6 +285,9 @@ export function UploadPanel() {
                   <span className="text-ct-soft">
                     Page {page.page} — {pageOriginLabel(page.source)}
                   </span>
+                  {page.confidence === 'low' ? (
+                    <span className="ct-badge ct-badge--warn">Check this page</span>
+                  ) : null}
                 </li>
               ))}
             </ul>

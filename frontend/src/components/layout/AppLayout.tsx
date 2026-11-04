@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
 import { DisclaimerBanner } from './DisclaimerBanner'
+import { MatterSwitcher } from './MatterSwitcher'
 import { SiteNav } from './SiteNav'
 import { ThemeToggle } from './ThemeToggle'
 import { IconChevronDown } from '../ui/Icons'
@@ -73,6 +74,7 @@ export function AppLayout() {
                 <ThemeToggle />
               </div>
             </div>
+            <MatterSwitcher />
             <SiteNav />
             <div className="ct-sidebar-foot">
               <p>

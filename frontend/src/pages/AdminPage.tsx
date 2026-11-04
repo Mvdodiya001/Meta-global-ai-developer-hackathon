@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+import { api } from '../api/client'
+import { currentMatterId } from '../api/demoSession'
 import type { AdminOverview } from '../api/types'
 import { STATUS_LABELS, TRUST_LABELS } from '../content/glossary'
 import { PageHeader } from '../components/layout/PageHeader'
@@ -124,9 +126,31 @@ export function AdminPage() {
             </Panel>
           </div>
 
-          <p className="ct-help">
-            This page is intentionally absent from lawyer navigation.
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                void (async () => {
+                  const data = await api.auditExport(currentMatterId())
+                  const blob = new Blob([JSON.stringify(data, null, 2)], {
+                    type: 'application/json',
+                  })
+                  const url = URL.createObjectURL(blob)
+                  const link = document.createElement('a')
+                  link.href = url
+                  link.download = `audit-${currentMatterId()}.json`
+                  link.click()
+                  URL.revokeObjectURL(url)
+                })()
+              }}
+            >
+              Export audit (current matter)
+            </Button>
+            <p className="ct-help">
+              This page is intentionally absent from lawyer navigation.
+            </p>
+          </div>
         </>
       ) : null}
     </div>

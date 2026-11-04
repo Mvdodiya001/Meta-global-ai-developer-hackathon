@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { api } from '../../api/client'
-import { DEMO_MATTER_ID } from '../../api/config'
+import { currentMatterId } from '../../api/demoSession'
 import type { Clause, Fact } from '../../api/types'
 import { fileToBase64, isWavFile } from '../../utils/fileBase64'
 import { lawyerError } from '../../utils/lawyerCopy'
@@ -49,13 +49,13 @@ export function DictationPanel({
     try {
       const audio_base64 = await fileToBase64(file)
       const next = await api.createDictation({
-        matter_id: DEMO_MATTER_ID,
+        matter_id: currentMatterId(),
         clause_id: clauseId,
         audio_base64,
       })
       const proposed: Fact = {
         id: next.fact_id,
-        matter_id: DEMO_MATTER_ID,
+        matter_id: currentMatterId(),
         clause_id: clauseId,
         statement: next.transcript,
         structured: {},

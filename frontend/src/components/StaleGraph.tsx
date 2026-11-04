@@ -28,30 +28,49 @@ const STATUS_HINT: Record<string, string> = {
   SUPERSEDED: 'superseded',
 }
 
-/** The API puts internal status codes in `label`; never show them raw. */
+/** Status line under a finding: state first, legacy label code as fallback. */
 function findingHint(label: string, state: string | null): string {
   if (state === 'STALE') {
     return STATUS_HINT.STALE
   }
+  if (state === 'SUPERSEDED') {
+    return STATUS_HINT.SUPERSEDED
+  }
   const code = (label ?? '').trim().split(/\s+/).pop() ?? ''
-  return STATUS_HINT[code] ?? ''
+  if (STATUS_HINT[code]) {
+    return STATUS_HINT[code]
+  }
+  return state === 'CURRENT' ? 'current answer' : ''
+}
+
+/** Node title: the clause this answer is about, never an internal id. */
+function findingTitle(label: string): string {
+  const text = (label ?? '').trim()
+  if (!text || /^FND-/i.test(text) || !isLawyerSafeText(text)) {
+    return 'Answer'
+  }
+  return text
+}
+
+const KIND_LABEL: Record<string, string> = {
+  rule_card: 'Legal test',
+  provision: 'Section',
+  fact: 'Fact',
+  source_version: 'Law version',
 }
 
 function supportLabel(node: GraphNode): { kind: string; caption: string } {
-  if (node.kind === 'rule_card') {
-    return { kind: 'Legal test', caption: 'Applied to these answers' }
+  const label = node.label?.trim() ?? ''
+  return {
+    kind: KIND_LABEL[node.kind] ?? 'Source',
+    caption: label && isLawyerSafeText(label) ? label : 'Related item',
   }
-  if (node.kind === 'provision') {
-    return { kind: 'Section', caption: 'Wording that was tested' }
-  }
-  if (node.kind === 'fact') {
-    const label = node.label?.trim() ?? ''
-    return {
-      kind: 'Fact',
-      caption: label && isLawyerSafeText(label) ? label : 'Used in these answers',
-    }
-  }
-  return { kind: 'Law version', caption: 'Recorded source' }
+}
+
+const EDGE_LABEL: Record<string, string> = {
+  DEPENDS_ON: 'depends on',
+  DERIVED_FROM: 'from section',
+  PART_OF: 'in version',
 }
 
 const COL_WIDTH = 188
@@ -80,6 +99,13 @@ function buildView(graph: GraphSlice): {
         : null
 
   const findingIds = new Set(findingNodes.map((node) => node.id))
+  // Simulated law versions never appear in the map (the what-if flow
+  // above still previews them; the map shows recorded law only).
+  const simulatedIds = new Set(
+    graph.nodes
+      .filter((node) => node.kind === 'source_version' && /simulated/i.test(node.label ?? ''))
+      .map((node) => node.id),
+  )
   const kept = new Set(shownFindings.map((node) => node.id))
   const depth = new Map<string, number>()
   let frontier = new Set(kept)
@@ -90,7 +116,12 @@ function buildView(graph: GraphSlice): {
         [edge.src, edge.dst],
         [edge.dst, edge.src],
       ] as const) {
-        if (frontier.has(from) && !findingIds.has(to) && !kept.has(to)) {
+        if (
+          frontier.has(from) &&
+          !findingIds.has(to) &&
+          !kept.has(to) &&
+          !simulatedIds.has(to)
+        ) {
           kept.add(to)
           depth.set(to, level)
           next.add(to)
@@ -112,8 +143,10 @@ function buildView(graph: GraphSlice): {
       id: node.id,
       data: {
         label: (
-          <div className="w-[9.25rem] text-left">
-            <div className="text-[0.72rem] font-semibold leading-tight text-ct-ink">Answer</div>
+          <div className="w-[10rem] text-left">
+            <div className="line-clamp-2 text-[0.72rem] font-semibold leading-tight text-ct-ink">
+              {findingTitle(node.label ?? '')}
+            </div>
             {findingHint(node.label ?? '', node.state ?? null) ? (
               <div
                 className={[
@@ -176,6 +209,10 @@ function buildView(graph: GraphSlice): {
       source: edge.src,
       target: edge.dst,
       animated: edge.rel === 'DEPENDS_ON',
+      label: EDGE_LABEL[edge.rel] ?? undefined,
+      labelStyle: { fontSize: 9, fill: 'rgb(var(--ct-muted))' },
+      labelBgStyle: { fill: 'rgb(var(--ct-surface))', fillOpacity: 0.85 },
+      labelBgPadding: [3, 2] as [number, number],
       style: { stroke: 'rgb(var(--ct-line-strong))', strokeWidth: 1.2 },
     }))
 

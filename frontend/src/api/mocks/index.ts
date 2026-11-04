@@ -7,6 +7,13 @@ import ingestJson from '../../../../openapi/examples/ingest_result.json'
 import matterJson from '../../../../openapi/examples/matter.json'
 import reverifyJson from '../../../../openapi/examples/reverify_result.json'
 import sourcesJson from '../../../../openapi/examples/sources.json'
+import compareReportJson from '../../../../openapi/examples/compare_report.json'
+import coverageReportJson from '../../../../openapi/examples/coverage_report.json'
+import flagResultJson from '../../../../openapi/examples/flag_result.json'
+import provisionSearchJson from '../../../../openapi/examples/provision_search.json'
+import provisionsJson from '../../../../openapi/examples/provisions.json'
+import ruleCardJson from '../../../../openapi/examples/rule_card.json'
+import ruleCardDraftsJson from '../../../../openapi/examples/rule_card_drafts.json'
 import sourceVersionsJson from '../../../../openapi/examples/source_versions.json'
 
 import type {
@@ -25,7 +32,15 @@ import type {
   Proof,
   ProofVerifyBody,
   ProofVerifyResult,
+  AuditExport,
+  CompareReport,
+  CoverageReport,
+  FlagResult,
+  ProvisionList,
+  ProvisionSearchResult,
   ReviewResult,
+  RuleCardDraftList,
+  RuleCardSummary,
   ReverifyResult,
   SourceList,
   SourceVersionList,
@@ -200,6 +215,69 @@ export async function fetchMockMatter(): Promise<Matter> {
   return mockData.matter
 }
 
+export async function fetchMockProvisions(): Promise<ProvisionList> {
+  return provisionsJson as ProvisionList
+}
+
+const mockDrafts: RuleCardSummary[] = [
+  ...(ruleCardDraftsJson as RuleCardDraftList).drafts,
+]
+
+export async function fetchMockCardDrafts(): Promise<RuleCardDraftList> {
+  return { drafts: [...mockDrafts] }
+}
+
+export async function fetchMockDraftCard(): Promise<RuleCardSummary> {
+  const card = ruleCardJson as RuleCardSummary
+  if (!mockDrafts.some((draft) => draft.id === card.id)) {
+    mockDrafts.push(card)
+  }
+  return card
+}
+
+export async function fetchMockConfirmCard(id: string): Promise<RuleCardSummary> {
+  const index = mockDrafts.findIndex((draft) => draft.id === id)
+  const base = index >= 0 ? mockDrafts[index] : (ruleCardJson as RuleCardSummary)
+  if (index >= 0) {
+    mockDrafts.splice(index, 1)
+  }
+  return { ...base, id: 'RC-CONFIRMED-01', trust_class: 'lawyer_confirmed' }
+}
+
+export async function fetchMockRejectCard(id: string): Promise<RuleCardSummary> {
+  const index = mockDrafts.findIndex((draft) => draft.id === id)
+  const base = index >= 0 ? mockDrafts[index] : (ruleCardJson as RuleCardSummary)
+  if (index >= 0) {
+    mockDrafts.splice(index, 1)
+  }
+  return base
+}
+
+const mockMatters: { id: string; client_name: string; title: string }[] = [
+  {
+    id: mockData.matter.id,
+    client_name: mockData.matter.client_name,
+    title: mockData.matter.title,
+  },
+]
+
+export async function fetchMockMatters(): Promise<{ matters: typeof mockMatters }> {
+  return { matters: [...mockMatters] }
+}
+
+export async function fetchMockCreateMatter(body: {
+  title: string
+  client_name: string
+}): Promise<{ id: string; client_name: string; title: string }> {
+  const created = {
+    id: `MAT-${String(mockMatters.length + 1).padStart(2, '0')}`,
+    client_name: body.client_name,
+    title: body.title,
+  }
+  mockMatters.push(created)
+  return created
+}
+
 export async function fetchMockRunEvents(_runId: string): Promise<ToolCall[]> {
   return DEMO_RUN_EVENTS
 }
@@ -236,6 +314,52 @@ export async function fetchMockApproveFact(factId: string): Promise<FactAction> 
     return approveFact(fact)
   }
   return { fact_id: factId, trust_class: 'lawyer_confirmed', supersedes_id: factId }
+}
+
+export async function fetchMockAuditExport(matterId: string): Promise<AuditExport> {
+  return {
+    matter_id: matterId,
+    exported_at: '2026-01-01T00:00:00Z',
+    rows: mockData.audit.rows,
+  }
+}
+
+export async function fetchMockCompare(): Promise<CompareReport> {
+  return compareReportJson as CompareReport
+}
+
+export async function fetchMockCoverage(): Promise<CoverageReport> {
+  return coverageReportJson as CoverageReport
+}
+
+export async function fetchMockFlagPair(): Promise<FlagResult> {
+  return flagResultJson as FlagResult
+}
+
+export async function fetchMockSearchProvisions(
+  query: string,
+): Promise<ProvisionSearchResult> {
+  const example = provisionSearchJson as ProvisionSearchResult
+  return { query, hits: example.hits }
+}
+
+export async function fetchMockExplainDocument(): Promise<{ explained: number }> {
+  return { explained: 12 }
+}
+
+export async function fetchMockSummarizeDocument(): Promise<{
+  fact_id: string
+  summary: string
+}> {
+  return {
+    fact_id: 'F-E01',
+    summary:
+      'Document summary: This agreement appears to set out how Nimbus processes personal data for Acme.',
+  }
+}
+
+export async function fetchMockRejectFact(factId: string): Promise<FactAction> {
+  return { fact_id: factId, trust_class: 'disputed', supersedes_id: factId }
 }
 
 export async function fetchMockChallengeFact(factId: string): Promise<FactAction> {

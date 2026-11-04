@@ -9,9 +9,24 @@ import {
   fetchMockFindingById,
   fetchMockGraph,
   fetchMockImpact,
+  fetchMockCreateMatter,
+  fetchMockCardDrafts,
+  fetchMockAuditExport,
+  fetchMockCompare,
+  fetchMockCoverage,
+  fetchMockFlagPair,
+  fetchMockConfirmCard,
+  fetchMockDraftCard,
   fetchMockMatter,
+  fetchMockProvisions,
+  fetchMockSearchProvisions,
+  fetchMockRejectCard,
+  fetchMockMatters,
   fetchMockApproveFact,
   fetchMockChallengeFact,
+  fetchMockExplainDocument,
+  fetchMockRejectFact,
+  fetchMockSummarizeDocument,
   fetchMockCreateClaim,
   fetchMockUnknownFinding,
   fetchMockHistory,
@@ -43,7 +58,11 @@ import type {
   TranscribeResult,
   UploadResult,
   FindingHistory,
+  AuditExport,
   Clause,
+  CompareReport,
+  CoverageReport,
+  FlagResult,
   CounterfactualBody,
   CounterfactualResult,
   DictationRequest,
@@ -51,16 +70,24 @@ import type {
   DiffResult,
   DocumentList,
   Fact,
+  ExplainResult,
   FactAction,
+  SummaryResult,
   Finding,
   GraphSlice,
   ImpactReport,
   IngestResult,
   IngestVersionBody,
   Matter,
+  MatterList,
+  MatterSummary,
   Proof,
   ProofVerifyResult,
+  ProvisionList,
+  ProvisionSearchResult,
   ReviewBody,
+  RuleCardDraftList,
+  RuleCardSummary,
   ReviewResult,
   ReverifyList,
   ReverifyResult,
@@ -215,6 +242,14 @@ async function pollLiveRunEvents(
 
 /** HTTP client for contract v8. Tests keep mocks (`MODE=test`). */
 export const api = {
+  matters: (): Promise<MatterList> =>
+    mocksEnabled()
+      ? fetchMockMatters()
+      : getJson<MatterList>('/api/matters'),
+  createMatter: (body: { title: string; client_name: string }): Promise<MatterSummary> =>
+    mocksEnabled()
+      ? fetchMockCreateMatter(body)
+      : postJson<MatterSummary>('/api/matters', body),
   matter: (id: string): Promise<Matter> =>
     mocksEnabled() ? fetchMockMatter() : getJson<Matter>(`/api/matters/${encodeURIComponent(id)}`),
   documents: (matterId: string): Promise<DocumentList> =>
@@ -283,6 +318,59 @@ export const api = {
       : getJson<ImpactReport>(`/api/impact/${encodeURIComponent(reportId)}`),
   sources: (): Promise<SourceList> =>
     mocksEnabled() ? fetchMockSources() : getJson<SourceList>('/api/sources'),
+  auditExport: (matterId: string): Promise<AuditExport> =>
+    mocksEnabled()
+      ? fetchMockAuditExport(matterId)
+      : getJson<AuditExport>(`/api/matters/${encodeURIComponent(matterId)}/audit-export`),
+  compareDocuments: (matterId: string, a: string, b: string): Promise<CompareReport> =>
+    mocksEnabled()
+      ? fetchMockCompare()
+      : getJson<CompareReport>(
+          `/api/matters/${encodeURIComponent(matterId)}/compare${query({ a, b })}`,
+        ),
+  flagClausePair: (matterId: string, clauseRef: string): Promise<FlagResult> =>
+    mocksEnabled()
+      ? fetchMockFlagPair()
+      : postJson<FlagResult>(`/api/matters/${encodeURIComponent(matterId)}/compare/flag`, {
+          clause_ref: clauseRef,
+        }),
+  documentCoverage: (documentId: string): Promise<CoverageReport> =>
+    mocksEnabled()
+      ? fetchMockCoverage()
+      : getJson<CoverageReport>(`/api/documents/${encodeURIComponent(documentId)}/coverage`),
+  searchProvisions: (q: string, limit = 5, rerank = false): Promise<ProvisionSearchResult> =>
+    mocksEnabled()
+      ? fetchMockSearchProvisions(q)
+      : getJson<ProvisionSearchResult>(
+          `/api/provisions/search${query({
+            q,
+            limit: String(limit),
+            rerank: rerank ? 'true' : undefined,
+          })}`,
+        ),
+  provisions: (versionId: string): Promise<ProvisionList> =>
+    mocksEnabled()
+      ? fetchMockProvisions()
+      : getJson<ProvisionList>(
+          `/api/source-versions/${encodeURIComponent(versionId)}/provisions`,
+        ),
+  cardDrafts: (): Promise<RuleCardDraftList> =>
+    mocksEnabled() ? fetchMockCardDrafts() : getJson<RuleCardDraftList>('/api/rule-cards/drafts'),
+  draftCard: (provisionId: string): Promise<RuleCardSummary> =>
+    mocksEnabled()
+      ? fetchMockDraftCard()
+      : postJson<RuleCardSummary>('/api/rule-cards/draft', { provision_id: provisionId }),
+  confirmCard: (
+    cardId: string,
+    body: { interpretation?: string; claim_type?: string },
+  ): Promise<RuleCardSummary> =>
+    mocksEnabled()
+      ? fetchMockConfirmCard(cardId)
+      : postJson<RuleCardSummary>(`/api/rule-cards/${encodeURIComponent(cardId)}/confirm`, body),
+  rejectCard: (cardId: string): Promise<RuleCardSummary> =>
+    mocksEnabled()
+      ? fetchMockRejectCard(cardId)
+      : postJson<RuleCardSummary>(`/api/rule-cards/${encodeURIComponent(cardId)}/reject`, {}),
   ingest: (sourceId: string, version?: IngestVersionBody): Promise<IngestResult> =>
     mocksEnabled()
       ? fetchMockIngest(sourceId)
@@ -316,6 +404,21 @@ export const api = {
       : postJson<FactAction>(`/api/facts/${encodeURIComponent(factId)}/challenge`, {
           reason: 'Lawyer challenge',
         }),
+  rejectFact: (factId: string): Promise<FactAction> =>
+    mocksEnabled()
+      ? fetchMockRejectFact(factId)
+      : postJson<FactAction>(`/api/facts/${encodeURIComponent(factId)}/reject`, {}),
+  explainDocument: (documentId: string): Promise<ExplainResult> =>
+    mocksEnabled()
+      ? fetchMockExplainDocument()
+      : postJson<ExplainResult>(`/api/documents/${encodeURIComponent(documentId)}/explain`, {}),
+  summarizeDocument: (documentId: string): Promise<SummaryResult> =>
+    mocksEnabled()
+      ? fetchMockSummarizeDocument()
+      : postJson<SummaryResult>(
+          `/api/documents/${encodeURIComponent(documentId)}/summarize`,
+          {},
+        ),
   verifyProof: (claimId: string, proof: Proof): Promise<ProofVerifyResult> =>
     mocksEnabled()
       ? fetchMockVerifyProof({ claim_id: claimId, proof })

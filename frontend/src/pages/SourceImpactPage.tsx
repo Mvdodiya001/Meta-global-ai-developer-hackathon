@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { api } from '../api/client'
-import { DEMO_MATTER_ID, DEMO_SOURCE_ID } from '../api/config'
+import { DEMO_SOURCE_ID } from '../api/config'
+import { currentMatterId } from '../api/demoSession'
 import type {
   AuditTrail,
   CounterfactualResult,
@@ -94,10 +95,10 @@ export function SourceImpactPage() {
       preferred
     const [nextDiff, nextGraph, trail, report, waiting] = await Promise.all([
       preferred ? api.diff(preferred, againstId, nextSource) : Promise.resolve(null),
-      api.graph(DEMO_MATTER_ID, nextSource),
-      api.audit(DEMO_MATTER_ID),
+      api.graph(currentMatterId(), nextSource),
+      api.audit(currentMatterId()),
       preferred ? api.impact(`IMP-${preferred}`) : Promise.resolve(null),
-      api.reverifyList(DEMO_MATTER_ID).catch((err: unknown) => {
+      api.reverifyList(currentMatterId()).catch((err: unknown) => {
         setReverifyListError(lawyerError(err))
         return null
       }),
@@ -185,8 +186,8 @@ export function SourceImpactPage() {
       const result = await api.ingest(sourceId, ingestBody(selected, diff))
       const [report, slice, trail] = await Promise.all([
         api.impact(result.impact_report_id),
-        api.graph(DEMO_MATTER_ID, sourceId),
-        api.audit(DEMO_MATTER_ID),
+        api.graph(currentMatterId(), sourceId),
+        api.audit(currentMatterId()),
       ])
       const captions = await wordingFor(report.affected.map((row) => row.finding_id))
       setImpact(report)
@@ -244,7 +245,7 @@ export function SourceImpactPage() {
       const nextId = result.current[0]
       const [nextFinding, trail] = await Promise.all([
         nextId ? api.findingById(nextId) : Promise.resolve(null),
-        api.audit(DEMO_MATTER_ID),
+        api.audit(currentMatterId()),
       ])
       setAfter(nextFinding)
       setAudit(trail)

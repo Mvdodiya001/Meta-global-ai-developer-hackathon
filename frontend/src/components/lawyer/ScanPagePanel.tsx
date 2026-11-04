@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { api } from '../../api/client'
-import { DEMO_MATTER_ID } from '../../api/config'
+import { currentMatterId } from '../../api/demoSession'
 import type { ScanResult } from '../../api/types'
 import { fileToBase64, scanMediaType } from '../../utils/fileBase64'
 import { lawyerError } from '../../utils/lawyerCopy'
@@ -30,7 +30,7 @@ export function ScanPagePanel() {
     try {
       const image_base64 = await fileToBase64(file)
       const next = await api.scanPage({
-        matter_id: DEMO_MATTER_ID,
+        matter_id: currentMatterId(),
         title: file.name,
         image_base64,
         media_type: mediaType,

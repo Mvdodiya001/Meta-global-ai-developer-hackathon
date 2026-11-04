@@ -138,8 +138,8 @@ export async function fetchMockDocumentPages(): Promise<DocumentPages> {
   return {
     document_id: 'DOC-UPLOAD-01',
     pages: [
-      { page: 1, source: 'text' },
-      { page: 2, source: 'vision' },
+      { page: 1, source: 'text', confidence: 'high' },
+      { page: 2, source: 'vision', confidence: 'low' },
     ],
   }
 }

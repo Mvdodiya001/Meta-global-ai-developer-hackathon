@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { api } from '../api/client'
-import { DEMO_DOCUMENT_ID, DEMO_MATTER_ID } from '../api/config'
+import { DEMO_DOCUMENT_ID } from '../api/config'
 import { parseChallengerReport, type ChallengerReportView } from '../api/mocks/challenger'
-import { rememberClaimId } from '../api/demoSession'
+import { currentMatterId, preferredDocumentId, rememberClaimId } from '../api/demoSession'
 import {
   DEFAULT_AS_OF,
   DEFAULT_VERIFY_QUESTION,
@@ -13,6 +13,7 @@ import type { Clause, Fact, Finding, Matter } from '../api/types'
 import { AskBox } from '../components/clause-review/AskBox'
 import { ClauseList } from '../components/clause-review/ClauseList'
 import { PremiseTrace } from '../components/clause-review/PremiseTrace'
+import { RelevantSections } from '../components/clause-review/RelevantSections'
 import { SourceTrace } from '../components/clause-review/SourceTrace'
 import { WhatWouldChangePanel } from '../components/clause-review/WhatWouldChangePanel'
 import { ChallengerPanel } from '../components/ChallengerPanel'
@@ -23,6 +24,7 @@ import { Button } from '../components/ui/Button'
 import { IconCheck, IconSearch } from '../components/ui/Icons'
 import { PanelSkeleton, Skeleton } from '../components/ui/Skeleton'
 import { StateMessage } from '../components/ui/StateMessage'
+import { clauseTags } from '../utils/clauseTags'
 import { buildWhatWouldChange } from '../utils/findingTraces'
 import { lawyerError } from '../utils/lawyerCopy'
 
@@ -52,17 +54,19 @@ export function ClauseReviewPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
+  const [tagFilter, setTagFilter] = useState('')
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     void (async () => {
       try {
-        const docs = await api.documents(DEMO_MATTER_ID)
-        const documentId = docs.documents[0]?.id ?? DEMO_DOCUMENT_ID
+        const docs = await api.documents(currentMatterId())
+        const documentId =
+          preferredDocumentId(docs.documents.map((doc) => doc.id)) ?? DEMO_DOCUMENT_ID
         const [m, c, f] = await Promise.all([
-          api.matter(DEMO_MATTER_ID),
+          api.matter(currentMatterId()),
           api.clauses(documentId),
-          api.facts(DEMO_MATTER_ID),
+          api.facts(currentMatterId()),
         ])
         setMatter(m)
         setClauses(c)
@@ -150,7 +154,11 @@ export function ClauseReviewPage() {
   }, [])
 
   const sensitivity = finding ? buildWhatWouldChange(finding, facts) : []
+  const allTags = [...new Set(clauses.flatMap((clause) => clauseTags(clause)))].sort()
   const visibleClauses = clauses.filter((clause) => {
+    if (tagFilter && !clauseTags(clause).includes(tagFilter)) {
+      return false
+    }
     const term = filter.trim().toLowerCase()
     if (!term) {
       return true
@@ -205,6 +213,27 @@ export function ClauseReviewPage() {
                 className="ct-input py-1.5 pl-8 text-xs"
               />
             </div>
+            {allTags.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1" aria-label="Filter clauses by topic">
+                <button
+                  type="button"
+                  className={tagFilter === '' ? 'ct-badge ct-badge--accent' : 'ct-badge'}
+                  onClick={() => setTagFilter('')}
+                >
+                  All topics
+                </button>
+                {allTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={tagFilter === tag ? 'ct-badge ct-badge--accent' : 'ct-badge'}
+                    onClick={() => setTagFilter(tag === tagFilter ? '' : tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="ct-scroll-fade max-h-[26rem] overflow-y-auto py-2">
             {loading ? (
@@ -231,6 +260,8 @@ export function ClauseReviewPage() {
             onAsOfChange={setAsOf}
             onSubmit={() => void runVerification()}
           />
+
+          <RelevantSections initialQuery={question} />
 
           {notice ? <StateMessage tone="warn">{notice}</StateMessage> : null}
 

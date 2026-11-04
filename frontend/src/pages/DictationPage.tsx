@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { api } from '../api/client'
-import { DEMO_MATTER_ID, getApiBase, mocksEnabled } from '../api/config'
+import { getApiBase, mocksEnabled } from '../api/config'
+import { currentMatterId, preferredDocumentId } from '../api/demoSession'
 import type { Clause, DictationResult } from '../api/types'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Button } from '../components/ui/Button'
@@ -31,8 +32,8 @@ export function DictationPage() {
 
   useEffect(() => {
     void (async () => {
-      const docs = await api.documents(DEMO_MATTER_ID)
-      const documentId = docs.documents[0]?.id
+      const docs = await api.documents(currentMatterId())
+      const documentId = preferredDocumentId(docs.documents.map((doc) => doc.id))
       if (documentId) {
         const list = await api.clauses(documentId)
         setClauses(list)
@@ -108,7 +109,7 @@ export function DictationPage() {
         setNotice('Listening… writing down what you said')
         setNoticeTone('info')
         try {
-          const heard = await api.transcribe({ matter_id: DEMO_MATTER_ID, audio_base64: base64 })
+          const heard = await api.transcribe({ matter_id: currentMatterId(), audio_base64: base64 })
           setTranscript(heard.transcript)
           setNotice(null)
         } catch {
@@ -185,7 +186,7 @@ export function DictationPage() {
     // as the proposed fact; the preview above is only for reading.
     const result = await api
       .createDictation({
-        matter_id: DEMO_MATTER_ID,
+        matter_id: currentMatterId(),
         clause_id: clauseId || null,
         audio_base64: audioRef.current,
       })

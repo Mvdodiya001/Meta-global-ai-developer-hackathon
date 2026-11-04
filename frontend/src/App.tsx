@@ -9,6 +9,7 @@ import { EvidencePage } from './pages/EvidencePage'
 import { LawyerControlPage } from './pages/LawyerControlPage'
 import { MattersPage } from './pages/MattersPage'
 import { SignInPage } from './pages/SignInPage'
+import { ComparePage } from './pages/ComparePage'
 import { SourceImpactPage } from './pages/SourceImpactPage'
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
         <Route index element={<MattersPage />} />
         <Route path="review" element={<ClauseReviewPage />} />
         <Route path="impact" element={<SourceImpactPage />} />
+        <Route path="compare" element={<ComparePage />} />
         <Route path="control" element={<LawyerControlPage />} />
         <Route path="evidence/:findingId" element={<EvidencePage />} />
         <Route path="dictate" element={<DictationPage />} />

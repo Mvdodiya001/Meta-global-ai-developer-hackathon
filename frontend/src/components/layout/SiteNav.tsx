@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import {
   IconClause,
   IconControl,
+  IconGraph,
   IconImpact,
   IconMatters,
   IconMic,
@@ -24,6 +25,7 @@ const GROUPS: { label: string; links: NavItem[] }[] = [
       { to: '/', label: 'Your matters', icon: IconMatters, end: true },
       { to: '/review', label: 'Review a clause', icon: IconReview },
       { to: '/impact', label: 'Law changes', icon: IconImpact },
+      { to: '/compare', label: 'Compare documents', icon: IconGraph },
       { to: '/control', label: 'Your control room', icon: IconControl },
     ],
   },
