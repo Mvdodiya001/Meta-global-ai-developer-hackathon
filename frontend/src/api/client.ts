@@ -163,6 +163,11 @@ async function getJson<T>(path: string): Promise<T> {
   const url = `${getApiBase()}${path}`
   const response = await fetch(url, { headers: authHeaders() })
   if (!response.ok) {
+    if (response.status === 401) {
+      // Stale token (e.g. issued by another backend): drop it so the
+      // UI can show the sign-in prompt instead of a load error.
+      storeToken(null)
+    }
     throw await readError(response, path)
   }
   return response.json() as Promise<T>
@@ -176,6 +181,11 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   })
   if (!response.ok) {
+    if (response.status === 401) {
+      // Stale token (e.g. issued by another backend): drop it so the
+      // UI can show the sign-in prompt instead of a load error.
+      storeToken(null)
+    }
     throw await readError(response, path)
   }
   return response.json() as Promise<T>

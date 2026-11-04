@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { api } from '../api/client'
+import { api, ApiError, storedToken } from '../api/client'
 import { preferredMatterId } from '../api/demoSession'
 import type { Matter } from '../api/types'
 import { UnderstandingPanel } from '../components/documents/UnderstandingPanel'
@@ -48,16 +48,17 @@ export function MattersPage() {
       if (picked) {
         setMatter(await api.matter(picked))
       }
-    } catch {
-      // No token yet: the API is auth-enforced, so this is a sign-in
-      // prompt, not a failure.
-      const signedIn =
-        typeof window !== 'undefined' &&
-        Boolean(window.localStorage.getItem('clausetrace.token'))
+    } catch (err) {
+      // 401 = no token, or a stale token the client has just cleared:
+      // the API is auth-enforced, so this is a sign-in prompt, not a
+      // failure. Detect it from the error itself — by catch time the
+      // stale token is already gone from storage.
+      const unauthenticated = err instanceof ApiError && err.status === 401
+      const signedIn = Boolean(storedToken())
       setError(
-        signedIn
-          ? 'The matter could not be loaded.'
-          : 'Sign in to load your matters and upload documents.',
+        unauthenticated || !signedIn
+          ? 'Sign in to load your matters and upload documents.'
+          : 'The matter could not be loaded.',
       )
     } finally {
       setLoading(false)
