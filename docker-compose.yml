@@ -1,0 +1,63 @@
+# ClauseTrace full backend stack: API + Postgres + FalkorDB.
+# One server is enough (demo traffic; ~500MB idle here, caps below).
+# Usage:
+#   PGPASSWORD=<strong-pw> docker compose up --build -d
+#   curl http://127.0.0.1:8000/api/health
+# The API seeds the demo database on first boot automatically.
+# Postgres is published on 5433 and FalkorDB on 6380 to avoid clashing
+# with existing host services; the API talks to both over the
+# internal network.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      API_STUB: 0
+      LLM_MODE: replay
+      DEMO_MODE: 1
+      CLAUSETRACE_DB_URL: postgresql+psycopg://clausetrace:${PGPASSWORD:-clausetrace_pw}@postgres:5432/clausetrace
+      CT_GRAPH_HOST: falkordb
+      CT_GRAPH_PORT: 6379
+      CT_GRAPH_NAME: clausetrace
+    depends_on:
+      postgres:
+        condition: service_healthy
+      falkordb:
+        condition: service_started
+    restart: unless-stopped
+    mem_limit: 2g
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: clausetrace
+      POSTGRES_PASSWORD: ${PGPASSWORD:-clausetrace_pw}
+      POSTGRES_DB: clausetrace
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5543:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clausetrace -d clausetrace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 3g
+
+  falkordb:
+    image: falkordb/falkordb-server:v4.22.0
+    volumes:
+      - falkdata:/data
+    ports:
+      - "127.0.0.1:6380:6379"
+    restart: unless-stopped
+    mem_limit: 1g
+
+volumes:
+  pgdata: {}
+  falkdata: {}

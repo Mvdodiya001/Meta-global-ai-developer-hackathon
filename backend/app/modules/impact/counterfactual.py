@@ -128,7 +128,7 @@ def run_counterfactual(session: Session, source_version_id: str) -> dict[str, An
     ]
     finding_ids: set[str] = set()
     for row in keyed_rows:
-        finding_ids.update(graph.dependent_findings(session, str(row.id)))
+        finding_ids.update(graph.dependent_findings_live(session, str(row.id))[0])
     affected: list[dict[str, Any]] = []
     nodes: dict[str, dict[str, Any]] = {}
     edges: list[dict[str, str]] = []

@@ -17,6 +17,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from app import models
+from app.modules.evidence import graph_projection
 
 TRAVERSAL_RELS = ("DERIVED_FROM", "DEPENDS_ON")
 
@@ -136,6 +137,41 @@ def _upstream_cte(provision_id: str) -> Any:
         edges.c.rel.in_(TRAVERSAL_RELS),
     )
     return anchor.union_all(hop)
+
+
+def graph_backend(session: Session) -> str:
+    """Live traversal backend for dependency checks (P1-hybrid).
+
+    Returns `"falkordb"` when the projection is fresh and queryable,
+    else `"relational"`. Never raises: any FalkorDB failure falls back.
+    """
+    try:
+        graph_projection.ensure_projected(session)
+        return "falkordb"
+    except Exception:
+        return "relational"
+
+
+def dependent_findings_live(
+    session: Session, provision_id: str
+) -> tuple[list[str], str]:
+    """FalkorDB-first dependent findings with relational fallback (P1-hybrid).
+
+    Returns `(finding_ids, backend)`. The projection query is CURRENT-free
+    by design, so the CURRENT filter is applied on the record side to
+    match `dependent_findings` exactly.
+    """
+    try:
+        graph_projection.ensure_projected(session)
+        projected = graph_projection.dependent_findings(None, provision_id)
+        live = sorted(
+            finding_id
+            for finding_id in projected
+            if is_current_finding(session, finding_id)
+        )
+        return live, "falkordb"
+    except Exception:
+        return dependent_findings(session, provision_id), "relational"
 
 
 def dependent_findings(session: Session, provision_id: str) -> list[str]:

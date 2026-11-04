@@ -360,6 +360,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Models
+         * @description Available models; a stable discovery endpoint that never 404s (v15).
+         *
+         *     The `/api/v1/models` alias covers OpenAI-style version-prefixed probes.
+         */
+        get: operations["list_models_api_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/overview": {
         parameters: {
             query?: never;
@@ -1432,13 +1454,18 @@ export interface components {
         };
         /**
          * GraphSlice
-         * @description Stub: graph slice example (T0.7).
+         * @description Graph slice plus the live traversal backend (v15: `backend`).
          */
         GraphSlice: {
             /** Nodes */
             nodes: components["schemas"]["GraphNode"][];
             /** Edges */
             edges: components["schemas"]["GraphEdge"][];
+            /**
+             * Backend
+             * @default relational
+             */
+            backend: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1565,6 +1592,26 @@ export interface components {
             due_at: string;
             /** Source Label */
             source_label: string;
+        };
+        /**
+         * ModelInfo
+         * @description One model served by the LLM gateway (v15).
+         */
+        ModelInfo: {
+            /** Id */
+            id: string;
+            /** Provider */
+            provider: string;
+            /** Mode */
+            mode: string;
+        };
+        /**
+         * ModelsResult
+         * @description Available models; never 404s so clients can probe capability (v15).
+         */
+        ModelsResult: {
+            /** Models */
+            models: components["schemas"]["ModelInfo"][];
         };
         /**
          * Proof
@@ -2485,6 +2532,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_models_api_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelsResult"];
                 };
             };
         };

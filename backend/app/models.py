@@ -3,10 +3,17 @@
 IDs are caller-supplied prefixed strings (`SRC-`, `SV-`, `PRV-`, …). Timestamps
 are UTC ISO-8601 strings; legal dates are plain-date strings. Append-only
 enforcement lives in `app.db` as SQLite triggers, not in these models.
+
+Every `ForeignKey` column also has a (traversal-free, unidirectional)
+many-to-one `relationship()`: the unit of work orders same-flush INSERTs
+along relationships only, so without them a child row can flush before its
+parent. SQLite never noticed (FK enforcement is off by design); Postgres
+enforces FKs, so the relationships are what make multi-table commits —
+seed, reset-demo, ask-flow — work there (P1). They emit no DDL.
 """
 
 import sqlalchemy as sa
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -54,6 +61,7 @@ class MatterContext(Base):
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     matter_id: Mapped[str] = mapped_column(sa.ForeignKey("matters.id"), nullable=False)
+    matter: Mapped["Matter"] = relationship()
     kind: Mapped[str] = mapped_column(sa.String, nullable=False)
     title: Mapped[str] = mapped_column(sa.String, nullable=False)
     due_at: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -80,6 +88,7 @@ class SourceVersion(Base):
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     source_id: Mapped[str] = mapped_column(sa.ForeignKey("sources.id"), nullable=False)
+    source: Mapped["Source"] = relationship()
     version_label: Mapped[str] = mapped_column(sa.String, nullable=False)
     published_on: Mapped[str] = mapped_column(sa.String, nullable=False)
     effective_from: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -100,6 +109,7 @@ class Provision(Base):
     source_version_id: Mapped[str] = mapped_column(
         sa.ForeignKey("source_versions.id"), nullable=False
     )
+    source_version: Mapped["SourceVersion"] = relationship()
     key: Mapped[str] = mapped_column(sa.String, nullable=False)
     text: Mapped[str] = mapped_column(sa.Text, nullable=False)
     text_sha256: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -114,6 +124,7 @@ class RuleCard(Base):
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     provision_id: Mapped[str] = mapped_column(sa.ForeignKey("provisions.id"), nullable=False)
+    provision: Mapped["Provision"] = relationship()
     kind: Mapped[str] = mapped_column(sa.String, nullable=False)
     claim_type: Mapped[str] = mapped_column(sa.String, nullable=False)
     predicate_json: Mapped[dict | None] = mapped_column(sa.JSON, nullable=True)
@@ -134,6 +145,7 @@ class Document(Base):
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     matter_id: Mapped[str] = mapped_column(sa.ForeignKey("matters.id"), nullable=False)
+    matter: Mapped["Matter"] = relationship()
     title: Mapped[str] = mapped_column(sa.String, nullable=False)
     kind: Mapped[str] = mapped_column(sa.String, nullable=False)
 
@@ -145,6 +157,7 @@ class DocumentVersion(Base):
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     document_id: Mapped[str] = mapped_column(sa.ForeignKey("documents.id"), nullable=False)
+    document: Mapped["Document"] = relationship()
     text: Mapped[str] = mapped_column(sa.Text, nullable=False)
     sha256: Mapped[str] = mapped_column(sa.String, nullable=False)
     created_at: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -159,6 +172,7 @@ class Clause(Base):
     document_version_id: Mapped[str] = mapped_column(
         sa.ForeignKey("document_versions.id"), nullable=False
     )
+    document_version: Mapped["DocumentVersion"] = relationship()
     ref: Mapped[str] = mapped_column(sa.String, nullable=False)
     heading: Mapped[str] = mapped_column(sa.String, nullable=False)
     text: Mapped[str] = mapped_column(sa.Text, nullable=False)
@@ -174,7 +188,9 @@ class Fact(Base):
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     matter_id: Mapped[str] = mapped_column(sa.ForeignKey("matters.id"), nullable=False)
+    matter: Mapped["Matter"] = relationship()
     clause_id: Mapped[str | None] = mapped_column(sa.ForeignKey("clauses.id"), nullable=True)
+    clause: Mapped["Clause | None"] = relationship()
     statement: Mapped[str] = mapped_column(sa.Text, nullable=False)
     structured_json: Mapped[dict | None] = mapped_column(sa.JSON, nullable=True)
     origin: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -193,7 +209,9 @@ class Claim(Base):
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     matter_id: Mapped[str] = mapped_column(sa.ForeignKey("matters.id"), nullable=False)
+    matter: Mapped["Matter"] = relationship()
     clause_id: Mapped[str] = mapped_column(sa.ForeignKey("clauses.id"), nullable=False)
+    clause: Mapped["Clause"] = relationship()
     claim_type: Mapped[str] = mapped_column(sa.String, nullable=False)
     params_json: Mapped[dict | None] = mapped_column(sa.JSON, nullable=True)
     question_text: Mapped[str] = mapped_column(sa.Text, nullable=False)
@@ -209,6 +227,7 @@ class Finding(Base):
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     tenant_id: Mapped[str] = mapped_column(sa.String, nullable=False, default="demo")
     claim_id: Mapped[str] = mapped_column(sa.ForeignKey("claims.id"), nullable=False)
+    claim: Mapped["Claim"] = relationship()
     version_no: Mapped[int] = mapped_column(sa.Integer, nullable=False)
     status: Mapped[str] = mapped_column(sa.String, nullable=False)
     confidence_band: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -230,6 +249,7 @@ class FindingEvent(Base):
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     finding_id: Mapped[str] = mapped_column(sa.ForeignKey("findings.id"), nullable=False)
+    finding: Mapped["Finding"] = relationship()
     state: Mapped[str] = mapped_column(sa.String, nullable=False)
     reason: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     caused_by_type: Mapped[str | None] = mapped_column(sa.String, nullable=True)
@@ -244,7 +264,9 @@ class ChallengerReport(Base):
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     claim_id: Mapped[str] = mapped_column(sa.ForeignKey("claims.id"), nullable=False)
+    claim: Mapped["Claim"] = relationship()
     finding_id: Mapped[str | None] = mapped_column(sa.ForeignKey("findings.id"), nullable=True)
+    finding: Mapped["Finding | None"] = relationship()
     model: Mapped[str] = mapped_column(sa.String, nullable=False)
     objections_json: Mapped[list | None] = mapped_column(sa.JSON, nullable=True)
     created_at: Mapped[str] = mapped_column(sa.String, nullable=False)
@@ -272,6 +294,7 @@ class Run(Base):
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     trigger: Mapped[str] = mapped_column(sa.String, nullable=False)
     claim_id: Mapped[str] = mapped_column(sa.ForeignKey("claims.id"), nullable=False)
+    claim: Mapped["Claim"] = relationship()
     started_at: Mapped[str] = mapped_column(sa.String, nullable=False)
     ended_at: Mapped[str | None] = mapped_column(sa.String, nullable=True)
     outcome: Mapped[str | None] = mapped_column(sa.String, nullable=True)
@@ -284,6 +307,7 @@ class ToolCall(Base):
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     run_id: Mapped[str] = mapped_column(sa.ForeignKey("runs.id"), nullable=False)
+    run: Mapped["Run"] = relationship()
     seq: Mapped[int] = mapped_column(sa.Integer, nullable=False)
     tool: Mapped[str] = mapped_column(sa.String, nullable=False)
     args_json: Mapped[dict | None] = mapped_column(sa.JSON, nullable=True)
@@ -299,6 +323,7 @@ class LlmCall(Base):
 
     id: Mapped[str] = mapped_column(sa.String, primary_key=True)
     run_id: Mapped[str | None] = mapped_column(sa.ForeignKey("runs.id"), nullable=True)
+    run: Mapped["Run | None"] = relationship()
     role: Mapped[str] = mapped_column(sa.String, nullable=False)
     model: Mapped[str] = mapped_column(sa.String, nullable=False)
     request_sha256: Mapped[str] = mapped_column(sa.String, nullable=False)

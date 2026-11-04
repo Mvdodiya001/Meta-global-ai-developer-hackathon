@@ -20,6 +20,17 @@ from app import models
 
 DEFAULT_GRAPH = "clausetrace"
 
+#: Connect timeout (s) so a dead graph host fails fast into the fallback.
+CONNECT_TIMEOUT_S = 2.0
+#: Query timeout (s) bounding a hung graph host; demo traversals are ms-scale.
+QUERY_TIMEOUT_S = 10.0
+
+#: Graph name -> record edge count at the last successful projection build.
+#: `ensure_projected` rebuilds only when the count moved, so repeated
+#: traversals in one request (e.g. per-provision impact loops) stay cheap
+#: while the projection can never silently go stale.
+_LAST_PROJECTED: dict[str, int] = {}
+
 
 def _connect(graph_name: str) -> Any:
     """One FalkorDB graph handle from the environment (P1)."""
@@ -28,7 +39,13 @@ def _connect(graph_name: str) -> Any:
     host = os.environ.get("CT_GRAPH_HOST", "127.0.0.1")
     port = int(os.environ.get("CT_GRAPH_PORT", "6379"))
     password = os.environ.get("CT_GRAPH_PASSWORD") or None
-    db = FalkorDB(host=host, port=port, password=password)
+    db = FalkorDB(
+        host=host,
+        port=port,
+        password=password,
+        socket_connect_timeout=CONNECT_TIMEOUT_S,
+        socket_timeout=QUERY_TIMEOUT_S,
+    )
     return db.select_graph(graph_name)
 
 
@@ -69,6 +86,30 @@ def project(session: Session, graph_name_value: str | None = None) -> dict[str, 
             {"src": str(edge.src_id), "dst": str(edge.dst_id), "rel": str(edge.rel)},
         )
     return {"nodes": len(node_ids), "edges": len(edges)}
+
+
+def record_edge_count(session: Session) -> int:
+    """Current edge row count in the system of record (P1-hybrid)."""
+    return int(
+        session.execute(sa.select(sa.func.count()).select_from(models.Edge)).scalar()
+        or 0
+    )
+
+
+def ensure_projected(
+    session: Session, graph_name_value: str | None = None
+) -> str:
+    """Rebuild the projection iff the record edge count moved (P1-hybrid).
+
+    Raises on connection/query failure so callers can fall back to the
+    relational traversal. Never writes to the record database.
+    """
+    name = graph_name_value or graph_name()
+    count = record_edge_count(session)
+    if _LAST_PROJECTED.get(name) != count:
+        project(session, name)
+        _LAST_PROJECTED[name] = count
+    return name
 
 
 def dependent_findings(graph_name_value: str | None, provision_id: str) -> list[str]:

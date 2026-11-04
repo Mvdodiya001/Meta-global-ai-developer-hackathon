@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClauseTrace",
-    "version": "v14"
+    "version": "v15"
   },
   "paths": {
     "/api/health": {
@@ -706,6 +706,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models": {
+      "get": {
+        "summary": "List Models",
+        "description": "Available models; a stable discovery endpoint that never 404s (v15).\n\nThe `/api/v1/models` alias covers OpenAI-style version-prefixed probes.",
+        "operationId": "list_models_api_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsResult"
                 }
               }
             }
@@ -3021,6 +3040,11 @@
             },
             "type": "array",
             "title": "Edges"
+          },
+          "backend": {
+            "type": "string",
+            "title": "Backend",
+            "default": "relational"
           }
         },
         "type": "object",
@@ -3029,7 +3053,7 @@
           "edges"
         ],
         "title": "GraphSlice",
-        "description": "Stub: graph slice example (T0.7)."
+        "description": "Graph slice plus the live traversal backend (v15: `backend`)."
       },
       "HTTPValidationError": {
         "properties": {
@@ -3328,6 +3352,47 @@
         ],
         "title": "MatterContext",
         "description": "Static demo panel row (F18)."
+      },
+      "ModelInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "provider",
+          "mode"
+        ],
+        "title": "ModelInfo",
+        "description": "One model served by the LLM gateway (v15)."
+      },
+      "ModelsResult": {
+        "properties": {
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelInfo"
+            },
+            "type": "array",
+            "title": "Models"
+          }
+        },
+        "type": "object",
+        "required": [
+          "models"
+        ],
+        "title": "ModelsResult",
+        "description": "Available models; never 404s so clients can probe capability (v15)."
       },
       "Proof": {
         "properties": {

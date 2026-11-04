@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { api } from '../api/client'
-import { DEMO_MATTER_ID } from '../api/config'
+import { DEMO_MATTER_ID, getApiBase } from '../api/config'
 import type { Clause, DictationResult } from '../api/types'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Button } from '../components/ui/Button'
 import { IconCheck, IconMic, IconStop } from '../components/ui/Icons'
 import { Panel } from '../components/ui/Panel'
 import { StateMessage } from '../components/ui/StateMessage'
-import { startWavRecording, type WavRecorder } from '../utils/wavRecorder'
+import { startLiveWavRecording, startWavRecording, type WavRecorder } from '../utils/wavRecorder'
 
 const STEPS = ['Choose the clause', 'Record the fact', 'Check the transcript', 'Save and confirm'] as const
 
@@ -23,7 +23,10 @@ export function DictationPage() {
   const [noticeTone, setNoticeTone] = useState<'info' | 'danger'>('info')
   const [busy, setBusy] = useState(false)
   const [hasAudio, setHasAudio] = useState(false)
+  const [liveEnabled, setLiveEnabled] = useState(false)
+  const [liveTranscript, setLiveTranscript] = useState('')
   const recorderRef = useRef<WavRecorder | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
   const audioRef = useRef<string>('')
 
   useEffect(() => {
@@ -38,11 +41,68 @@ export function DictationPage() {
     })()
   }, [])
 
+  useEffect(() => {
+    return () => {
+      wsRef.current?.close()
+      wsRef.current = null
+    }
+  }, [])
+
+  function streamUrl(): string {
+    const base = getApiBase().replace(/\/$/, '')
+    if (base) {
+      return `${base.replace(/^http/, 'ws')}/api/transcribe/stream`
+    }
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${proto}//${window.location.host}/api/transcribe/stream`
+  }
+
+  function handleStreamMessage(event: MessageEvent<string>): void {
+    let msg: {
+      type: string
+      ok?: boolean
+      transcript?: string
+    }
+    try {
+      msg = JSON.parse(event.data) as {
+        type: string
+        ok?: boolean
+        transcript?: string
+      }
+    } catch {
+      return
+    }
+    if ((msg.type === 'interim' || msg.type === 'final') && msg.ok && msg.transcript) {
+      setLiveTranscript(msg.transcript)
+    }
+    if (msg.type === 'error') {
+      setNotice('Live transcription unavailable. Your recording will still be transcribed after stop.')
+      setNoticeTone('danger')
+    }
+    if (msg.type === 'final' && !msg.ok) {
+      setNotice('Live transcription unavailable. Your recording will still be transcribed after stop.')
+      setNoticeTone('danger')
+    }
+  }
+
   async function toggleRecording() {
     if (recording) {
       const base64 = await recorderRef.current?.stop()
+      recorderRef.current = null
       setRecording(false)
+      const socket = wsRef.current
+      wsRef.current = null
       if (base64) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          try {
+            socket.send(JSON.stringify({ type: 'audio', audio_base64: base64 }))
+            socket.send(JSON.stringify({ type: 'finalize' }))
+          } catch {
+            socket.close()
+          }
+        } else if (socket) {
+          socket.close()
+        }
         audioRef.current = base64
         setHasAudio(true)
         setNotice('Listening… writing down what you said')
@@ -55,6 +115,50 @@ export function DictationPage() {
           setNotice('That recording could not be written down. Try again.')
           setNoticeTone('danger')
         }
+      } else if (socket) {
+        socket.close()
+      }
+      return
+    }
+    if (liveEnabled) {
+      if (typeof WebSocket === 'undefined') {
+        setNotice('Live transcription is not available in this browser. Record normally instead.')
+        setNoticeTone('danger')
+      } else {
+        try {
+          const socket = new WebSocket(streamUrl())
+          wsRef.current = socket
+          setLiveTranscript('')
+          socket.onmessage = (event: MessageEvent<string>) => handleStreamMessage(event)
+          socket.onerror = () => {
+            setNotice(
+              'Live transcription unavailable. Your recording will still be transcribed after stop.',
+            )
+            setNoticeTone('danger')
+          }
+        } catch {
+          wsRef.current = null
+          setNotice(
+            'Live transcription unavailable. Your recording will still be transcribed after stop.',
+          )
+          setNoticeTone('danger')
+        }
+      }
+      try {
+        const socket = wsRef.current
+        recorderRef.current = await startLiveWavRecording((partial) => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'audio', audio_base64: partial }))
+          }
+        })
+        setRecording(true)
+        setNotice('Recording… speak the fact, then stop')
+        setNoticeTone('info')
+      } catch {
+        wsRef.current?.close()
+        wsRef.current = null
+        setNotice('The microphone is not available in this browser.')
+        setNoticeTone('danger')
       }
       return
     }
@@ -186,7 +290,26 @@ export function DictationPage() {
                 </span>
               )}
             </div>
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                id="dictate-live"
+                type="checkbox"
+                checked={liveEnabled}
+                disabled={recording || busy}
+                onChange={(event) => setLiveEnabled(event.target.checked)}
+              />
+              <label htmlFor="dictate-live" className="text-xs text-ct-soft">
+                Transcribe live
+              </label>
+            </div>
           </div>
+
+          {liveEnabled ? (
+            <div className="ct-field" aria-live="polite">
+              <p className="ct-label">Live transcript (draft — not saved)</p>
+              <p className="text-sm text-ct-soft">{liveTranscript || 'Listening…'}</p>
+            </div>
+          ) : null}
 
           <div className="ct-field">
             <label htmlFor="dictate-transcript" className="ct-label">

@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app import models
 from app.core.errors import ToolError
-from app.db import init_db
+from app.db import get_engine_for_url, init_db, init_engine
 from app.modules.evidence import graph
 from app.modules.intake import extract as extract_agent
 from app.modules.law import rulecards, sources
@@ -326,9 +326,18 @@ def build_document(clauses: list[tuple[str, str, str]]) -> tuple[str, list[tuple
 def seed_demo(
     db_path: str | Path, corpus_root: str | Path = DEFAULT_CORPUS_ROOT
 ) -> dict[str, Any]:
-    """Seed matter, contract, corpus and cards; return what was written (T1.4)."""
+    """Seed matter, contract, corpus and cards; return what was written (T1.4).
+
+    `db_path` is a filesystem path (SQLite demo file, as before) or a
+    SQLAlchemy database URL (e.g. PostgreSQL via `CLAUSETRACE_DB_URL`).
+    """
     corpus_root = Path(corpus_root)
-    engine = init_db(db_path)
+    target = str(db_path)
+    engine = (
+        init_engine(get_engine_for_url(target))
+        if "://" in target
+        else init_db(target)
+    )
     session: Session = sessionmaker(bind=engine, future=True)()
     version_ids = sources.load_corpus(session, corpus_root / "raw")
     card_ids = rulecards.load_rulecards(session, corpus_root / "rulecards")

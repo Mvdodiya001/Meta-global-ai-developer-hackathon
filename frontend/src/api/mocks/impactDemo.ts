@@ -31,6 +31,7 @@ function findingNode(id: string, stale: boolean) {
 
 /** Demo graph: 3 of 8 findings stale after the simulated DPDP Act v2 ingest. */
 export const demoStaleGraph: GraphSlice = {
+  backend: 'relational',
   nodes: [
     ...FINDING_IDS.map((id) => findingNode(id, STALE_IDS.has(id))),
     { id: 'RC-01', kind: 'rule_card', label: 'RC-01', state: null },
@@ -45,6 +46,7 @@ export const demoStaleGraph: GraphSlice = {
 }
 
 export const demoCurrentGraph: GraphSlice = {
+  backend: 'relational',
   nodes: demoStaleGraph.nodes.map((node) => ({ ...node, state: null })),
   edges: demoStaleGraph.edges,
 }

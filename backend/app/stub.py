@@ -197,3 +197,15 @@ def demo_scenario(name: str, payload: dict[str, Any] | None = None) -> JSONRespo
     if os.getenv("DEMO_MODE", "0") != "1":
         return demo_forbidden()
     return JSONResponse(status_code=200, content=example("demo_scenario"))
+
+
+@router.get("/api/models", response_model=schemas.ModelsResult)
+def list_models() -> Any:
+    """Available models stub (v15)."""
+    return example("models")
+
+
+@router.get("/api/v1/models", response_model=schemas.ModelsResult, include_in_schema=False)
+def list_models_v1() -> Any:
+    """Version-prefixed alias stub (v15)."""
+    return example("models")

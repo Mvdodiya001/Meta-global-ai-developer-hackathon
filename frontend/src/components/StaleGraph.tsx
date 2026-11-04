@@ -199,6 +199,9 @@ export function StaleGraph({ graph }: StaleGraphProps) {
               {staleCount} of {findingNodes.length} answers need re-check
             </p>
             {note ? <p className="ct-panel-desc">{note}</p> : null}
+            <p className="ct-panel-desc">
+              Live graph: {graph.backend === 'falkordb' ? 'FalkorDB' : 'record store'}
+            </p>
           </div>
         </div>
         <ul

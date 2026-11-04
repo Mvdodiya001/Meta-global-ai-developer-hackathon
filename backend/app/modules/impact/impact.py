@@ -147,7 +147,7 @@ def apply_version(session: Session, new_version_id: str) -> dict[str, Any]:
                     rel="AFFECTS",
                 )
                 affected.add(str(card.id))
-            for finding_id in graph.dependent_findings(session, str(row.id)):
+            for finding_id in graph.dependent_findings_live(session, str(row.id))[0]:
                 stale_for_key.setdefault(finding_id, key)
     for finding_id in sorted(stale_for_key):
         if not _already_stale(session, finding_id, str(version.id)):

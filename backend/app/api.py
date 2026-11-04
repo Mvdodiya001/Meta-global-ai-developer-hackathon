@@ -1,7 +1,7 @@
 """T4.5: real DB-backed API router (contract v1, DATA_MODEL_API §7).
 
 Included instead of the stub router when `API_STUB != 1`. Every handler
-reads the database on each request through `default_db_path()`, so tests
+reads the database on each request through `database_url()`, so tests
 point it at a scratch file with `CLAUSETRACE_DB`. Model calls (extract,
 claims) go through the gateway; replay mode serves the demo cassettes.
 Handlers are `async def` so SQLite stays on one thread; the blocking
@@ -11,7 +11,9 @@ SQLAlchemy calls are short demo queries.
 import base64
 import binascii
 import functools
+import json
 import re
+import time
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -19,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import sqlalchemy as sa
-from fastapi import APIRouter, BackgroundTasks, Depends, Header
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -38,7 +40,7 @@ from app.core.errors import (
     SourceUnavailable,
     ToolError,
 )
-from app.db import default_db_path, init_db
+from app.db import database_url, get_engine_for_url, init_engine
 from app.modules.intake import jobs as intake_jobs
 from app.modules.intake import pdf as pdf_intake
 from app.services import counterfactual as counterfactual_service
@@ -61,23 +63,23 @@ def _new_id(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:12]}"
 
 
-def _engine_for(path: str) -> Engine:
-    """Cache one engine per database path (T4.5).
+def _engine_for(key: str) -> Engine:
+    """Cache one engine per database URL (T4.5, P1).
 
-    Uses `init_db`, not bare `get_engine`: booting the server must also
-    create missing tables and heal additive columns on an older demo file
+    Uses `init_engine`, not a bare engine: booting the server must also
+    create missing tables and heal additive columns on an older database
     (otherwise a stale file 500s on INSERT).
     """
-    engine = _engines.get(path)
+    engine = _engines.get(key)
     if engine is None:
-        engine = init_db(path)
-        _engines[path] = engine
+        engine = init_engine(get_engine_for_url(key))
+        _engines[key] = engine
     return engine
 
 
 def db_session() -> Any:
     """Per-request session on the configured database (T4.5)."""
-    session = sessionmaker(bind=_engine_for(str(default_db_path())), future=True)()
+    session = sessionmaker(bind=_engine_for(database_url()), future=True)()
     try:
         yield session
     finally:
@@ -551,7 +553,7 @@ def _resolve_clause(
 
 def _run_job_later(job_id: str) -> None:
     """Background worker entry: fresh session, job records its outcome (P3)."""
-    session = sessionmaker(bind=_engine_for(str(default_db_path())), future=True)()
+    session = sessionmaker(bind=_engine_for(database_url()), future=True)()
     try:
         intake_jobs.process_job(session, job_id, CASSETTES_DIR)
     finally:
@@ -821,6 +823,26 @@ async def create_dictation(
     }
 
 
+@router.get("/api/models", response_model=schemas.ModelsResult)
+@router.get("/api/v1/models", response_model=schemas.ModelsResult, include_in_schema=False)
+@endpoint
+async def list_models() -> Any:
+    """Available models; a stable discovery endpoint that never 404s (v15).
+
+    The `/api/v1/models` alias covers OpenAI-style version-prefixed probes.
+    """
+    import os as _os
+
+    from app.agent import llm
+
+    mode = _os.environ.get("LLM_MODE", "replay")
+    return {
+        "models": [
+            {"id": llm.DEFAULT_MODEL, "provider": "meta", "mode": mode},
+        ]
+    }
+
+
 @router.get("/api/admin/overview", response_model=schemas.AdminOverview)
 @endpoint
 async def admin_overview(session: Session = Depends(db_session)) -> Any:
@@ -930,6 +952,148 @@ async def transcribe_only(
         raise ValueError("audio_base64 is not valid base64") from exc
     result = transcribe.transcribe_audio(audio_bytes, cache_dir=CASSETTES_DIR, session=session)
     return {"transcript": result.transcript}
+
+
+_WS_MAX_AUDIO_BYTES = 10 * 1024 * 1024
+_WS_INTERIM_MIN_INTERVAL_S = 2.0
+
+
+@router.websocket("/api/transcribe/stream")
+async def transcribe_stream(websocket: WebSocket) -> None:
+    """Live transcription over WebSocket (text-only JSON).
+
+    Client sends cumulative WAV buffers as `{"type": "audio", ...}` and one
+    `{"type": "finalize"}` on stop; the server replies with `interim` drafts
+    and one `final` before closing. Interims never touch the cost log — only
+    the finalize transcription is billed through the per-connection session.
+    """
+    await websocket.accept()
+    session = sessionmaker(bind=_engine_for(database_url()), future=True)()
+    latest: bytes | None = None
+    last_interim: float | None = None
+    try:
+        while True:
+            try:
+                incoming = await websocket.receive()
+            except WebSocketDisconnect:
+                break
+            if incoming.get("type") == "websocket.disconnect":
+                break
+            text = incoming.get("text")
+            if not isinstance(text, str):
+                try:
+                    await websocket.send_json(
+                        {"type": "error", "reason": "expected a text JSON message"}
+                    )
+                except Exception:
+                    break
+                continue
+            try:
+                msg: Any = json.loads(text)
+            except (ValueError, TypeError):
+                try:
+                    await websocket.send_json(
+                        {"type": "error", "reason": "message is not valid JSON"}
+                    )
+                except Exception:
+                    break
+                continue
+            if not isinstance(msg, dict):
+                try:
+                    await websocket.send_json(
+                        {"type": "error", "reason": "message must be a JSON object"}
+                    )
+                except Exception:
+                    break
+                continue
+            kind = msg.get("type")
+            if kind == "audio":
+                raw_b64 = msg.get("audio_base64")
+                if not isinstance(raw_b64, str) or not raw_b64:
+                    await websocket.send_json(
+                        {"type": "interim", "ok": False, "reason": "invalid audio payload"}
+                    )
+                    continue
+                try:
+                    audio_bytes = base64.b64decode(raw_b64, validate=True)
+                except (binascii.Error, ValueError):
+                    await websocket.send_json(
+                        {"type": "interim", "ok": False, "reason": "invalid audio encoding"}
+                    )
+                    continue
+                if len(audio_bytes) > _WS_MAX_AUDIO_BYTES:
+                    try:
+                        await websocket.send_json(
+                            {"type": "error", "reason": "audio buffer too large"}
+                        )
+                        await websocket.close()
+                    except Exception:
+                        pass
+                    break
+                latest = audio_bytes
+                now = time.monotonic()
+                if last_interim is not None and now - last_interim < _WS_INTERIM_MIN_INTERVAL_S:
+                    await websocket.send_json(
+                        {"type": "interim", "ok": False, "reason": "listening…"}
+                    )
+                    continue
+                last_interim = now
+                try:
+                    result = transcribe.transcribe_audio(
+                        audio_bytes, cache_dir=CASSETTES_DIR, session=None
+                    )
+                except Exception as exc:
+                    await websocket.send_json(
+                        {"type": "interim", "ok": False, "reason": str(exc) or "listening…"}
+                    )
+                    continue
+                await websocket.send_json(
+                    {"type": "interim", "ok": True, "transcript": result.transcript}
+                )
+            elif kind == "finalize":
+                if latest is None:
+                    try:
+                        await websocket.send_json(
+                            {"type": "final", "ok": False, "reason": "no audio received"}
+                        )
+                        await websocket.close()
+                    except Exception:
+                        pass
+                    break
+                try:
+                    result = transcribe.transcribe_audio(
+                        latest, cache_dir=CASSETTES_DIR, session=session
+                    )
+                except Exception as exc:
+                    try:
+                        await websocket.send_json(
+                            {
+                                "type": "final",
+                                "ok": False,
+                                "reason": str(exc) or "transcription failed",
+                            }
+                        )
+                        await websocket.close()
+                    except Exception:
+                        pass
+                    break
+                try:
+                    await websocket.send_json(
+                        {"type": "final", "ok": True, "transcript": result.transcript}
+                    )
+                    await websocket.close()
+                except Exception:
+                    pass
+                break
+            else:
+                try:
+                    await websocket.send_json(
+                        {"type": "error", "reason": f"unknown message type: {kind}"}
+                    )
+                except Exception:
+                    break
+    finally:
+        session.close()
 
 
 @router.post("/api/documents/{id}/clauses/{clause_id}/update", response_model=schemas.Clause)
@@ -1640,7 +1804,7 @@ async def get_graph(
             view for view in edges if view["src"] in component and view["dst"] in component
         ]
     node_list = [nodes[node_id] for node_id in sorted(nodes)]
-    return {"nodes": node_list, "edges": edges}
+    return {"nodes": node_list, "edges": edges, "backend": graph.graph_backend(session)}
 
 
 def _audit_matches(session: Session, row: models.AuditLog, matter_id: str | None) -> bool:
@@ -1803,7 +1967,7 @@ async def demo_reset(body: dict[str, Any] | None = None) -> Any:
             status_code=403,
             content={"error": {"code": "DEMO_DISABLED", "message": "demo routes need DEMO_MODE=1"}},
         )
-    seed.seed_demo(default_db_path())
+    seed.seed_demo(database_url())
     return {"reset": True, "matter_id": seed.MATTER_ID}
 
 
@@ -1821,9 +1985,9 @@ async def demo_scenario(name: str, body: dict[str, Any] | None = None) -> Any:
         )
     if name != "stale-demo":
         return _error(404, "SCENARIO_UNKNOWN", f"unknown scenario: {name}")
-    session = sessionmaker(bind=_engine_for(str(default_db_path())), future=True)()
+    session = sessionmaker(bind=_engine_for(database_url()), future=True)()
     try:
-        seed.seed_demo(default_db_path())
+        seed.seed_demo(database_url())
         version_id = "SV-DPDP-ACT-V2SIM"
         if session.get(models.SourceVersion, version_id) is None:
             return _error(404, "SCENARIO_UNKNOWN", f"scenario needs {version_id}")

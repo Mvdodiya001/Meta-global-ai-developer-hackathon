@@ -1,6 +1,7 @@
 """T1.4 CLI: seed the demo database. Run with `make seed` from the repo root."""
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -15,9 +16,14 @@ def main() -> None:
     """Parse args, seed, print a one-line summary (T1.4)."""
     parser = argparse.ArgumentParser(description="Seed the ClauseTrace demo database")
     parser.add_argument("--db", default=str(default_db_path()))
+    parser.add_argument(
+        "--db-url",
+        default=os.environ.get("CLAUSETRACE_DB_URL"),
+        help="SQLAlchemy database URL (e.g. PostgreSQL); wins over --db when set.",
+    )
     parser.add_argument("--corpus-root", default=str(ROOT / "corpus"))
     args = parser.parse_args()
-    result = seed_demo(args.db, args.corpus_root)
+    result = seed_demo(args.db_url or args.db, args.corpus_root)
     print(
         f"seeded {result['db']}: matter {result['matter_id']}, "
         f"{result['clauses']} clauses, "

@@ -761,3 +761,76 @@ _(no entries yet)_
 - Note: `.github/` and `Makefile` edits are outside the listed lane files but were explicitly instructed by the user. Local system package for poppler (`/usr/bin/pdftoppm`) already present here, mirroring the new CI apt step. Docs (`README.md` system-prereq note) left for Cursor/human — [REQ → H] if a poppler prerequisite line is wanted in setup docs.
 - Credit spend: none.
 - Ready for human commit: yes — suggested message: `CI installs prod extras + poppler so PDF/vision tests run for real`
+
+## [PG reset-demo + FK ordering] DONE · 2026-11-04 IST
+- Task: user migrated to Postgres but `make reset-demo` still targeted SQLite. Wiring the URL through exposed the real gap: `reset_demo.sh`, `seed_demo.py --db`, `seed_demo(db_path)`, and `app/api.py` all hardcoded SQLite paths, ignoring the P1 `CLAUSETRACE_DB_URL` helpers.
+- Root cause found by testing for real (not guessed): seeding on PG failed with FK violations. Bisected to SQLAlchemy UoW behavior, not app code or version (reproduced on 2.0.57 and 2.1.6 with virgin models, both psycopg and pg8000 drivers): with bare-FK columns and no `relationship()`, same-flush parent+child INSERTs have NO ordering edge, so the child batch can run first. SQLite never noticed (FK enforcement off by design); Postgres enforces. Deterministic (child mapper class name sorts first: Clause<DocumentVersion, FindingEvent<Finding, Provision<SourceVersion...), so every same-flush multi-table write breaks loudly.
+- Files changed: `scripts/reset_demo.sh` (wipe+reseed via URL when `CLAUSETRACE_DB_URL` is non-sqlite, else unchanged SQLite flow; still <60s: ~1s); `scripts/seed_demo.py` (`--db-url`, defaults to env); `backend/app/modules/matters/seed.py` (`seed_demo` accepts path or URL); `backend/app/api.py` (all sessions/seeds via `database_url()`); `backend/app/models.py` (unidirectional many-to-one `relationship()` on all 15 FKs — the actual fix; DDL diffed identical on sqlite+postgres, so no schema change; nothing traverses the rels, only flush ordering changes).
+- Checks: ruff clean, mypy clean (103 files), pytest **282 passed, 2 skipped**. PG e2e on a throwaway PG16: `reset-demo` twice (wipe+reseed, 0-1s), full content verified (5 versions/16 provisions/8 cards/12 clauses/13 facts/8 CURRENT findings), server booted on PG (`API_STUB=0`, replay): ask-flow claim→FOLLOWS finding→CURRENT event, fact approve→lawyer_confirmed+Review row, all without 500s. SQLite reset/seed paths re-verified to temp files (real demo DB untouched).
+- Left alone: `record_cassettes.py`/`evals.run_evals` scratch-sqlite usage (out of scope); `.env.example`/docs note for `CLAUSETRACE_DB_URL` is human/Cursor lane — [REQ → H].
+- Credit spend: none (replay only).
+- Ready for human commit: yes — suggested message: `PG reset-demo: URL-aware seed/reset/api wiring + relationship ordering for PG FKs`
+
+## [Hybrid DB probe: aegis-postgres + sqlite] DONE · 2026-11-04 IST
+- Task: user runs hybrid DB (Docker `aegis-postgres` :5432 + SQLite). Prove one independent table + inserts on both. No repo files touched; probe script lives at `/tmp/hybrid_probe.py` (uses the project's `get_engine_for_url`, raw SQL `hybrid_probe(id, note, created_at)` — independent of app models).
+- Result: table created + rows inserted and read back on both `aegis_sandbox` (user `aegis`) and a scratch sqlite file; cross-checked with native `psql` and `sqlite3` clients (2 rows each). First version collided on second-resolution ids across rapid re-runs; fixed with pid-suffixed ids.
+- Credit spend: none.
+
+## [Demo mode on sqlite + postgres] DONE · 2026-11-04 IST
+- Task: user asked whether demo mode works. Verified live (API_STUB=0, DEMO_MODE=1, replay) on both backends: POST /api/demo/reset → {reset:true, MAT-01}; POST /api/demo/scenario/stale-demo → seeded + applied SV-DPDP-ACT-V2SIM + 2 stale findings; GET /api/matters/MAT-01 reads back. PG run used scratch DB ct_demo_pg on the aegis server; user sandbox untouched.
+- Credit spend: none (replay).
+
+## [FalkorDB-live + WS transcription + models endpoint] DONE · 2026-11-04 IST
+- Task: user bundle — (a) demo mode default-off/opt-in, (b) fix /v1/models 404, (c) FalkorDB always-on for graph traversal + fact checking with PG fallback, surfaced in demos, (d) real-time transcription via WebSocket chunked re-transcribe.
+- (a) Demo mode: verified already default-off everywhere (code default "0", .env.example 0; only the Docker deployment sets DEMO_MODE=1, which is exactly "on when it needs"). No change.
+- (b) Added GET /api/models + alias GET /api/v1/models (schema ModelsResult/ModelInfo, stub + openapi/examples/models.json, openapi regen → [CONTRACT v14 → v15], tests/test_models.py). Live-verified both return the gateway model.
+- (c) FalkorDB-first: `ensure_projected` (rebuild only when record edge count moved) + `dependent_findings_live` (projection query + record-side CURRENT filter, fallback to relational) + `graph_backend()`; wired into impact/counterfactual and GET /api/graph (`backend` field, additive under v15); StaleGraph caption "Live graph: FalkorDB/record store" (frontend types regen via gen:api). Relationship ordering from the PG migration makes same-flush seed/traversal safe. NOTE: their FalkorDB container requires auth — set CT_GRAPH_PASSWORD to light up the live path; fallback verified live, live path covered by unit + skip-when-unreachable integration tests.
+- (d) WS /api/transcribe/stream (subagent): cumulative-WAV protocol (final bytes == one-shot bytes so replay cassettes hit), interim ok:true/false (never fake text), 2s throttle, 10MB cap, one session/connection with finalize-only cost logging; DictationPage "Transcribe live" toggle default-off + draft live region; 6 backend + 2 frontend tests. Verified live: mock interim/final flow, replay-miss graceful. Removed one stray live-mic cassette the WS session wrote (unreferenced gibberish; cassettes stay record-only).
+- Also fixed: frontend mocks missing the new required `backend` field (build caught it; tests don't typecheck).
+- Checks: backend ruff+mypy clean, pytest 294 passed/3 skipped; frontend lint 0, vitest 47/47, vite build green. PG e2e (reset + ask + approve) re-verified after all changes.
+- Credit spend: none (replay/mock only).
+- Ready for human commit: yes — suggested messages: `Add GET /api/models (+v1 alias), contract v15` / `FalkorDB-first graph traversal with PG fallback` / `Live transcription over WebSocket`
+
+## [Dockerize full backend] DONE · 2026-11-04 IST
+- Task: user runs one 11GB/120GB server; dockerize the full backend so it sets up everything. Co-location concern: at demo scale the stack idles ~180MB (api ~93MB, pg ~50MB, falkordb ~34MB) — one box is fine; compose keeps services separable for later.
+- Files: `backend/Dockerfile` rewritten (prod extras .[prod], poppler-utils for pdftoppm, non-root user, HEALTHCHECK, seed-on-boot via URL-aware seed_demo); new root `docker-compose.yml` (api :8000, postgres:16-alpine on 127.0.0.1:5543 — 5432/5433 taken by host services, falkordb v4.22.0 on 127.0.0.1:6380, pgdata/falkdata volumes, health-gated startup, mem caps 2g/3g/1g); new root `.dockerignore`.
+- Verified live: config valid, image builds (414MB), all 3 healthy, auto-seed on boot, /api/models 200, /api/graph → backend falkordb (compose FalkorDB has no auth so the live path serves), demo reset OK. PG password via PGPASSWORD env (default clausetrace_pw, documented in compose). Stack left RUNNING for the user.
+- Credit spend: none.
+- Ready for human commit: yes — suggested message: `Dockerize full backend: api + postgres + falkordb compose stack`
+
+## [.env.example for hybrid stack] DONE · 2026-11-04 IST
+- Task: user asked to update .env.example accordingly. Rewrote it to document every env var the code reads (verified by grep): LLM_MODE, API_STUB, DEMO_MODE (default off), CLAUSETRACE_DB vs CLAUSETRACE_DB_URL (URL wins; compose + external examples), CT_GRAPH_* (FalkorDB optional, fallback documented), CT_AUTH_REQUIRED/CT_AUTH_SECRET, CT_TENANT_BUDGET_USD, CHALLENGER_*, frontend VITE_* (as .env.local), dev-only CT_GRAPH_TEST/CLAUSETRACE_PG_URL/PGPASSWORD. .env.example is outside the agent lane list; edited on explicit user instruction.
+- Checks: none needed (comments only); no code touched.
+- Credit spend: none.
+
+## [Split hosting: Vercel frontend + Oracle backend] DONE · 2026-11-04 IST
+- Task: user asked if frontend-on-Vercel + backend-on-Oracle-server is possible. Yes with two additions (only missing pieces: CORS + SPA fallback).
+- Files: `frontend/vercel.json` (vite build, dist output, SPA rewrites so /review etc. deep-link); `backend/app/main.py` (CORSMiddleware only when CT_CORS_ORIGINS set; allow-list or "*"; default unset = unchanged same-origin behaviour); `backend/tests/test_cors.py` (default-off, listed-allowed, unlisted-denied); `.env.example` documents CT_CORS_ORIGINS.
+- Checks: backend ruff+mypy clean, pytest **297 passed / 3 skipped**; frontend lint 0, vitest 47/47, build green both with and without VITE_API_BASE (absolute base baked in verified). Live preflight: listed origin granted, unlisted gets nothing.
+- Note: HTTPS is required on the API (browsers block HTTPS Vercel page calling http:// API; wss:// WS likewise) — Caddy or Cloudflare Tunnel on the Oracle box per runbook in chat. WS transcription works over wss through either.
+- Credit spend: none.
+- Ready for human commit: yes — suggested message: `Split hosting: vercel.json SPA fallback + opt-in CORS`
+
+## [README refresh draft for CU/human] DONE · 2026-11-04 IST
+- Task: user asked for a README update. README.md is Cursor-owned (human writes tool disclosure), so no edit made — full replacement draft handed over in chat. [REQ → CU]: apply the draft to README.md (human to review/adjust the model table + video line).
+- Draft covers, all session-verified: hybrid DB (SQLite default, Postgres via CLAUSETRACE_DB_URL), FalkorDB-first traversal with record fallback + "Live graph" caption, live WS transcription toggle, GET /api/models (+/v1 alias), contract v15, docker compose full stack (api+postgres+falkordb, ports 8000/5543/6380), split hosting (Vercel + own server: vercel.json, CT_CORS_ORIGINS, HTTPS required), updated counts (backend 297 passed/3 skipped, frontend 47/47), URL-aware reset/seed, collapsible sidebar.
+- Left untouched in draft: model-ID table (not re-verified beyond DEFAULT_MODEL — human to confirm), video line, provenance, NEW_WORK pointer.
+- Credit spend: none.
+
+## [Stop backend stack; frontend-only verification] DONE · 2026-11-04 IST
+- Task: user asked to stop the Docker backend and verify everything from the frontend. Ran `docker compose down` (project stack only; aegis/system containers untouched; volumes kept). Left a pre-existing user dev server on :5173 alone (their terminal).
+- Frontend gate: lint 0 warnings, vitest 13 files / 47 passed, vite build green (incl. absolute VITE_API_BASE build earlier). Started mock-mode dev server (VITE_USE_MOCKS=1) on :5174 for click-through without any backend — serves bundled openapi/examples fixtures on every route.
+- Credit spend: none.
+
+## [Full live test rig for user QA] DONE · 2026-11-04 IST
+- Task: user wants to test every implemented feature. Restarted compose stack (api+pg+falkordb, seeded on boot, graph backend=falkordb live) and a live-proxy dev frontend on :5174 (default proxy -> :8000, no mocks). Replay mode: deterministic paths work offline; new voice/scan audio correctly hits the loud cassette-miss path (no fake output).
+- Credit spend: none.
+
+## [Live-mode full QA + WS dep fix] DONE · 2026-11-04 IST
+- Task: user wants the real product demoed in live mode, not just replay. Key (48ch in .env) verified with a $0.00005 probe first.
+- Live walkthrough on scratch PG ct_live_demo (LLM_MODE=live, CHALLENGER=on): novel ask → FOLLOWS/medium; novel txt upload → extracted+done; PIL-rendered scan → real vision transcript + proposed fact; tone WAV → honest "produced no text" (no fabrication); fixture speech → verbatim transcript (cassette); challenger ran live (muse-spark-1.2 x2); WS stream with real partial audio → interim "Nimbus shall keep." → final full sentence.
+- Total live walkthrough spend: 10 uncached calls = $0.003107 (cached replays $0). Lifetime still ~$0.91 of $150.
+- Bug found+fixed along the way: uvicorn had no WebSocket library (WS routes 404d live) → added `websockets>=14.0` to base deps (Docker image picks it up via .[prod]... note: image installs .[prod] which includes base deps, so covered). Verified live after fix.
+- Checks: backend 297 passed/3 skipped, mypy+ruff clean; frontend lint 0, 47 passed, build green. Live server stopped via PID kill (pkill self-matches this shell — use PIDs).
+- Credit spend: ≈ $0.003 live walkthrough.
+- Ready for human commit: yes — suggested message: `Live QA: websockets dep for WS transcribe; verified ask/extract/scan/transcribe/challenger live`

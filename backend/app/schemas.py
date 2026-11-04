@@ -539,10 +539,11 @@ class GraphEdge(BaseModel):
 
 
 class GraphSlice(BaseModel):
-    """Stub: graph slice example (T0.7)."""
+    """Graph slice plus the live traversal backend (v15: `backend`)."""
 
     nodes: list[GraphNode]
     edges: list[GraphEdge]
+    backend: str = "relational"
 
 
 class AuditRow(BaseModel):
@@ -637,3 +638,17 @@ class ErrorResponse(BaseModel):
     """Error envelope from DATA_MODEL_API §7."""
 
     error: ErrorDetail
+
+
+class ModelInfo(BaseModel):
+    """One model served by the LLM gateway (v15)."""
+
+    id: str
+    provider: str
+    mode: str
+
+
+class ModelsResult(BaseModel):
+    """Available models; never 404s so clients can probe capability (v15)."""
+
+    models: list[ModelInfo]

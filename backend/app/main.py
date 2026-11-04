@@ -3,6 +3,7 @@
 import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app import schemas
 from app.api import router as api_router
@@ -20,8 +21,23 @@ _PUBLIC_PATHS = (
 
 
 def create_app() -> FastAPI:
-    """Build the ClauseTrace FastAPI application (T0.4, T0.7, T4.5, ask-flow)."""
-    app = FastAPI(title="ClauseTrace", version="v14")
+    """Build the ClauseTrace FastAPI application (T0.4, T0.7, T4.5, ask-flow).
+
+    Cross-origin browsers (e.g. a Vercel-hosted frontend talking to this
+    API on another host) need CORS headers: set CT_CORS_ORIGINS to a
+    comma-separated allow-list (or "*" for open demos). Unset = no CORS
+    middleware, preserving same-origin/proxy behaviour.
+    """
+    app = FastAPI(title="ClauseTrace", version="v15")
+
+    cors_origins = os.environ.get("CT_CORS_ORIGINS", "")
+    if cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=[o.strip() for o in cors_origins.split(",") if o.strip()],
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     @app.middleware("http")
     async def _auth_gate(request, call_next):  # type: ignore[no-untyped-def]

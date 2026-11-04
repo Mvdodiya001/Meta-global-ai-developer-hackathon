@@ -51,6 +51,21 @@ function encodeWavBase64(samples: Float32Array, sampleRate: number): string {
   return window.btoa(binary)
 }
 
+function mergeChunks(chunks: Float32Array[]): Float32Array {
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+  const merged = new Float32Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    merged.set(chunk, offset)
+    offset += chunk.length
+  }
+  return merged
+}
+
+function encodeChunks(chunks: Float32Array[], rate: number): string {
+  return encodeWavBase64(downsample(mergeChunks(chunks), rate, 24000), 24000)
+}
+
 export async function startWavRecording(): Promise<WavRecorder> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
   const context = new AudioContext()
@@ -67,16 +82,45 @@ export async function startWavRecording(): Promise<WavRecorder> {
       processor.disconnect()
       source.disconnect()
       stream.getTracks().forEach((track) => track.stop())
-      const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
-      const merged = new Float32Array(total)
-      let offset = 0
-      for (const chunk of chunks) {
-        merged.set(chunk, offset)
-        offset += chunk.length
-      }
       const rate = context.sampleRate
       await context.close()
-      return encodeWavBase64(downsample(merged, rate, 24000), 24000)
+      return encodeChunks(chunks, rate)
+    },
+  }
+}
+
+/**
+ * Live variant of `startWavRecording`: same capture and encoder, but every
+ * `intervalMs` the cumulative buffer is encoded and handed to `onPartial`.
+ * `stop()` returns the final base64, byte-identical to the one-shot path
+ * for the same audio.
+ */
+export async function startLiveWavRecording(
+  onPartial: (wavBase64SoFar: string) => void,
+  intervalMs = 1500,
+): Promise<WavRecorder> {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  const context = new AudioContext()
+  const source = context.createMediaStreamSource(stream)
+  const processor = context.createScriptProcessor(4096, 1, 1)
+  const chunks: Float32Array[] = []
+  processor.onaudioprocess = (event) => {
+    chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)))
+  }
+  source.connect(processor)
+  processor.connect(context.destination)
+  const timer = window.setInterval(() => {
+    onPartial(encodeChunks(chunks, context.sampleRate))
+  }, intervalMs)
+  return {
+    stop: async () => {
+      window.clearInterval(timer)
+      processor.disconnect()
+      source.disconnect()
+      stream.getTracks().forEach((track) => track.stop())
+      const rate = context.sampleRate
+      await context.close()
+      return encodeChunks(chunks, rate)
     },
   }
 }

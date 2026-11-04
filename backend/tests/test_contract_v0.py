@@ -45,8 +45,8 @@ def client_post(path: str, body: object) -> httpx.Response:
 
 
 def test_contract_version_is_v1() -> None:
-    """Gate: [CONTRACT v2 → v3] — ProofStep carries all checker step fields."""
-    assert load_openapi()["info"]["version"] == "v14"
+    """Gate: [CONTRACT v14 → v15] — discovery endpoint that never 404s."""
+    assert load_openapi()["info"]["version"] == "v15"
 
 
 def test_spec_paths_present() -> None:
@@ -79,6 +79,7 @@ def test_spec_paths_present() -> None:
         "/api/audit",
         "/api/proofs/verify",
         "/api/counterfactual",
+        "/api/models",
         "/api/demo/reset",
         "/api/demo/scenario/{name}",
     ]:
@@ -110,6 +111,8 @@ GET_CASES = [
     ("/api/impact/IMP-01", "impact.json"),
     ("/api/graph?matter_id=MAT-01", "graph.json"),
     ("/api/audit?matter_id=MAT-01", "audit.json"),
+    ("/api/models", "models.json"),
+    ("/api/v1/models", "models.json"),
 ]
 
 POST_CASES = [
