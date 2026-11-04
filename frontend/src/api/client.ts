@@ -143,6 +143,8 @@ export function storedToken(): string | null {
 }
 
 export function storeToken(token: string | null): void {
+  // A different (or no) user must never see the previous user's cached reads.
+  clearApiCache()
   try {
     if (token) {
       window.localStorage.setItem(TOKEN_KEY, token)
@@ -151,6 +153,67 @@ export function storeToken(token: string | null): void {
     }
   } catch {
     // storage unavailable (tests); sign-in still works for the session
+  }
+}
+
+/**
+ * Read cache: screens re-mount constantly (sidebar navigation), and each
+ * mount used to refetch matters/documents/clauses/law data from the API.
+ * GETs are now cached in memory with a TTL and concurrent identical
+ * requests share one fetch. Any successful mutation (postJson) clears
+ * the whole cache, as does a sign-in change (storeToken), so stale or
+ * cross-user data is never served. Static law corpus reads (sources,
+ * versions, provisions, provision search) additionally survive a page
+ * reload via sessionStorage — that data is public legal text, unlike
+ * matter data, which stays memory-only.
+ */
+export const CACHE_TTL_MS = 30_000
+export const STATIC_TTL_MS = 5 * 60_000
+const STATIC_PREFIXES = ['/api/sources', '/api/source-versions', '/api/provisions']
+
+type CacheEntry = { at: number; data: unknown }
+const getCache = new Map<string, CacheEntry>()
+const inflight = new Map<string, Promise<unknown>>()
+
+export function clearApiCache(): void {
+  getCache.clear()
+  inflight.clear()
+  try {
+    const keys: string[] = []
+    for (let i = 0; i < window.sessionStorage.length; i += 1) {
+      const key = window.sessionStorage.key(i)
+      if (key?.startsWith('ct-cache:')) {
+        keys.push(key)
+      }
+    }
+    keys.forEach((key) => window.sessionStorage.removeItem(key))
+  } catch {
+    // storage unavailable (tests/private mode); memory cache still works
+  }
+}
+
+function isStaticPath(path: string): boolean {
+  return STATIC_PREFIXES.some((prefix) => path.startsWith(prefix))
+}
+
+function storedEntry(path: string, ttl: number): CacheEntry | null {
+  try {
+    const raw = window.sessionStorage.getItem(`ct-cache:${path}`)
+    if (!raw) {
+      return null
+    }
+    const entry = JSON.parse(raw) as CacheEntry
+    return Date.now() - entry.at < ttl ? entry : null
+  } catch {
+    return null
+  }
+}
+
+function persistEntry(path: string, entry: CacheEntry): void {
+  try {
+    window.sessionStorage.setItem(`ct-cache:${path}`, JSON.stringify(entry))
+  } catch {
+    // quota/unavailable: memory cache alone still serves this session
   }
 }
 
@@ -173,6 +236,38 @@ async function getJson<T>(path: string): Promise<T> {
   return response.json() as Promise<T>
 }
 
+async function cachedGetJson<T>(path: string, ttl: number = CACHE_TTL_MS): Promise<T> {
+  const hit = getCache.get(path)
+  if (hit && Date.now() - hit.at < ttl) {
+    return hit.data as T
+  }
+  if (isStaticPath(path)) {
+    const stored = storedEntry(path, ttl)
+    if (stored) {
+      getCache.set(path, stored)
+      return stored.data as T
+    }
+  }
+  const pending = inflight.get(path)
+  if (pending) {
+    return pending as Promise<T>
+  }
+  const request = getJson<T>(path)
+    .then((data) => {
+      const entry = { at: Date.now(), data }
+      getCache.set(path, entry)
+      if (isStaticPath(path)) {
+        persistEntry(path, entry)
+      }
+      return data
+    })
+    .finally(() => {
+      inflight.delete(path)
+    })
+  inflight.set(path, request)
+  return request
+}
+
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const url = `${getApiBase()}${path}`
   const response = await fetch(url, {
@@ -188,12 +283,16 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     }
     throw await readError(response, path)
   }
-  return response.json() as Promise<T>
+  const data = (await response.json()) as T
+  // A mutation can change any read model (new finding, fact, document…);
+  // drop cached reads rather than serve pre-mutation state.
+  clearApiCache()
+  return data
 }
 
-async function optionalGet<T>(path: string): Promise<T | null> {
+async function optionalGet<T>(path: string, ttl: number = CACHE_TTL_MS): Promise<T | null> {
   try {
-    return await getJson<T>(path)
+    return await cachedGetJson<T>(path, ttl)
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       return null
@@ -255,49 +354,56 @@ export const api = {
   matters: (): Promise<MatterList> =>
     mocksEnabled()
       ? fetchMockMatters()
-      : getJson<MatterList>('/api/matters'),
+      : cachedGetJson<MatterList>('/api/matters', 60_000),
   createMatter: (body: { title: string; client_name: string }): Promise<MatterSummary> =>
     mocksEnabled()
       ? fetchMockCreateMatter(body)
       : postJson<MatterSummary>('/api/matters', body),
   matter: (id: string): Promise<Matter> =>
-    mocksEnabled() ? fetchMockMatter() : getJson<Matter>(`/api/matters/${encodeURIComponent(id)}`),
+    mocksEnabled()
+      ? fetchMockMatter()
+      : cachedGetJson<Matter>(`/api/matters/${encodeURIComponent(id)}`, 60_000),
   documents: (matterId: string): Promise<DocumentList> =>
     mocksEnabled()
       ? fetchMockDocuments(matterId)
-      : getJson<DocumentList>(`/api/matters/${encodeURIComponent(matterId)}/documents`),
+      : cachedGetJson<DocumentList>(
+          `/api/matters/${encodeURIComponent(matterId)}/documents`,
+          60_000,
+        ),
   clauses: (documentId: string): Promise<Clause[]> =>
     mocksEnabled()
       ? fetchMockClauses()
-      : getJson<{ clauses: Clause[] }>(
+      : cachedGetJson<{ clauses: Clause[] }>(
           `/api/documents/${encodeURIComponent(documentId)}/clauses`,
+          60_000,
         ).then((r) => r.clauses),
   finding: (claimId: string): Promise<Finding> =>
     mocksEnabled()
       ? fetchMockFinding()
-      : getJson<Finding>(`/api/claims/${encodeURIComponent(claimId)}/current`),
+      : cachedGetJson<Finding>(`/api/claims/${encodeURIComponent(claimId)}/current`, 15_000),
   currentFinding: (claimId: string): Promise<Finding | null> =>
     mocksEnabled()
       ? claimId === 'C-UNK'
         ? fetchMockUnknownFinding()
         : fetchMockFinding()
-      : optionalGet<Finding>(`/api/claims/${encodeURIComponent(claimId)}/current`),
+      : optionalGet<Finding>(`/api/claims/${encodeURIComponent(claimId)}/current`, 15_000),
   findingById: (findingId: string): Promise<Finding> =>
     mocksEnabled()
       ? fetchMockFindingById(findingId)
-      : getJson<Finding>(`/api/findings/${encodeURIComponent(findingId)}`),
+      : cachedGetJson<Finding>(`/api/findings/${encodeURIComponent(findingId)}`, 15_000),
   findingHistory: (claimId: string): Promise<Finding[]> =>
     mocksEnabled()
       ? fetchMockHistory(claimId)
-      : getJson<FindingHistory>(`/api/claims/${encodeURIComponent(claimId)}/history`).then(
-          (r) => r.versions,
-        ),
+      : cachedGetJson<FindingHistory>(
+          `/api/claims/${encodeURIComponent(claimId)}/history`,
+          15_000,
+        ).then((r) => r.versions),
   facts: (matterId: string): Promise<Fact[]> =>
     mocksEnabled()
       ? fetchMockFacts()
-      : getJson<{ facts: Fact[] }>(
-          `/api/matters/${encodeURIComponent(matterId)}/facts`,
-        ).then((r) => r.facts),
+      : cachedGetJson<{ facts: Fact[] }>(`/api/matters/${encodeURIComponent(matterId)}/facts`).then(
+          (r) => r.facts,
+        ),
   diff: (
     currentVersionId: string,
     againstVersionId: string,
@@ -305,38 +411,43 @@ export const api = {
   ): Promise<DiffResult> =>
     mocksEnabled()
       ? fetchMockDiff(sourceIdForMock, againstVersionId)
-      : getJson<DiffResult>(
+      : cachedGetJson<DiffResult>(
           `/api/source-versions/${encodeURIComponent(currentVersionId)}/diff${query({
             against: againstVersionId,
           })}`,
+          STATIC_TTL_MS,
         ),
   graph: (matterId: string, sourceIdForMock = DEMO_SOURCE_ID): Promise<GraphSlice> =>
     mocksEnabled()
       ? fetchMockGraph(sourceIdForMock)
-      : getJson<GraphSlice>(`/api/graph${query({ matter_id: matterId })}`),
+      : cachedGetJson<GraphSlice>(`/api/graph${query({ matter_id: matterId })}`),
   audit: (matterId: string): Promise<AuditTrail> =>
     mocksEnabled()
       ? fetchMockAudit()
-      : getJson<AuditTrail>(`/api/audit${query({ matter_id: matterId })}`),
+      : cachedGetJson<AuditTrail>(`/api/audit${query({ matter_id: matterId })}`),
   sourceVersions: (sourceId: string): Promise<SourceVersionList> =>
     mocksEnabled()
       ? fetchMockSourceVersions(sourceId)
-      : getJson<SourceVersionList>(`/api/sources/${encodeURIComponent(sourceId)}/versions`),
+      : cachedGetJson<SourceVersionList>(
+          `/api/sources/${encodeURIComponent(sourceId)}/versions`,
+          STATIC_TTL_MS,
+        ),
   impact: (reportId: string): Promise<ImpactReport> =>
     mocksEnabled()
       ? fetchMockImpact(reportId)
-      : getJson<ImpactReport>(`/api/impact/${encodeURIComponent(reportId)}`),
+      : cachedGetJson<ImpactReport>(`/api/impact/${encodeURIComponent(reportId)}`),
   sources: (): Promise<SourceList> =>
-    mocksEnabled() ? fetchMockSources() : getJson<SourceList>('/api/sources'),
+    mocksEnabled() ? fetchMockSources() : cachedGetJson<SourceList>('/api/sources', STATIC_TTL_MS),
   auditExport: (matterId: string): Promise<AuditExport> =>
     mocksEnabled()
       ? fetchMockAuditExport(matterId)
-      : getJson<AuditExport>(`/api/matters/${encodeURIComponent(matterId)}/audit-export`),
+      : cachedGetJson<AuditExport>(`/api/matters/${encodeURIComponent(matterId)}/audit-export`),
   compareDocuments: (matterId: string, a: string, b: string): Promise<CompareReport> =>
     mocksEnabled()
       ? fetchMockCompare()
-      : getJson<CompareReport>(
+      : cachedGetJson<CompareReport>(
           `/api/matters/${encodeURIComponent(matterId)}/compare${query({ a, b })}`,
+          60_000,
         ),
   flagClausePair: (matterId: string, clauseRef: string): Promise<FlagResult> =>
     mocksEnabled()
@@ -347,25 +458,32 @@ export const api = {
   documentCoverage: (documentId: string): Promise<CoverageReport> =>
     mocksEnabled()
       ? fetchMockCoverage()
-      : getJson<CoverageReport>(`/api/documents/${encodeURIComponent(documentId)}/coverage`),
+      : cachedGetJson<CoverageReport>(
+          `/api/documents/${encodeURIComponent(documentId)}/coverage`,
+          60_000,
+        ),
   searchProvisions: (q: string, limit = 5, rerank = false): Promise<ProvisionSearchResult> =>
     mocksEnabled()
       ? fetchMockSearchProvisions(q)
-      : getJson<ProvisionSearchResult>(
+      : cachedGetJson<ProvisionSearchResult>(
           `/api/provisions/search${query({
             q,
             limit: String(limit),
             rerank: rerank ? 'true' : undefined,
           })}`,
+          STATIC_TTL_MS,
         ),
   provisions: (versionId: string): Promise<ProvisionList> =>
     mocksEnabled()
       ? fetchMockProvisions()
-      : getJson<ProvisionList>(
+      : cachedGetJson<ProvisionList>(
           `/api/source-versions/${encodeURIComponent(versionId)}/provisions`,
+          STATIC_TTL_MS,
         ),
   cardDrafts: (): Promise<RuleCardDraftList> =>
-    mocksEnabled() ? fetchMockCardDrafts() : getJson<RuleCardDraftList>('/api/rule-cards/drafts'),
+    mocksEnabled()
+      ? fetchMockCardDrafts()
+      : cachedGetJson<RuleCardDraftList>('/api/rule-cards/drafts'),
   draftCard: (provisionId: string): Promise<RuleCardSummary> =>
     mocksEnabled()
       ? fetchMockDraftCard()
@@ -444,7 +562,7 @@ export const api = {
   reverifyList: (matterId: string): Promise<ReverifyList> =>
     mocksEnabled()
       ? fetchMockReverifyList(matterId)
-      : getJson<ReverifyList>(`/api/reverify-list${query({ matter_id: matterId })}`),
+      : cachedGetJson<ReverifyList>(`/api/reverify-list${query({ matter_id: matterId })}`),
   scanPage: (body: ScanRequest): Promise<ScanResult> =>
     mocksEnabled() ? fetchMockScan(body) : postJson<ScanResult>('/api/scans', body),
   createDictation: (body: DictationRequest): Promise<DictationResult> =>
@@ -483,8 +601,9 @@ export const api = {
   documentPages: (documentId: string): Promise<DocumentPages> =>
     mocksEnabled()
       ? fetchMockDocumentPages()
-      : getJson<DocumentPages>(
+      : cachedGetJson<DocumentPages>(
           `/api/documents/${encodeURIComponent(documentId)}/pages`,
+          60_000,
         ),
   register: (body: { email: string; password: string; name: string }): Promise<AuthResult> =>
     mocksEnabled()
@@ -495,5 +614,7 @@ export const api = {
       ? fetchMockAuth(body.email, '')
       : postJson<AuthResult>('/api/auth/login', body),
   me: (): Promise<AuthResult> =>
-    mocksEnabled() ? fetchMockAuth('lawyer@example.com', 'Lawyer') : getJson<AuthResult>('/api/me'),
+    mocksEnabled()
+      ? fetchMockAuth('lawyer@example.com', 'Lawyer')
+      : cachedGetJson<AuthResult>('/api/me', 60_000),
 }
