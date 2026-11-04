@@ -30,15 +30,6 @@ def create_app() -> FastAPI:
     """
     app = FastAPI(title="ClauseTrace", version="v22")
 
-    cors_origins = os.environ.get("CT_CORS_ORIGINS", "")
-    if cors_origins:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=[o.strip() for o in cors_origins.split(",") if o.strip()],
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-
     # Phase 6: optional per-client write rate limit. CT_RATE_LIMIT_PER_MIN
     # unset/0 = off (demo + tests unaffected); production sets a ceiling.
     rate_limit = int(os.environ.get("CT_RATE_LIMIT_PER_MIN", "0") or "0")
@@ -81,6 +72,10 @@ def create_app() -> FastAPI:
 
         from fastapi.responses import JSONResponse
 
+        if request.method == "OPTIONS":
+            # CORS preflights carry no credentials by design; the CORS
+            # layer (outermost) answers them. Never gate them here.
+            return await call_next(request)
         if os.environ.get("CT_AUTH_REQUIRED", "0") == "1" and request.url.path.startswith("/api"):
             if not any(request.url.path == path for path in _PUBLIC_PATHS):
                 header = request.headers.get("authorization", "")
@@ -94,6 +89,19 @@ def create_app() -> FastAPI:
                         content={"error": {"code": "AUTH_REQUIRED", "message": "sign-in required"}},
                     )
         return await call_next(request)
+
+    # CORS is registered LAST so it is the outermost middleware: it must
+    # answer preflights before the auth gate sees them, and its headers
+    # must be present even on 401/429 responses generated inside —
+    # otherwise browsers hide those responses from the SPA entirely.
+    cors_origins = os.environ.get("CT_CORS_ORIGINS", "")
+    if cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=[o.strip() for o in cors_origins.split(",") if o.strip()],
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     @app.get("/api/health", response_model=schemas.Health)
     def health() -> dict[str, str]:

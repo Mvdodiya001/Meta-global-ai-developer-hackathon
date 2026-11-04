@@ -51,3 +51,45 @@ def test_unlisted_origin_gets_no_cors_headers() -> None:
     response = asyncio.run(_get(app, "/api/health", {"Origin": "https://evil.example"}))
     assert response.status_code == 200
     assert "access-control-allow-origin" not in response.headers
+
+
+async def _request(app, method: str, path: str, headers: dict[str, str]) -> httpx.Response:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        return await client.request(method, path, headers=headers)
+
+
+def test_preflight_not_blocked_by_auth_gate(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Regression: with CT_AUTH_REQUIRED=1, a CORS preflight (OPTIONS, no
+    credentials by design) must be answered by the CORS layer, not 401'd
+    by the auth gate — otherwise browsers block every authenticated
+    cross-origin request and the SPA reports a generic load failure."""
+    monkeypatch.setenv("CT_AUTH_REQUIRED", "1")
+    app = _app_with("https://ct.example.com")
+    response = asyncio.run(
+        _request(
+            app,
+            "OPTIONS",
+            "/api/matters",
+            {
+                "Origin": "https://ct.example.com",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "authorization",
+            },
+        )
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://ct.example.com"
+
+
+def test_auth_401_carries_cors_headers(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Regression: a 401 from the auth gate must still carry CORS headers,
+    or the browser hides the response and the SPA cannot tell the user
+    to sign in."""
+    monkeypatch.setenv("CT_AUTH_REQUIRED", "1")
+    app = _app_with("https://ct.example.com")
+    response = asyncio.run(
+        _get(app, "/api/matters", {"Origin": "https://ct.example.com"})
+    )
+    assert response.status_code == 401
+    assert response.headers["access-control-allow-origin"] == "https://ct.example.com"
