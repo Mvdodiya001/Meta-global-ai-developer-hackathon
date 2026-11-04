@@ -4,7 +4,8 @@
 | Layer | Choice | Alternative | Why |
 |-------|--------|-------------|-----|
 | Backend | Python 3.12 + FastAPI | Django | Fast to build, auto OpenAPI contract for the frontend |
-| DB | SQLite (WAL) + SQLAlchemy 2 | PostgreSQL | One file, instant demo reset, triggers enforce append-only; swap to Postgres later if needed |
+| DB | Hybrid: SQLite (WAL) default, PostgreSQL via `CLAUSETRACE_DB_URL` | — | Same SQLAlchemy models on both; one env var switches; append-only enforced by triggers (SQLite) / service discipline (Postgres) |
+| Graph store | FalkorDB-first traversal with relational fallback | Neo4j | FalkorDB holds a rebuildable projection of the relational record; any failure falls back to the CTE traversal; UI reports which served |
 | Graph | Relational `edges` table + recursive CTE | Neo4j, networkx | No extra service; traversal is a few lines of SQL |
 | Checker | Plain Python package `backend/checker` | Prolog/Z3/Lean | Small closed rule set; readable; no heavy deps |
 | Frontend | React + Vite + TS + Tailwind | Streamlit | Streamlit looks like a generic chatbot; we need inspectable graph and diff views |
@@ -69,6 +70,15 @@ flowchart LR
 
 ### C. Premise challenge
 Lawyer marks a fact disputed → fact trust class becomes `disputed` (new row/event) → reverse traversal finds findings using it → stale → re-verify: claim becomes UNKNOWN or REQUIRES_REVIEW if the premise is no longer admissible.
+
+## 4b. Product-phase components (2026-11-04)
+- **Workspace** (`modules/matters`, `modules/identity`): matter CRUD + membership; the UI selects a working matter and every query follows it.
+- **Contract understanding** (`modules/intake/understanding.py`): one gateway call (plus a deterministic fallback) extracts parties, obligations, defined terms and key dates into proposed facts (`ai_inferred`, structured `kind`), confirmable in the Control room.
+- **Law corpus** (`modules/law`): DPDP Act (18 provisions) + Rules, IT Act 2000, Copyright Act 1957 — 55 provisions from the official India Code mirror; rule cards are model-drafted (`rulecards.draft_card`) and lawyer-confirmed (`confirm_card` mints the confirmed successor; drafts never edited in place).
+- **Retrieval / semantic RAG** (`modules/evidence/retrieval.py`, `rerank.py`): deterministic IDF ranking with legal concept expansion, then an optional one-call AI re-rank with reasons; silent lexical fallback. Exposed via `GET /api/provisions/search` and `lookup_source?query=`.
+- **Readability** (`modules/intake/explanations.py`): per-clause explanations and document summaries, tone-guarded in code (banned advice phrasing is replaced with quote-anchored fallbacks), stored as proposed facts.
+- **Comparison** (`api` compare/coverage endpoints): clause alignment across two documents, difference flagging via Review rows (never findings), per-clause provision coverage.
+- **Realtime transcription**: `WS /api/transcribe/stream` streams cumulative WAV buffers; interims are unlogged drafts, only the finalize call is billed; cassette writes are best-effort so a read-only image never loses a paid transcript.
 
 ## 5. Proof format and checker
 Proof (JSON) = list of typed steps. Each step cites ids that exist in the DB.
@@ -149,10 +159,10 @@ Per-token prices are on the Meta Pricing page; measure real cost in T0.3 and wri
 - Rights: official government texts with URL and retrieval date in `NOTICE.md`; no paid databases.
 
 ## 11. Security and isolation
-Every query filters by `matter_id`; tool args are validated against the session's matter; secrets only in `.env`; no PII; the agent has no network, shell or file tools; ingestion allowlist enforced in the source service; demo-reset endpoints behind `DEMO_MODE=1`.
+Every query filters by `matter_id`; tool args are validated against the session's matter; secrets only in `.env`; no PII; the agent has no network, shell or file tools; ingestion allowlist enforced in the source service; demo-reset endpoints behind `DEMO_MODE=1`. Product build adds: per-matter membership (`matter_members`), optional enforced auth (`CT_AUTH_REQUIRED=1` + bearer tokens), upload size limits and a malware-scan hook (`app/modules/intake/safety.py`, EICAR canary, fail-closed), per-page extraction confidence flags, and an optional per-client write rate limit (`CT_RATE_LIMIT_PER_MIN`).
 
 ## 12. Deployment
-Docker Compose: `api` (uvicorn), `web` (static build via Caddy), SQLite volume. `make reset-demo` seeds the matter, corpus, extracted clauses and cassettes. Keep a pre-recorded video of the full demo path as a fallback.
+Docker Compose (in-repo): `api` (uvicorn, non-root, healthcheck, seeds on boot), `postgres` (127.0.0.1:5543), `falkordb` (127.0.0.1:6380), data in `pgdata`/`falkdata` volumes; ~180MB idle, sized for one small server with per-service memory caps. Frontend either served locally (Vite proxy) or split-hosted on Vercel with `VITE_API_BASE` + opt-in CORS (`CT_CORS_ORIGINS`) and HTTPS on the API (Caddy/tunnel). `make reset-demo` wipes and reseeds whichever database `CLAUSETRACE_DB_URL` selects. Backups: `scripts/backup_demo.sh` (SQLite copy or pg_dump, optional cassette tar). Keep a pre-recorded video of the full demo path as a fallback.
 
 ## 13. Top risks and mitigations
 | Risk | Mitigation |

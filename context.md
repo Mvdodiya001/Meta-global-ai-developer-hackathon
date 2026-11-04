@@ -158,3 +158,9 @@ there (no challenger cassette for that date).
    terms are confirmed in writing.
 3. `make reset-demo` before any demo or recording; `make record` at most
    once per task and only when a cassette hash actually breaks.
+
+---
+
+## Addendum — 2026-11-04 (product build)
+
+The OpenAPI contract is now **v22**. The post-hackathon product build (Phases 0–6) is complete in the working tree: multi-matter workspace, contract understanding, four laws (55 provisions, official India Code mirror), model-drafted + lawyer-confirmed rule cards, semantic RAG retrieval (`lookup_source` query mode + AI re-rank), readability layer, document comparison, and production hardening (upload safety, per-page confidence, rate limiting, audit export, eval gate in CI, backup script). Persistence is hybrid SQLite/Postgres (`CLAUSETRACE_DB_URL`); dependency traversal is FalkorDB-first with relational fallback. Docker compose stack and Vercel/own-server split hosting are proven. Checks: backend 341 passed, frontend 47/47. CORS now exists (opt-in `CT_CORS_ORIGINS`); a Compose file is in-repo. See `PROGRESS.md` (2026-11-04 entry) and `docs/logs/MUSE_CODE_LOG.md` for the full record.

@@ -34,3 +34,14 @@ Judges: this file shows what is new. Fill the "Dates" and "Commit range" columns
 | Production rewrite P0–P5: modular service boundaries, tenant schema, Postgres migration + FalkorDB graph projection (parity-tested), service split with domain events, async intake jobs + PDF pipeline + fact correction, matters/evidence/admin pages, eval gate, per-tenant budgets | 2026-11-02 | uncommitted at writing | Muse Code |
 ## Third-party material (not new work)
 Open-source libraries and official legal texts are listed with licences and URLs in `NOTICE.md`.
+
+## Product build (2026-11-04, post-hackathon phases 0–6)
+
+- Multi-matter workspace: matter CRUD + membership, sidebar matter switcher, every screen scoped to the selected matter (contract v16).
+- Contract understanding: parties, obligations by actor, defined terms, key dates extracted into proposed facts; taxonomy tags in the clause list (Phase 1).
+- Law corpus completion: DPDP Act expanded (ss 3–7, 9–13, 16, 17, 33), IT Act 2000 and Copyright Act 1957 ingested from the official India Code mirror — 55 provisions across 6 sources; model-drafted rule cards with a lawyer confirmation queue (contract v17).
+- Semantic retrieval (RAG): deterministic provision ranking, legal concept expansion, AI re-rank with per-hit reasons; `lookup_source` query mode; Relevant sections UI (contract v19–v20).
+- Readability layer: tone-guarded per-clause explanations and document summaries as confirmable/dismissible suggestions (contract v18).
+- Document comparison: clause alignment, difference flagging (Review rows, never findings), contract-vs-law coverage roll-up (contract v21).
+- Production hardening: upload size/malware gates, per-page extraction confidence, optional rate limiting, per-matter audit export, eval gate wired into CI, backup script (contract v22).
+- Hybrid persistence proven throughout: SQLite default, Postgres via `CLAUSETRACE_DB_URL`, FalkorDB-first dependency traversal with record fallback; Docker compose stack (API + Postgres + FalkorDB) and Vercel/own-server split hosting.

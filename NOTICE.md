@@ -31,3 +31,15 @@
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **The Emblems and Names (Prevention of Improper Use) Act, 1950** *(Unrelated Decoy Source)* | Act No. 12 of 1950 | Legislative Department / National Informatics Centre (NIC) | Enacted: 1 March 1950<br>Effective: 1 September 1950 | 2026-10-29 | https://thc.nic.in/Central%20Governmental%20Acts/Emblems%20and%20Names%20(Prevention%20of%20Improper%20Use)%20Act,%201950.pdf |
 | **India Code Central Act Legislation Listing for Act No. 12 of 1950** *(Unrelated Decoy Source Index)* | Act No. 12 of 1950 (Item 258 on page) | India Code (Ministry of Law and Justice) | 1 March 1950 | 2026-10-29 | https://www.indiacode.nic.in/handle/123456789/1362/browse?type=shorttitle&sort_by=3&order=ASC&rpp=25&etal=-1&null=&offset=233 |
+
+## 4. Product-phase law ingestions (2026-11-04)
+
+Retrieved by the assistant from the official India Code / eCourtsIndia mirror (`indiacode.ecourtsindia.com`, published under s.52(1)(q)(ii) of the Copyright Act, 1957) at the owner's instruction; statutory text only, amendment footnote markers stripped.
+
+| Document | Provisions ingested | Source |
+| :--- | :--- | :--- |
+| The Digital Personal Data Protection Act, 2023 (expansion) | ss 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 16, 17, 33 | `indiacode.ecourtsindia.com/digital-personal-data-protection-act-2023/section/<n>` |
+| The Information Technology Act, 2000 | ss 43, 43A, 65, 66, 69, 72A, 79 | `indiacode.ecourtsindia.com/it-act/section/<n>` |
+| The Copyright Act, 1957 | ss 17, 18, 19, 30, 51, 52 | `indiacode.ecourtsindia.com/copyright-act/section/<n>` |
+
+Effective dates used: DPDP additions 2027-05-13 (G.S.R. 843(E) Stage 3); IT Act 2000-10-17; Copyright Act 1958-01-21.

@@ -145,3 +145,14 @@ Use the Discord office hours for blockers. Join or watch the hackathon's agent s
 
 ## Daily end-of-day checklist
 Both agent logs have final entries · lane checks green (`make check` green for you) · you reviewed diffs and committed by lane (`git hc`) · pushed (`git hp`) · `HUMAN_LOG.md`, `PROGRESS.md`, `NEW_WORK.md`, `NOTICE.md` updated from the logs · credit spend logged · tomorrow's first task named.
+
+## Product phases (2026-11-04, post-hackathon) — all complete
+- **Phase 0** Multi-matter workspace: matter CRUD + membership, sidebar switcher (contract v16). Deferred: login-first guard before `CT_AUTH_REQUIRED=1` becomes the compose default.
+- **Phase 1** Contract understanding: parties/obligations/terms/dates as proposed facts; taxonomy tags.
+- **Phase 2a** DPDP corpus completed (18 provisions) + model-drafted, lawyer-confirmed rule-card queue (contract v17).
+- **Phase 2b** IT Act 2000 (ss 43, 43A, 65, 66, 69, 72A, 79) + Copyright Act 1957 (ss 17, 18, 19, 30, 51, 52) from the India Code mirror.
+- **Phase 3** Semantic provision retrieval: concept expansion + AI re-rank; `lookup_source` query mode (contracts v19–v20). Future: deep dynamic claim-typing in the loop.
+- **Phase 4** Readability layer: tone-guarded clause explanations + document summary (contract v18).
+- **Phase 5** Document comparison + coverage roll-up; flagging writes Review rows, never findings (contract v21). Future: cross-document impact (contract v2 staling v1 findings).
+- **Phase 6** Hardening: upload safety/malware hook, per-page confidence, rate limiting, audit export, eval gate in CI, backup script (contract v22).
+

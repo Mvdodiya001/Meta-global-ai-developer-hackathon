@@ -168,6 +168,11 @@ Confidence band: see ARCHITECTURE §6.
 
 Error shape: `{"error": {"code": "PROOF_REJECTED", "message": "...", "details": {...}}}`.
 
+## 7b. Product-phase additions (contract v16–v22, additive only)
+- Tables: `matter_members` (Phase 0). Facts gained Phase-1/4 structured kinds (`parties`, `obligations`, `defined_terms`, `key_dates`, `explanation`, `summary`) inside the existing `structured_json`; `Fact.supersedes_id` is exposed in the API.
+- Endpoints: `GET/POST /api/matters`, `GET /api/models` (+ `/api/v1/models` alias, never 404), `GET /api/source-versions/{id}/provisions`, `POST /api/documents/{id}/explain|summarize`, `GET /api/provisions/search` (deterministic retrieval; `rerank=true` adds the AI re-rank), rule-card queue (`GET /api/rule-cards/drafts`, `POST /api/rule-cards/draft|{id}/confirm|{id}/reject`), comparison (`GET /api/matters/{id}/compare`, `POST /api/matters/{id}/compare/flag`, `GET /api/documents/{id}/coverage`), `GET /api/matters/{id}/audit-export`, `WS /api/transcribe/stream` (cumulative-WAV interim + finalize protocol).
+- `DocumentPage` gained `confidence` (`high|low`); job results carry per-page confidence and understanding counts.
+
 ## 8. Edge cases and validation rules
 - A fact's `structured_json` must match the schema of its claim type; otherwise it cannot be cited.
 - A quote in a proof must be a verbatim substring of the cited provision text; whitespace normalised, nothing else.

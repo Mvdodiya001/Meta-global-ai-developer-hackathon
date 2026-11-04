@@ -22,13 +22,19 @@ ClauseTrace shows what follows from accepted premises and stated source versions
 - **Conflicting readings** — when two legal tests cited in one proof contradict each other, the answer is stored as "Two readings of the law conflict — your call", never silently resolved.
 - **Your control room** — approve or challenge facts (approval mints a new confirmed copy; nothing is edited), correct fact wording, dictate a fact by voice or add a scanned page — both arrive as *proposed* facts that cannot support any answer until a lawyer approves them.
 - **Evidence page** — every answer has a page with its reasoning, citations, facts, and earlier versions.
-- Uploads run as tracked background jobs, including PDF files (text layer read directly; image-only pages transcribed).
+- Uploads run as tracked background jobs, including PDF files (text layer read directly; image-only pages transcribed, with a per-page confidence flag for spot-checking).
+- **Contract understanding** — parties, obligations grouped by who owes them, defined terms and key dates extracted from the uploaded document, all as proposed items until a lawyer confirms them.
+- **Readability layer** — a suggestion-labelled document summary and per-clause plain-language explanations (what it says / who it binds / what triggers it / worth checking), confirmable or dismissible by the lawyer. AI suggestions may be wrong; this is not legal advice.
+- **Compare documents** — two documents aligned clause by clause, differing wording flaggable for review, plus a per-clause "which law it touches" roll-up.
+- **Relevant sections search** — any wording ranked against every current law (DPDP Act + Rules, IT Act 2000, Copyright Act 1957), with an optional AI re-rank that explains each match.
+- **Legal test drafting queue** — the model drafts rule cards from provisions; only a lawyer's confirmation makes a test relied-on.
+- **Multi-matter workspace** — sign in, create matters, switch between them; everything is scoped to the selected matter.
 
 ## Architecture
 
 Backend (Python 3.12, FastAPI) as a modular monolith with explicit domain boundaries (`backend/app/modules/`): **verification** (agent loop + memory, the only place a status is decided), **law** (sources, legal tests, diff), **impact** (amendment → stale → re-verify, what-if), **intake** (extraction, scans, dictation, PDF, jobs), **evidence** (facts, trust actions, graph), **matters**, **identity** (tenancy). The deterministic checker (`backend/checker/`, plus a propositional-logic module) is a pure library inside verification. Domain events (`finding.decided`, `fact.approved`, `impact.applied`) connect the modules.
 
-Data: SQLite for the demo and local development; the same models run on PostgreSQL (`CLAUSETRACE_DB_URL`), with the evidence graph projected to FalkorDB as a rebuildable read model (parity-tested against the record). Contract: `openapi/openapi.json`, currently **v12**, additive-only, with lawyer display labels beside every machine field. Frontend: React 18 + Vite + TypeScript, generated API types.
+Data (hybrid): SQLite for zero-setup local work, PostgreSQL via `CLAUSETRACE_DB_URL` for shared/production use — the same models run on both. Dependency traversal runs on **FalkorDB first** with an automatic fallback to the record database (the graph is a rebuildable projection of the relational record; the UI shows which served it). Retrieval is a small RAG: deterministic ranking over all provisions, concept expansion for statute-vs-lawyer wording, and an optional AI re-rank with per-hit reasons. Contract: `openapi/openapi.json`, currently **v22**, additive-only, with lawyer display labels beside every machine field. Frontend: React 18 + Vite + TypeScript, generated API types.
 
 Invariants: only the memory service decides FOLLOWS / RULED_OUT / UNKNOWN / REQUIRES_REVIEW / CONFLICTING. A stale finding is replaced only after a fresh `lookup_source` of the current version. Premises must be lawyer-confirmed or document-extracted; AI-inferred facts can never support a proof. Simulated amendments carry a SIMULATED badge.
 
@@ -83,7 +89,7 @@ make reset-demo
 Two terminals:
 
 ```bash
-# API — contract v13, replay
+# API — contract v22, replay
 cd backend && set -a; [ -f ../.env ] && . ../.env; set +a
 API_STUB=0 LLM_MODE=replay CHALLENGER=on \
   .venv/bin/uvicorn app.main:app --port 8000 --reload
@@ -103,7 +109,9 @@ API is opt-in with `CT_AUTH_REQUIRED=1` (off for the demo).
 - Screen 1 default question: `Does clause 9.2 require Nimbus to keep transfer logs?` Recorded as-of dates: **2026-11-20** (default) and **2025-10-17**.
 - Run Screen 1 before Screen 3 (lawyer control uses that `claim_id`).
 - UNKNOWN-typed questions store UNKNOWN without drafting a proof. If the challenger cassette is missing, the finding is kept as REQUIRES_REVIEW (not a 502).
-- Backend image: `docker build -f backend/Dockerfile -t clausetrace-backend .` Compose file is not in-repo yet.
+- Backend image: `docker build -f backend/Dockerfile -t clausetrace-backend .`
+- Full stack (API + Postgres + FalkorDB): `PGPASSWORD=<pw> docker compose up --build -d` (API on :8000, Postgres on 127.0.0.1:5543, FalkorDB on 127.0.0.1:6380).
+- Split hosting (Vercel frontend + own server): set `VITE_API_BASE` to the API origin, set `CT_CORS_ORIGINS` to the app origin, and serve the API over HTTPS (Caddy or a tunnel).
 - Unit tests still use `openapi/examples` mocks (`MODE=test` or `VITE_USE_MOCKS=1`).
 - Upload a document from the Your matters page (PDF, DOCX, or text). Text pages are read directly; scanned pages are transcribed and labelled per page so you can spot-check them on the clause page before relying on answers.
 - Sign in from the nav. Dictate a fact on the Dictate page (microphone → transcript → save as proposed → confirm) or dictate new clause wording on the clause page; saving writes a new version and never edits history.
@@ -118,7 +126,7 @@ make check-backend    # ruff, mypy, pytest
 make check            # both (human)
 ```
 
-Latest runs (2026-11-02): backend pytest **280 passed** (+2 infrastructure-gated skips for Postgres/FalkorDB parity), frontend vitest **44/44**, production build passes, eval gate **5/5 with 0 premise violations**. Contract is **v14**.
+Latest runs (2026-11-04): backend pytest **341 passed** (+3 infrastructure-gated skips), frontend vitest **47/47**, production build passes, eval gate **5/5 with 0 premise violations** (also wired into CI). Contract is **v22**.
 
 ## Source provenance
 

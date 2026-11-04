@@ -867,3 +867,109 @@ _(no entries yet)_
 - Gates: backend 299 passed/3 skipped (ruff+mypy clean), frontend lint 0, vitest 47/47, build green. Zero tracebacks/500s in final logs. DB reset pristine (13 facts) and stack left running with DEMO_MODE=0 for user testing at :5173.
 - Credit spend: live calls during E2E were mostly cassette-served; ASR/agent spend negligible (<$0.01 on final DB).
 - Ready for human commit: yes — suggested message: `E2E fixes: best-effort ASR cassette write; capture Before anchor after ingest`
+
+## [Dependency map: meaningful nodes, simulated out] DONE · 2026-11-04 IST
+- Task: user said the dependency map image made no sense (generic "Answer / Applied to these answers" boxes) and asked to remove the simulation from the graph only (confirmed via question; simulated law-change flow stays).
+- Backend (`app/api.py`): finding nodes now labelled by clause ("Clause 10 — Breach intimation" via claim->clause), rule cards by their interpretation text, provisions short ("s8(6)", "Rule 6"), source versions disambiguated ("DPDP Act 2023 · v1"); simulated source versions (and their PART_OF edges) excluded from GET /api/graph. Regression asserts in test_api.py::test_graph_and_audit.
+- Frontend (`StaleGraph.tsx`): finding title = clause label (internal ids still hidden), status line from state, support captions = real labels, edge labels (depends on / from section / in version), simulated-version filter as belt-and-braces.
+- Gates: backend 299+ passed (api+graph suites green in full gate run), frontend lint 0, vitest 47/47, build green. Docker rebuilt; screenshot verified: Clause 9.2/10 nodes, s8(6), DPDP Act v1, no simulated nodes. Note: vite HMR missed one edit mid-session; a touch forced re-transform (dev-server quirk, not app code).
+- Credit spend: none.
+- Ready for human commit: yes — suggested message: `Dependency map: clause/section/test node labels, edge relations, simulated versions out`
+
+## [One-document flow] DONE · 2026-11-04 IST
+- Task: user will use ONE document and wants everything extracted/driven from it. Found gap: every screen opened documents[0] (seeded DOC-01), so uploads extracted but never drove Review/Clauses/Dictate/Control.
+- Fix (frontend only): UploadPanel remembers the uploaded document_id (sessionStorage clausetrace.document_id, same pattern as claim id); ClauseReviewPage, ClausesPage, DictationPage, LawyerControlPage pick preferredDocumentId() = remembered doc when present in the matter list, else first document. No backend/contract change.
+- Gates: tsc clean, lint 0, vitest 47/47, build green. Browser-verified: upload novel txt -> Done 1 clause -> Review shows ONLY the uploaded 9.9 clause; Clauses page selects its clause. (Vite watcher missed an edit again; touch forced re-transform.)
+- DB reset pristine after test; stack left running (DEMO_MODE=0 override) at :5173.
+- Credit spend: one live txt extraction (~cents).
+- Ready for human commit: yes — suggested message: `One-document flow: uploaded doc becomes the working document on every screen`
+
+## [Phase 0: multi-matter workspace] DONE · 2026-11-04 IST
+- Backend: MatterMember model (additive table via create_all, no DDL change to existing tables); GET /api/matters (membership-filtered when a valid token is presented, open otherwise), POST /api/matters 201 (creator becomes owner member); registration auto-joins existing workspace matters so sign-in keeps the demo visible. Contract [CONTRACT v15 -> v16] additive: schemas MatterSummary/MatterList/MatterCreateRequest, stub + examples (matters.json, matter_created.json), openapi regen, frontend types regen.
+- Frontend: api.matters/createMatter (+mocks), demoSession matter helpers (remember/preferred/currentMatterId), MatterSwitcher in sidebar (select + inline New matter form, reload-on-switch), every screen now reads currentMatterId() instead of DEMO_MATTER_ID (Matters, Review, Impact, Control, Clauses, Dictate, Upload, Scan, DictationPanel). DEMO_MATTER_ID remains only as the no-selection fallback in config/currentMatterId.
+- Tests: backend test_matters.py (list/create, creator-privacy vs second user, validation 400) — full gate 304 passed/3 skipped; frontend lint 0, vitest 47/47, build green. Browser-verified: switcher lists demo+created matters, create works, switch to new matter shows its title, switch back restores demo.
+- Deferred within Phase 0 (needs go-ahead): flipping CT_AUTH_REQUIRED=1 in compose — requires login-first UX (route guard to /signin) or the open demo breaks; backend support already exists and is tested via membership filtering.
+- Credit spend: none.
+- Ready for human commit: yes — suggested message: `Phase 0: matter CRUD + membership, sidebar matter switcher (contract v16)`
+
+## [Phase 2a: rule-card drafting pipeline + confirmation queue] DONE · 2026-11-04 IST
+- Backend (modules/law/rulecards.py): draft_card (model via gateway, JSON parse with verbatim-span validation, quote-anchored fallback; ai_inferred; idempotent per provision), list_drafts, confirm_card (mints lawyer_confirmed successor, draft superseded, card edges ensured), reject_card. Endpoints: GET /api/source-versions/{id}/provisions, GET /api/rule-cards/drafts, POST /api/rule-cards/draft (201), /{id}/confirm, /{id}/reject. Contract [CONTRACT v16 -> v17] additive + stub/examples + regen.
+- Frontend: RuleCardQueue panel in Control room (provision picker from DPDP Act v1, Draft button, per-draft span quote + claim-type/interpretation editors, Confirm/Reject; suggestion-tone banner per user decision). Client + mocks for all five endpoints.
+- Corpus expansion BLOCKED on source text: MeitY official PDF returns 403 and web search was cancelled; per AGENTS rule 10 (no unverified legal text) the s4-s17 DPDP texts were NOT fabricated. [REQ -> H]: supply human-verified s4-s17 (and Rules remainder) texts per corpus/NOTES method, or approve a fetch source; the drafting pipeline already works for all 9 existing Act/Rules provisions and any future provision added to the manifest.
+- Tests: backend test_rulecard_drafts.py (draft idempotent + span, confirm mints confirmed, reject leaves queue, 404) — full gate 311 passed/3 skipped; frontend lint 0, vitest 47/47, build green. Browser: sign-in (auth enforced by user's CT_AUTH_REQUIRED=1), queue shows seeded ai_inferred cards awaiting review, draft + confirm cycle verified (awaiting count drops, "can now be relied on").
+- Note: seeded corpus cards are themselves ai_inferred, so the queue correctly opens with them awaiting lawyer confirmation — confirming one mints its successor without touching history.
+- Credit spend: negligible (draft calls mostly cassette/mock-served during tests).
+- Ready for human commit: yes — suggested message: `Phase 2a: model-drafted rule cards + lawyer confirmation queue (contract v17)`
+
+## [DPDP corpus expansion from trusted official mirror] DONE · 2026-11-04 IST
+- Task: user instructed websearch for law docs from trusted sites (waiving the human-verified-only workflow). Source used: indiacode.ecourtsindia.com section mirrors (official India Code / eCourtsIndia, already cited in NOTICE.md for the Rules).
+- Added 13 DPDP Act provisions (s3, s4, s5, s6, s7, s9, s10, s11, s12, s13, s16, s17, s33) verbatim from the mirror, GSR 843(E) Stage-3 effective date 2027-05-13, to SV-DPDP-ACT-V1 and SV-DPDP-ACT-V2SIM (V2SIM ids suffixed per existing convention). Corpus provisions 16 -> 42. [REQ -> H]: record these in NOTICE.md (India Code mirror, retrieved 2026-11-04).
+- Load-bearing fallout handled: (1) count assertions updated (42 provisions, diff unchanged 18); (2) cassette hashes shifted -> reset demo DB + `make record` (two runs; first against a dirty demo DB, second after reset — total latest-call cost ~$0.001); (3) ingest idempotency broke because content digest depended on provision order — fixed properly by canonical key-order digest in both sources.ingest_version and the API ingest endpoint (regression: test_reingest_stored_version_stales_card_dependents green again).
+- Gates: backend 311 passed/3 skipped (ruff+mypy clean). Docker rebuilt + PG reset: Act v1 serves 18 provisions; card queue drafts for any of them.
+- Credit spend: ~$0.001 (re-record).
+- Ready for human commit: yes — suggested message: `DPDP corpus: add ss3-7,9-13,16,17,33 from India Code mirror; canonical ingest digest`
+
+## [IT Act 2000 + Copyright Act 1957 ingestion (Phase 2b)] DONE · 2026-11-04 IST
+- Task: user asked same trusted-source treatment for the remaining two laws. Source: indiacode.ecourtsindia.com mirrors (/it-act/section/*, /copyright-act/section/*), retrieved 2026-11-04. [REQ -> H]: record in NOTICE.md.
+- Added SRC-IT-ACT (SV-IT-ACT-V1: s43, s43A, s65, s66, s69, s72A, s79; in force 2000-10-17) and SRC-COPYRIGHT-ACT (SV-COPYRIGHT-ACT-V1: s17, s18, s19, s30, s51, s52; in force 1958-01-21). Amendment footnote markers stripped; statutory words unchanged. Corpus: 7 versions, 55 provisions.
+- Fallout handled same as DPDP expansion: count assertions updated (versions 7, provisions 55, seed idempotency), reset + make record ($0.00042) for shifted loop hashes. Full gate: backend 311 passed/3 skipped, ruff+mypy clean. Docker rebuilt + PG reset; both new sources serve provisions via API (auth on).
+- The Phase 2a drafting queue now covers these provisions too (any provision can be drafted/ confirmed).
+- Credit spend: ~$0.0004.
+- Ready for human commit: yes — suggested message: `Phase 2b: ingest IT Act 2000 + Copyright Act 1957 from India Code mirror`
+
+## [Phase 1: contract understanding] DONE · 2026-11-04 IST
+- Backend: new modules/intake/understanding.py — one gateway call -> {parties, obligations, defined_terms, key_dates} JSON with a deterministic fallback (entered-into-by parties preamble, shall-sentences, "X means" terms, dates) for mock/offline. Items stored as ai_inferred facts with structured_json kind discriminator + content-derived deterministic ids (keeps the seed replay-determinism gate); deduped per matter. Hooked into intake jobs (best-effort, never fails a job) and into seed (mock mode, free) so the seeded DPA shows understanding from first boot.
+- Frontend: Contract understanding panel on Your matters (parties, obligations grouped by actor with clause refs, defined terms, key dates; suggestion-tone banner per user decision), taxonomy tag chips in Review clause list (deterministic keyword tagger, filterable).
+- Seed fact counts moved 13 -> 28 (13 + 15 understanding); affected assertions updated (test_seed, test_tenancy, test_api extract 25 -> 40); reset + make record for shifted loop hashes (~$0 cost reported by record run).
+- Gates: backend 313 passed/3 skipped (ruff+mypy clean), frontend lint 0, vitest 47/47, build green. Browser-verified: parties Acme/Data Fiduciary + Nimbus/Data Processor, obligations under Nimbus, tag filter (Breach notice -> clauses 2, 10). Docker rebuilt + PG reset.
+- Credit spend: negligible (record run reported $0.000000 latest-call cost; understanding in seed is mock-mode).
+- Ready for human commit: yes — suggested message: `Phase 1: contract understanding (parties/obligations/terms/dates) as proposed facts + taxonomy tags`
+
+## [Phase 4: readability layer] DONE · 2026-11-04 IST
+- Backend: modules/intake/explanations.py — per-clause explanations {says, binds, triggers, check} + document summary, both stored as ai_inferred facts (kind=explanation/summary). Tone guardrail is enforced in code: BANNED_PHRASES filter replaces advice-like model output field-by-field with quote-anchored fallbacks; deterministic mock fallback quotes the clause. Endpoints POST /api/documents/{id}/explain + /summarize. Contract [CONTRACT v17 -> v18] additive (incl. Fact.supersedes_id exposure + example payload updates). Per-clause drafting parallelized (4 threads, session-less workers): live explain-all dropped from ~4m21s sequential to ~1min class; one live explanation per clause (regeneration dedupes by clause, not statement text).
+- Frontend: Plain-language explanations panel on Update clauses (Explain all, per-clause What this says/Who it binds/What triggers it/Worth checking, Confirm (approve-mints-successor aware) / Dismiss via rejectFact), Document summary block in Contract understanding (generate/refresh). Client+mocks for explain/summarize/reject.
+- Tests: backend test_explanations.py (tone filter, quote-anchored mock, storage dedupe) — full gate 318 passed/3 skipped; frontend lint 0, vitest 47/47, build green. Browser-verified live: summary generated (49s live call), 12 clause explanations rendered, confirm -> "Confirmed by you".
+- Credit spend: a few live explain/summary calls during verification (~$0.01 class).
+- Ready for human commit: yes — suggested message: `Phase 4: readability layer — tone-guarded clause explanations + document summary (contract v18)`
+
+## [Phase 3: generalized verification via provision retrieval] DONE · 2026-11-04 IST
+- Backend: modules/evidence/retrieval.py — deterministic IDF-weighted token ranking over the current (non-simulated, non-superseded-by-real) version of every source; two ranking bugs found+fixed by tests (cosine penalised long sections; simulated v2 "superseding" v1 removed the whole Act from search). lookup_source tool gains retrieval mode via `query` arg (same six tools, extended args; recorded flows untouched). Endpoint GET /api/provisions/search. Contract [CONTRACT v18 -> v19] additive + stub/example + regen.
+- Frontend: Relevant sections panel on Review a clause — query, ranked hits with law title, match score + bar, and quoted text; client + mocks.
+- Tests: test_retrieval.py against the real corpus (breach->s8(6) first, consent->s6, transfer->s16, copyright assignment->Copyright Act top-3, intermediary->IT s79, simulated never ranked). Full gate: backend 325 passed/3 skipped; frontend lint 0, vitest 47/47, build green. Browser-verified: copyright assignment query returns Copyright Act s18 as top hit in the UI.
+- Scoped honestly: deep dynamic claim-typing inside the agent loop was NOT rewritten — the loop now *can* retrieve any provision via lookup_source?query=, and unverifiable proofs still default to REQUIRES_REVIEW through the existing checker/challenger path. Full dynamic typing remains future work.
+- Credit spend: none (deterministic retrieval; no model calls).
+- Ready for human commit: yes — suggested message: `Phase 3: provision retrieval across all laws (lookup_source query mode + Relevant sections) (contract v19)`
+
+## [Phase 3 semantic layer: concept expansion + AI re-rank (RAG)] DONE · 2026-11-04 IST
+- Task: user noted Phase 3 lacked semantic meaning; asked for a proper RAG-kind system. Built retrieve-then-rerank: (1) legal concept map (18 curated concepts) expands query tokens; two-tier scoring keeps exact statutory matches dominant (concept-collapsed bonus, anchors never double-count; generic mates like notify/notification pruned after they polluted rankings). (2) modules/evidence/rerank.py: one gateway call re-orders the lexical shortlist with per-hit reasons; silent lexical fallback on mock/replay-miss/bad JSON; wired into lookup_source retrieval mode and GET /api/provisions/search?rerank=true. Contract [CONTRACT v19 -> v20] (ProvisionHit.why/reranked, additive).
+- Frontend: Relevant sections gains "AI re-rank by meaning" toggle (default on) with AI re-ranked badge + reason per hit.
+- Tests: semantic queries the statute never words that way (abroad->s16 top-3, data leak->s8(6) top-3), rerank order/reasons, mock-mode no-call, bad-JSON fallback. Full gates: backend 330 passed/3 skipped, frontend lint 0, vitest 47/47, build green.
+- Verified live: "notify the board after a data leak" re-ranks s8(6) first with reason "Direct duty to intimate Board on personal data breach" (lexical alone ranked it 6th); UI semantic query "sending personal data abroad" -> s16 top hit.
+- Credit spend: a few live re-rank calls during verification (cents).
+- Ready for human commit: yes — suggested message: `Phase 3 semantic RAG: concept expansion + AI re-rank with lexical fallback (contract v20)`
+
+## [Phase 5: multi-document comparison + coverage] DONE · 2026-11-04 IST
+- Backend: GET /api/matters/{id}/compare (clause alignment by ref, changed flags, only_a/only_b), POST /api/matters/{id}/compare/flag (writes a Review row — never a finding; status decisions stay with the memory service), GET /api/documents/{id}/coverage (per-clause strongest matched provision via Phase 3 retrieval + latest finding status label). Contract [CONTRACT v20 -> v21] additive + stub/examples + regen.
+- Frontend: new /compare page (nav: Compare documents) — two document pickers, aligned pairs with editorial before/after for differing clauses, Flag for review per differing pair, and the contract-vs-law coverage roll-up.
+- Tests: test_compare.py (alignment, coverage matches, flag writes Review and zero findings). Full gates: backend 336 passed/3 skipped, frontend lint 0, vitest 47/47, build green.
+- Browser-verified: sign-in -> upload variant DPA -> compare vs Master DPA (2 of 2 shared clauses differ) -> flag recorded -> coverage roll-up renders. DB reset pristine afterwards.
+- Scoped honestly: cross-document *impact* (contract v2 staling v1 findings, Phase 5.4 in the plan) not built — findings are claim-scoped to clauses, and the compare/flag/coverage slice covers the review workflow without touching the memory invariants.
+- Credit spend: one live txt extraction during browser verification (cents).
+- Ready for human commit: yes — suggested message: `Phase 5: document comparison + coverage roll-up (contract v21)`
+
+## [Phase 6: production hardening] DONE · 2026-11-04 IST
+- Upload safety: modules/intake/safety.py — decoded-size limits (10MB docs, 10MB media) + malware-scan hook (EICAR canary rejected as UPLOAD_REJECTED 400; unknown scanner engines fail closed) wired into upload/scan/dictation/transcribe endpoints.
+- Extraction quality: per-page confidence (text>=200 chars high; vision/thin = low) stored on job pages + served by the pages endpoint (legacy results default by source); "Check this page" warn badges in Clauses page origins + Upload panel. Mixed-pdf assertions updated for the additive field.
+- Rate limiting: optional per-client write ceiling via CT_RATE_LIMIT_PER_MIN (default off; 429 RATE_LIMITED), tested.
+- Audit export: GET /api/matters/{id}/audit-export + Admin "Export audit" download button. Contract [CONTRACT v21 -> v22] additive (incl. DocumentPage.confidence).
+- Eval gate: scripts/run_evals.py added as a CI step after check-backend (replay: verdict agreement 1.0, premise violations 0, gate passed locally).
+- Backup: scripts/backup_demo.sh — SQLite copy or pg_dump (SQLAlchemy-URL normalized; compose-exec fallback), optional --cassettes tar; verified both paths, restore documented in the script header.
+- Tests: test_hardening.py (EICAR 400, size unit, rate-limit 429, export shape). Full gates: backend 341 passed/3 skipped, frontend lint 0, vitest 47/47, build green. Docker verified: EICAR upload rejected live, audit export returns rows.
+- Scoped honestly: malware scanning is a signature canary + hook seam (no ClamAV in the image); encryption-at-rest remains the platform's volume concern (documented restore path), not app-level crypto.
+- Credit spend: none (eval gate is replay).
+- Ready for human commit: yes — suggested message: `Phase 6: upload safety, page confidence, rate limit, audit export, eval CI gate, backups (contract v22)`
+
+## [Docs refresh across the repo] DONE · 2026-11-04 IST
+- Task: user asked to update all docs/.md incl. human log + architecture. Updated: README (hybrid data, FalkorDB-first graph, RAG retrieval, new capabilities, docker compose + split hosting, counts 341/47, contract v22), PROGRESS (2026-11-04 current-status entry), NOTICE (s.4 table: DPDP expansion + IT Act + Copyright Act ingestions from the India Code mirror), NEW_WORK (product-phase components), docs/ARCHITECTURE (hybrid DB + FalkorDB stack rows, security incl. upload safety/rate limit, deployment rewrite, new s.4b product components), docs/DATA_MODEL_API (s.7b product additions: matter_members, structured fact kinds, all v16-v22 endpoints, DocumentPage.confidence), docs/TASKS (product phases appendix), docs/DEMO_AND_SUBMISSION (s.10 product deployment), docs/logs/HUMAN_LOG (owner summary row), context.md (dated addendum; 2026-11-02 history untouched). AGENTS.md/PLAN.md/PROMPT.md left as-is (process docs); README model table + video line untouched for the owner.
+- Checks: consistency grep — no stale contract/count claims remain outside dated historical sections.
+- Credit spend: none.

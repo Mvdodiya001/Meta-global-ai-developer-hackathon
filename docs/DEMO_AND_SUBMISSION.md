@@ -82,3 +82,10 @@ Be critical, not agreeable.
 
 ## 9. Disclaimer (banner text, every screen)
 "ClauseTrace shows whether a claim follows from accepted premises and the stated source versions. It does not assert that the law or the premises are true, and it is not legal advice. A qualified lawyer must review all findings. Demo data is fictional; simulated amendments are labelled."
+
+## 10. Product deployment (2026-11-04)
+- One command on the demo server: `PGPASSWORD=<pw> docker compose up --build -d` (API + Postgres + FalkorDB, auto-seeded). The dependency map should read "Live graph: FalkorDB".
+- Frontend can split to Vercel: set `VITE_API_BASE` to the API origin and `CT_CORS_ORIGINS` to the app origin; the API must be HTTPS (Caddy or a tunnel). Live dictation needs `wss://`, which both handle.
+- `DEMO_MODE` stays off by default; scripted demo helpers (`/api/demo/reset`, scenarios) are opt-in with `DEMO_MODE=1`. `make reset-demo` reseeds whichever database `CLAUSETRACE_DB_URL` selects.
+- Backup before the demo: `sh scripts/backup_demo.sh --cassettes`.
+

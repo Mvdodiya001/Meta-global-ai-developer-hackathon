@@ -21,6 +21,8 @@ jobs:
           .venv/bin/pip install -e ".[dev,prod]"
       - name: Check backend
         run: make check-backend
+      - name: Eval gate (replay, no live spend)
+        run: cd backend && .venv/bin/python ../scripts/run_evals.py
 
   frontend:
     runs-on: ubuntu-latest
