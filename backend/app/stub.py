@@ -33,6 +33,18 @@ def demo_forbidden() -> JSONResponse:
 router = APIRouter()
 
 
+@router.get("/api/matters", response_model=schemas.MatterList)
+def list_matters() -> Any:
+    """Matter list stub (Phase 0)."""
+    return example("matters")
+
+
+@router.post("/api/matters", response_model=schemas.MatterSummary)
+def create_matter(payload: dict[str, Any] | None = None) -> Any:
+    """Create-matter stub (Phase 0)."""
+    return example("matter_created")
+
+
 @router.get("/api/matters/{id}", response_model=schemas.Matter)
 def get_matter(id: str) -> Any:
     """Matter plus context panel (F18)."""
@@ -49,6 +61,18 @@ def list_documents(id: str) -> Any:
 def list_clauses(id: str) -> Any:
     """Stub: clause list example (T0.7)."""
     return example("clauses")
+
+
+@router.post("/api/documents/{id}/explain", response_model=schemas.ExplainResult)
+def explain_document(id: str, payload: dict[str, Any] | None = None) -> Any:
+    """Explanation-generation stub (Phase 4)."""
+    return example("explain_result")
+
+
+@router.post("/api/documents/{id}/summarize", response_model=schemas.SummaryResult)
+def summarize_document(id: str, payload: dict[str, Any] | None = None) -> Any:
+    """Document-summary stub (Phase 4)."""
+    return example("summary_result")
 
 
 @router.post("/api/documents/{id}/extract", response_model=schemas.ExtractResult)
@@ -133,6 +157,66 @@ def list_sources() -> Any:
 def list_source_versions(id: str) -> Any:
     """Version registry stub (F1)."""
     return example("source_versions")
+
+
+@router.get("/api/source-versions/{id}/provisions", response_model=schemas.ProvisionList)
+def list_provisions(id: str) -> Any:
+    """Provision list stub (Phase 2a)."""
+    return example("provisions")
+
+
+@router.get("/api/matters/{id}/audit-export", response_model=schemas.AuditExport)
+def audit_export(id: str) -> Any:
+    """Audit export stub (Phase 6)."""
+    return example("audit_export")
+
+
+@router.get("/api/matters/{id}/compare", response_model=schemas.CompareReport)
+def compare_documents(id: str, a: str = "", b: str = "") -> Any:
+    """Document comparison stub (Phase 5)."""
+    return example("compare_report")
+
+
+@router.post("/api/matters/{id}/compare/flag", response_model=schemas.FlagResult)
+def flag_clause_pair(id: str, payload: dict[str, Any] | None = None) -> Any:
+    """Compare-flag stub (Phase 5)."""
+    return example("flag_result")
+
+
+@router.get("/api/documents/{id}/coverage", response_model=schemas.CoverageReport)
+def document_coverage(id: str) -> Any:
+    """Coverage roll-up stub (Phase 5)."""
+    return example("coverage_report")
+
+
+@router.get("/api/provisions/search", response_model=schemas.ProvisionSearchResult)
+def search_provisions(q: str = "") -> Any:
+    """Provision retrieval stub (Phase 3)."""
+    return example("provision_search")
+
+
+@router.get("/api/rule-cards/drafts", response_model=schemas.RuleCardDraftList)
+def list_card_drafts() -> Any:
+    """Card draft queue stub (Phase 2a)."""
+    return example("rule_card_drafts")
+
+
+@router.post("/api/rule-cards/draft", response_model=schemas.RuleCardSummary)
+def draft_card(payload: dict[str, Any] | None = None) -> Any:
+    """Draft-a-card stub (Phase 2a)."""
+    return example("rule_card")
+
+
+@router.post("/api/rule-cards/{id}/confirm", response_model=schemas.RuleCardSummary)
+def confirm_card(id: str, payload: dict[str, Any] | None = None) -> Any:
+    """Confirm-a-card stub (Phase 2a)."""
+    return example("rule_card")
+
+
+@router.post("/api/rule-cards/{id}/reject", response_model=schemas.RuleCardSummary)
+def reject_card(id: str, payload: dict[str, Any] | None = None) -> Any:
+    """Reject-a-card stub (Phase 2a)."""
+    return example("rule_card")
 
 
 @router.get("/api/source-versions/{id}/diff", response_model=schemas.DiffResult)

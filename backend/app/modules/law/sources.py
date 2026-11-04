@@ -55,7 +55,11 @@ def ingest_version(
     """Store one hashed version plus provisions; identical content is a no-op (T1.2)."""
     if session.get(models.Source, spec["source_id"]) is None:
         raise SourceUnavailable(f"unknown source: {spec['source_id']}")
-    raw_text = "\n\n".join(texts[item["file"]] for item in spec["provisions"])
+    # Canonical key order: the digest must not depend on the caller's
+    # provision ordering (manifest vs diff round-trip), or re-ingesting
+    # identical content would mint a duplicate version.
+    ordered = sorted(spec["provisions"], key=lambda item: item["key"])
+    raw_text = "\n\n".join(texts[item["file"]] for item in ordered)
     digest = sha256_text(raw_text)
     existing = session.execute(
         sa.select(models.SourceVersion).where(

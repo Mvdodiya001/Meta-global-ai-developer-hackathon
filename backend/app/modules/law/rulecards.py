@@ -22,14 +22,18 @@ Every card cites a verbatim span: `provision.text[span_start:span_end]`
 must equal `span_text`, else the card is rejected before anything is written.
 """
 
+import json
+import re
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from app import models
-from app.core.errors import RuleCardError
+from app.core.errors import RuleCardError, SourceUnavailable
 from app.modules.evidence import graph
 
 DEFAULT_CARDS_DIR = Path(__file__).resolve().parents[4] / "corpus" / "rulecards"
@@ -209,3 +213,168 @@ def load_rulecards(
     for card in cards:
         verify_card(session, card)
     return ingest_cards(session, cards)
+
+
+# ---------------------------------------------------------------------------
+# Phase 2a: model-drafted cards + lawyer confirmation queue.
+#
+# Drafts are ai_inferred (like the seeded corpus cards) until a lawyer
+# confirms them; confirmation mints a NEW lawyer_confirmed card and marks
+# the draft superseded — the draft itself is never edited in place.
+# ---------------------------------------------------------------------------
+
+def _new_card_id(prefix: str) -> str:
+    return f"{prefix}-{uuid.uuid4().hex[:12]}"
+
+
+def _draft_prompt(provision: models.Provision) -> dict[str, Any]:
+    """One drafting request for the gateway (Phase 2a)."""
+    return {
+        "input": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": (
+                            "Draft a legal test card for this provision. Reply with JSON only: "
+                            '{"claim_type": "CT2", "requires": ["short_requirement_name"], '
+                            '"interpretation": "one or two plain sentences stating the test", '
+                            '"span_text": "an exact verbatim quote from the provision"}\n\n'
+                            f"Provision {provision.key}:\n{provision.text}"
+                        ),
+                    }
+                ],
+            }
+        ]
+    }
+
+
+def _parse_draft(text: str, provision: models.Provision) -> dict[str, Any]:
+    """Parse model JSON; fall back to a quote-anchored draft (Phase 2a)."""
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        try:
+            data = json.loads(match.group(0))
+            span = str(data.get("span_text", ""))
+            start = provision.text.find(span) if span else -1
+            if start >= 0 and data.get("interpretation"):
+                return {
+                    "claim_type": str(data.get("claim_type", "CT2"))[:24],
+                    "requires": [str(r)[:48] for r in list(data.get("requires", []))[:4]],
+                    "interpretation": str(data["interpretation"])[:600],
+                    "span_start": start,
+                    "span_end": start + len(span),
+                }
+        except (ValueError, TypeError):
+            pass
+    # Fallback (mock mode / unparseable): anchor on the opening text so
+    # the draft is still a faithful, reviewable quote of the provision.
+    span = provision.text[:240]
+    return {
+        "claim_type": "CT2",
+        "requires": [],
+        "interpretation": f"Draft test from the provision text: {span[:280]}",
+        "span_start": 0,
+        "span_end": len(span),
+    }
+
+
+def draft_card(session: Session, provision_id: str) -> models.RuleCard:
+    """Draft one ai_inferred card for a provision; idempotent (Phase 2a)."""
+    from app.agent import llm
+
+    provision = session.get(models.Provision, provision_id)
+    if provision is None:
+        raise SourceUnavailable(f"unknown provision: {provision_id}")
+    existing = session.execute(
+        sa.select(models.RuleCard)
+        .where(
+            models.RuleCard.provision_id == provision_id,
+            models.RuleCard.trust_class == "ai_inferred",
+            models.RuleCard.superseded_by.is_(None),
+        )
+        .order_by(models.RuleCard.created_at.desc())
+    ).scalars().first()
+    if existing is not None:
+        return existing
+    response = llm.call_llm(_draft_prompt(provision), session=session, role="card-draft")
+    draft = _parse_draft(response.text, provision)
+    card = models.RuleCard(
+        id=_new_card_id("RC-DRAFT"),
+        provision_id=provision_id,
+        kind="statutory",
+        claim_type=draft["claim_type"],
+        predicate_json={"requires": draft["requires"]},
+        interpretation_text=draft["interpretation"],
+        span_start=draft["span_start"],
+        span_end=draft["span_end"],
+        trust_class="ai_inferred",
+        approved_by="",
+        created_at=_utcnow(),
+        superseded_by=None,
+    )
+    session.add(card)
+    session.commit()
+    session.refresh(card)
+    session.expunge(card)
+    return card
+
+
+def list_drafts(session: Session) -> list[models.RuleCard]:
+    """Open ai_inferred drafts awaiting lawyer review (Phase 2a)."""
+    return list(
+        session.execute(
+            sa.select(models.RuleCard)
+            .where(
+                models.RuleCard.trust_class == "ai_inferred",
+                models.RuleCard.superseded_by.is_(None),
+            )
+            .order_by(models.RuleCard.created_at)
+        ).scalars().all()
+    )
+
+
+def confirm_card(
+    session: Session,
+    card_id: str,
+    *,
+    reviewer: str = "lawyer",
+    interpretation: str | None = None,
+    claim_type: str | None = None,
+) -> models.RuleCard:
+    """Mint the lawyer_confirmed successor of a draft (Phase 2a)."""
+    old = session.get(models.RuleCard, card_id)
+    if old is None or old.trust_class != "ai_inferred" or old.superseded_by is not None:
+        raise SourceUnavailable(f"unknown draft card: {card_id}")
+    new = models.RuleCard(
+        id=_new_card_id("RC"),
+        provision_id=old.provision_id,
+        kind=old.kind,
+        claim_type=(claim_type or old.claim_type)[:24],
+        predicate_json=old.predicate_json,
+        interpretation_text=(interpretation or old.interpretation_text)[:1200],
+        span_start=old.span_start,
+        span_end=old.span_end,
+        trust_class="lawyer_confirmed",
+        approved_by=reviewer or "lawyer",
+        created_at=_utcnow(),
+        superseded_by=None,
+    )
+    session.add(new)
+    old.superseded_by = str(new.id)
+    session.commit()
+    graph.ensure_card_edges(session)
+    session.commit()
+    session.refresh(new)
+    session.expunge(new)
+    return new
+
+
+def reject_card(session: Session, card_id: str) -> None:
+    """Mark a draft rejected; it leaves the queue (Phase 2a)."""
+    old = session.get(models.RuleCard, card_id)
+    if old is None or old.trust_class != "ai_inferred" or old.superseded_by is not None:
+        raise SourceUnavailable(f"unknown draft card: {card_id}")
+    old.superseded_by = "REJECTED"
+    session.commit()

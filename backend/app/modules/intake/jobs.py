@@ -158,7 +158,27 @@ def extract_and_store(
             }
         )
     session.commit()
-    return {"document_version_id": new_version.id, "clauses": clauses, "facts": facts}
+    # Phase 1: structured understanding (parties/obligations/terms/dates)
+    # as proposed facts. Best-effort: replay misses must not fail a job
+    # whose clauses already extracted cleanly.
+    understanding_counts: dict[str, int] = {}
+    try:
+        from app.modules.intake import understanding
+
+        understanding_counts = understanding.store_understanding(
+            session,
+            matter_id=str(document.matter_id),
+            text=str(version.text),
+            clause_ids_by_ref=clause_ids,
+        )
+    except Exception as exc:  # understanding is additive; clauses stand
+        print(f"warning: understanding skipped for {document_id}: {exc}")
+    return {
+        "document_version_id": new_version.id,
+        "clauses": clauses,
+        "facts": facts,
+        "understanding": understanding_counts,
+    }
 
 
 def _store_text_version(session: Session, document_id: str, text: str) -> str:
@@ -228,7 +248,17 @@ def process_job(session: Session, job_id: str, cache_dir: str | Path) -> models.
                     texts.append(transcribed[page.page])
                 else:
                     texts.append(page.text)
-                pages.append({"page": page.page, "source": page.source})
+                # Phase 6 quality signal: transcribed pages and thin
+                # text layers deserve a lawyer's spot-check.
+                page_text = (
+                    page.text if page.source == "text" else transcribed.get(page.page, "")
+                )
+                confidence = (
+                    "low" if page.source == "vision" or len(page_text) < 200 else "high"
+                )
+                pages.append(
+                    {"page": page.page, "source": page.source, "confidence": confidence}
+                )
             # Page markers preserve document structure for extraction;
             # never quoted (the prompt says so), unlike real text.
             marked = "\n\n".join(
@@ -255,6 +285,7 @@ def process_job(session: Session, job_id: str, cache_dir: str | Path) -> models.
             "document_version_id": stored["document_version_id"],
             "clauses": len(stored["clauses"]),
             "facts": len(stored["facts"]),
+            "understanding": stored.get("understanding", {}),
             "pages": pages,
         },
     )

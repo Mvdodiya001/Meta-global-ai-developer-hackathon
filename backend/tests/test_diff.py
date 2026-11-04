@@ -58,7 +58,7 @@ def test_diff_identical_version_is_empty(tmp_path: Path) -> None:
         assert result.changed_keys == []
         assert result.added_keys == []
         assert result.removed_keys == []
-        assert len(result.unchanged_keys) == 5
+        assert len(result.unchanged_keys) == 18
     finally:
         session.close()
 

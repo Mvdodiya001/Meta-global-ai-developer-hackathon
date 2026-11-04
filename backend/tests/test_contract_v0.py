@@ -45,8 +45,8 @@ def client_post(path: str, body: object) -> httpx.Response:
 
 
 def test_contract_version_is_v1() -> None:
-    """Gate: [CONTRACT v14 → v15] — discovery endpoint that never 404s."""
-    assert load_openapi()["info"]["version"] == "v15"
+    """Gate: [CONTRACT v21 → v22] — production hardening (Phase 6)."""
+    assert load_openapi()["info"]["version"] == "v22"
 
 
 def test_spec_paths_present() -> None:
@@ -54,10 +54,13 @@ def test_spec_paths_present() -> None:
     paths = load_openapi()["paths"]
     for path in [
         "/api/health",
+        "/api/matters",
         "/api/matters/{id}",
         "/api/matters/{id}/documents",
         "/api/documents/{id}/clauses",
         "/api/documents/{id}/extract",
+        "/api/documents/{id}/explain",
+        "/api/documents/{id}/summarize",
         "/api/matters/{id}/facts",
         "/api/facts/{id}/approve",
         "/api/facts/{id}/challenge",
@@ -72,6 +75,16 @@ def test_spec_paths_present() -> None:
         "/api/sources",
         "/api/sources/{id}/versions",
         "/api/source-versions/{id}/diff",
+        "/api/source-versions/{id}/provisions",
+        "/api/provisions/search",
+        "/api/matters/{id}/compare",
+        "/api/matters/{id}/audit-export",
+        "/api/matters/{id}/compare/flag",
+        "/api/documents/{id}/coverage",
+        "/api/rule-cards/drafts",
+        "/api/rule-cards/draft",
+        "/api/rule-cards/{id}/confirm",
+        "/api/rule-cards/{id}/reject",
         "/api/sources/{id}/ingest",
         "/api/impact/{id}",
         "/api/impact/{id}/reverify",
@@ -96,6 +109,7 @@ def test_examples_are_valid_json() -> None:
 
 GET_CASES = [
     ("/api/health", "health.json"),
+    ("/api/matters", "matters.json"),
     ("/api/matters/MAT-01", "matter.json"),
     ("/api/matters/MAT-01/documents", "documents.json"),
     ("/api/documents/DOC-01/clauses", "clauses.json"),
@@ -108,6 +122,12 @@ GET_CASES = [
     ("/api/sources", "sources.json"),
     ("/api/sources/SRC-DPDP-ACT/versions", "source_versions.json"),
     ("/api/source-versions/SV-01/diff?against=SV-02", "diff.json"),
+    ("/api/source-versions/SV-01/provisions", "provisions.json"),
+    ("/api/rule-cards/drafts", "rule_card_drafts.json"),
+    ("/api/provisions/search?q=breach", "provision_search.json"),
+    ("/api/matters/MAT-01/compare?a=DOC-01&b=DOC-02", "compare_report.json"),
+    ("/api/matters/MAT-01/audit-export", "audit_export.json"),
+    ("/api/documents/DOC-01/coverage", "coverage_report.json"),
     ("/api/impact/IMP-01", "impact.json"),
     ("/api/graph?matter_id=MAT-01", "graph.json"),
     ("/api/audit?matter_id=MAT-01", "audit.json"),
@@ -116,7 +136,14 @@ GET_CASES = [
 ]
 
 POST_CASES = [
+    ("/api/matters", {"title": "New DPA review", "client_name": "Beta"}, "matter_created.json"),
+    ("/api/rule-cards/draft", {"provision_id": "PRV-01"}, "rule_card.json"),
+    ("/api/rule-cards/RC-DRAFT-01/confirm", {}, "rule_card.json"),
+    ("/api/rule-cards/RC-DRAFT-01/reject", {}, "rule_card.json"),
+    ("/api/matters/MAT-01/compare/flag", {"clause_ref": "9.2"}, "flag_result.json"),
     ("/api/documents/DOC-01/extract", {}, "extract_result.json"),
+    ("/api/documents/DOC-01/explain", {}, "explain_result.json"),
+    ("/api/documents/DOC-01/summarize", {}, "summary_result.json"),
     ("/api/facts/F-001/approve", {"note": "verified"}, "fact_action.json"),
     ("/api/facts/F-001/challenge", {"note": "check span"}, "fact_action.json"),
     ("/api/facts/F-001/reject", {"note": "wrong clause"}, "fact_action.json"),

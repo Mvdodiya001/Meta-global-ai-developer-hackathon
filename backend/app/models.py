@@ -68,6 +68,19 @@ class MatterContext(Base):
     source_label: Mapped[str] = mapped_column(sa.String, nullable=False)
 
 
+class MatterMember(Base):
+    """One user's membership of a matter (Phase 0: per-matter access)."""
+
+    __tablename__ = "matter_members"
+
+    id: Mapped[str] = mapped_column(sa.String, primary_key=True)
+    matter_id: Mapped[str] = mapped_column(sa.ForeignKey("matters.id"), nullable=False)
+    matter: Mapped["Matter"] = relationship()
+    user_id: Mapped[str] = mapped_column(sa.String, nullable=False)
+    role: Mapped[str] = mapped_column(sa.String, nullable=False, default="lawyer")
+    created_at: Mapped[str] = mapped_column(sa.String, nullable=False)
+
+
 class Source(Base):
     """A legal source in the registry (F1)."""
 

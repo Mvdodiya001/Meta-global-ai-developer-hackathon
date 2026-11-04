@@ -44,7 +44,7 @@ def test_seed_demo_matter_and_clauses(tmp_path: Path) -> None:
         nine_two = [row for row in clauses if row.ref == "9.2"]
         assert len(nine_two) == 1
         assert "outside India" in nine_two[0].text
-        assert len(result["versions"]) == 5
+        assert len(result["versions"]) == 7
         assert len(result["cards"]) == 8
     finally:
         session.close()
@@ -61,9 +61,9 @@ def test_seed_is_idempotent(tmp_path: Path) -> None:
         for entity, want in (
             (models.Matter, 1),
             (models.Clause, 12),
-            (models.SourceVersion, 5),
+            (models.SourceVersion, 7),
             (models.RuleCard, 8),
-            (models.Fact, 13),
+            (models.Fact, 28),  # 13 seeded + 15 understanding (Phase 1)
         ):
             count = conn.execute(
                 sa.select(sa.func.count()).select_from(entity)
@@ -98,7 +98,7 @@ def test_seed_is_deterministic_across_databases(tmp_path: Path) -> None:
         finally:
             session.close()
     assert snapshots[0] == snapshots[1]
-    assert len(snapshots[0]) == 13
+    assert len(snapshots[0]) == 28
 
 
 def test_seed_extracts_doc01_facts_in_replay(tmp_path: Path) -> None:

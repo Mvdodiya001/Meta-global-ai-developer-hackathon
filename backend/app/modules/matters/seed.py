@@ -411,6 +411,21 @@ def seed_demo(
     ensure_demo_92_claim(session)
     fact_count = _seed_extraction_facts(session, corpus_root)
     ensure_rule_card_findings(session)
+    # Phase 1: deterministic (mock-mode) understanding of the seeded DPA —
+    # parties/obligations appear as proposed facts from first boot.
+    try:
+        from app.modules.intake import understanding
+
+        clause_rows = session.execute(sa.select(models.Clause)).scalars().all()
+        understanding.store_understanding(
+            session,
+            matter_id=MATTER_ID,
+            text=(corpus_root / "contracts" / "master_dpa.md").read_text(encoding="utf-8"),
+            clause_ids_by_ref={str(row.ref): str(row.id) for row in clause_rows},
+            mode="mock",
+        )
+    except Exception as exc:  # seed must not fail on understanding
+        print(f"warning: seed understanding skipped: {exc}")
     clause_count = session.execute(
         sa.select(sa.func.count()).select_from(models.Clause)
     ).scalar()

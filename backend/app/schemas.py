@@ -31,6 +31,27 @@ class Matter(BaseModel):
     context: list[MatterContext]
 
 
+class MatterSummary(BaseModel):
+    """One matter in the workspace list (Phase 0)."""
+
+    id: str
+    client_name: str
+    title: str
+
+
+class MatterList(BaseModel):
+    """Matters visible to the caller (Phase 0)."""
+
+    matters: list[MatterSummary]
+
+
+class MatterCreateRequest(BaseModel):
+    """New matter body (Phase 0)."""
+
+    title: str
+    client_name: str
+
+
 class Document(BaseModel):
     """A contract document (F3)."""
 
@@ -76,6 +97,7 @@ class Fact(BaseModel):
     trust_class: str
     trust_label: str = ""
     created_at: str
+    supersedes_id: str | None = None
 
 
 class FactList(BaseModel):
@@ -160,6 +182,7 @@ class DocumentPage(BaseModel):
 
     page: int
     source: str
+    confidence: str = "high"
 
 
 class DocumentPages(BaseModel):
@@ -466,6 +489,133 @@ class SourceVersionList(BaseModel):
     versions: list[SourceVersion]
 
 
+class ComparePair(BaseModel):
+    """One aligned clause pair across two documents (Phase 5)."""
+
+    ref: str
+    a_text: str
+    b_text: str
+    changed: bool
+
+
+class CompareReport(BaseModel):
+    """Clause-level comparison of two documents (Phase 5)."""
+
+    document_a: str
+    document_b: str
+    pairs: list[ComparePair]
+    only_a: list[str]
+    only_b: list[str]
+
+
+class CoverageRow(BaseModel):
+    """One clause with its matched provision + finding state (Phase 5)."""
+
+    clause_id: str
+    ref: str
+    heading: str
+    provision_key: str
+    source_title: str
+    score: float
+    finding_status: str | None = None
+
+
+class CoverageReport(BaseModel):
+    """Contract-vs-law roll-up for one document (Phase 5)."""
+
+    document_id: str
+    rows: list[CoverageRow]
+
+
+class FlagResult(BaseModel):
+    """A clause pair flagged for lawyer review (Phase 5)."""
+
+    flagged: bool
+    clause_ref: str
+
+
+class ProvisionHit(BaseModel):
+    """One ranked provision from retrieval search (Phase 3)."""
+
+    provision_id: str
+    key: str
+    source_id: str
+    source_title: str
+    source_version_id: str
+    version_label: str
+    score: float
+    text: str
+    why: str | None = None
+    reranked: bool = False
+
+
+class ProvisionSearchResult(BaseModel):
+    """Ranked provisions for a query (Phase 3)."""
+
+    query: str
+    hits: list[ProvisionHit]
+
+
+class ExplainResult(BaseModel):
+    """Per-clause explanations generated for one document (Phase 4)."""
+
+    explained: int
+
+
+class SummaryResult(BaseModel):
+    """One suggestion-labelled document summary (Phase 4)."""
+
+    fact_id: str
+    summary: str
+
+
+class ProvisionSummary(BaseModel):
+    """One provision row for pickers (Phase 2a)."""
+
+    id: str
+    key: str
+    source_version_id: str
+
+
+class ProvisionList(BaseModel):
+    """Provisions of one source version (Phase 2a)."""
+
+    provisions: list[ProvisionSummary]
+
+
+class RuleCardSummary(BaseModel):
+    """One rule-card draft or confirmed card (Phase 2a)."""
+
+    id: str
+    provision_id: str
+    provision_key: str
+    claim_type: str
+    interpretation: str
+    span_text: str
+    trust_class: str
+    created_at: str
+
+
+class RuleCardDraftList(BaseModel):
+    """Open ai_inferred drafts awaiting lawyer review (Phase 2a)."""
+
+    drafts: list[RuleCardSummary]
+
+
+class DraftCardRequest(BaseModel):
+    """Draft-a-card body (Phase 2a)."""
+
+    provision_id: str
+
+
+class ConfirmCardRequest(BaseModel):
+    """Confirm-a-card body; edits are optional (Phase 2a)."""
+
+    reviewer: str | None = None
+    interpretation: str | None = None
+    claim_type: str | None = None
+
+
 class Provision(BaseModel):
     """One provision inside a source version (F2)."""
 
@@ -562,6 +712,14 @@ class AuditRow(BaseModel):
 class AuditTrail(BaseModel):
     """Stub: audit rows example (T0.7)."""
 
+    rows: list[AuditRow]
+
+
+class AuditExport(BaseModel):
+    """Downloadable per-matter audit export (Phase 6)."""
+
+    matter_id: str
+    exported_at: str
     rows: list[AuditRow]
 
 

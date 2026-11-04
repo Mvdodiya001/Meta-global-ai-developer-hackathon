@@ -38,9 +38,13 @@ def test_load_corpus_versions_and_provisions(tmp_path: Path) -> None:
         "SV-DPDP-RULES-V1",
         "SV-GSR-843E-V1",
         "SV-DECOY-V1",
+        "SV-IT-ACT-V1",
+        "SV-COPYRIGHT-ACT-V1",
     }
-    assert count_rows(session, models.SourceVersion) == 5
-    assert count_rows(session, models.Provision) == 5 + 5 + 4 + 1 + 1
+    assert count_rows(session, models.SourceVersion) == 7
+    # DPDP Act v1 + simulated v2 (18 each), Rules 4, commencement 1,
+    # decoy 1, IT Act 7, Copyright Act 6.
+    assert count_rows(session, models.Provision) == 18 + 18 + 4 + 1 + 1 + 7 + 6
     session.close()
 
 
@@ -63,8 +67,8 @@ def test_ingest_identical_content_is_idempotent(tmp_path: Path) -> None:
     first = sources.load_corpus(session, RAW_DIR)
     second = sources.load_corpus(session, RAW_DIR)
     assert first == second
-    assert count_rows(session, models.SourceVersion) == 5
-    assert count_rows(session, models.Provision) == 16
+    assert count_rows(session, models.SourceVersion) == 7
+    assert count_rows(session, models.Provision) == 55
     session.close()
 
 

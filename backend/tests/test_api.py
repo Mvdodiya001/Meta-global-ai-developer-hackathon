@@ -778,6 +778,13 @@ def test_graph_and_audit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     audit = get(app, "/api/audit?matter_id=MAT-01").json()["rows"]
     assert [row["event"] for row in audit] == ["fact.approved"]
     assert get(app, "/api/audit").json()["rows"] != []
+    # Node labels name what each node is (clause / section / test reading),
+    # never internal ids, and simulated versions stay out of the map.
+    labels = {node["id"]: node["label"] for node in graph["nodes"]}
+    assert labels["FND-01"].startswith("Clause ")
+    assert "FND-01" not in labels["FND-01"]
+    assert labels["PRV-01"] == "Section 6"
+    assert not any("SIMULATED" in label for label in labels.values())
 
 
 def test_proofs_verify_and_misc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -822,8 +829,8 @@ def test_extract_persists_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     clauses = get(app, "/api/documents/DOC-01/clauses").json()["clauses"]
     assert len(clauses) == 12
     facts = get(app, "/api/matters/MAT-01/facts").json()["facts"]
-    # G8: seed already carries 13 facts (F-LOOP-92 + F-SEED-01..12).
-    assert len(facts) == 25
+     # G8: seed carries 28 facts (13 + 15 Phase-1 understanding items).
+    assert len(facts) == 40
     assert "F-LOOP-92" in {fact["id"] for fact in facts}
 
 

@@ -152,14 +152,18 @@ def test_mixed_pdf_upload_processes_with_per_page_progress(
     assert job.status == "done", job.error
     assert job.result_json is not None
     assert job.result_json["pages"] == [
-        {"page": 1, "source": "text"},
-        {"page": 2, "source": "vision"},
+        {"page": 1, "source": "text", "confidence": "high"},
+        {"page": 2, "source": "vision", "confidence": "low"},
     ]
     session.close()
 
     status = get(app, f"/api/jobs/{job_id}")
     assert status.json()["stage"] == "done"
-    assert status.json()["result"]["pages"][1] == {"page": 2, "source": "vision"}
+    assert status.json()["result"]["pages"][1] == {
+        "page": 2,
+        "source": "vision",
+        "confidence": "low",
+    }
 
     clauses = get(app, f"/api/documents/{document_id}/clauses").json()["clauses"]
     assert len(clauses) == 2
@@ -168,6 +172,6 @@ def test_mixed_pdf_upload_processes_with_per_page_progress(
 
     pages = get(app, f"/api/documents/{document_id}/pages").json()
     assert pages["pages"] == [
-        {"page": 1, "source": "text"},
-        {"page": 2, "source": "vision"},
+        {"page": 1, "source": "text", "confidence": "high"},
+        {"page": 2, "source": "vision", "confidence": "low"},
     ]

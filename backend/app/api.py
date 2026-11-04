@@ -43,6 +43,7 @@ from app.core.errors import (
 from app.db import database_url, get_engine_for_url, init_engine
 from app.modules.intake import jobs as intake_jobs
 from app.modules.intake import pdf as pdf_intake
+from app.modules.intake import safety
 from app.services import counterfactual as counterfactual_service
 from app.services import graph, impact, memory, premises, reverify, seed, sources
 
@@ -106,6 +107,8 @@ def endpoint(fn: Callable[..., Any]) -> Callable[..., Any]:
             if str(exc).startswith("unknown"):
                 return _error(404, "NOT_FOUND", str(exc))
             return _error(400, "DECISION_REJECTED", str(exc))
+        except safety.UploadRejected as exc:
+            return _error(400, "UPLOAD_REJECTED", str(exc))
         except (RuleCardError, ClaimError, ExtractionError, transcribe.TranscribeError) as exc:
             return _error(400, type(exc).__name__, str(exc))
         except ToolError as exc:
@@ -344,6 +347,77 @@ def _require_matter(session: Session, matter_id: str) -> models.Matter:
     return matter
 
 
+def _token_user(session: Session, authorization: str | None) -> Any | None:
+    """User row for a bearer token, or None (Phase 0: optional identity)."""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    from app.modules.identity import auth
+
+    data = auth.decode_token(authorization.removeprefix("Bearer "))
+    if data is None:
+        return None
+    return session.get(models.User, str(data.get("sub")))
+
+
+def _visible_matters(session: Session, user: Any | None) -> list[Any]:
+    """Matters the caller may see: membership-filtered when known (P0)."""
+    query = sa.select(models.Matter).order_by(models.Matter.id)
+    if user is not None:
+        member_ids = session.execute(
+            sa.select(models.MatterMember.matter_id).where(
+                models.MatterMember.user_id == user.id
+            )
+        ).scalars().all()
+        if member_ids:
+            query = query.where(models.Matter.id.in_(member_ids))
+    return list(session.execute(query).scalars().all())
+
+
+@router.get("/api/matters", response_model=schemas.MatterList)
+@endpoint
+async def list_matters(
+    session: Session = Depends(db_session),
+    authorization: str | None = Header(default=None),
+) -> Any:
+    """Matters visible to the caller (Phase 0)."""
+    user = _token_user(session, authorization)
+    return {
+        "matters": [
+            {"id": row.id, "client_name": row.client_name, "title": row.title}
+            for row in _visible_matters(session, user)
+        ]
+    }
+
+
+@router.post("/api/matters", response_model=schemas.MatterSummary, status_code=201)
+@endpoint
+async def create_matter(
+    body: schemas.MatterCreateRequest,
+    session: Session = Depends(db_session),
+    authorization: str | None = Header(default=None),
+) -> Any:
+    """Create a matter; the creator becomes its owner (Phase 0)."""
+    if not body.title.strip() or not body.client_name.strip():
+        raise ValueError("title and client_name are required")
+    user = _token_user(session, authorization)
+    matter_id = _new_id("MAT")
+    session.add(
+        models.Matter(id=matter_id, client_name=body.client_name.strip(), title=body.title.strip())
+    )
+    if user is not None:
+        session.add(
+            models.MatterMember(
+                id=_new_id("MM"),
+                matter_id=matter_id,
+                user_id=str(user.id),
+                role="owner",
+                created_at=_utcnow(),
+            )
+        )
+    session.commit()
+    return {"id": matter_id, "client_name": body.client_name.strip(), "title": body.title.strip()}
+
+
 @router.get("/api/matters/{id}", response_model=schemas.Matter)
 @endpoint
 async def get_matter(id: str, session: Session = Depends(db_session)) -> Any:
@@ -453,6 +527,7 @@ async def list_facts(id: str, session: Session = Depends(db_session)) -> Any:
                 "trust_class": row.trust_class,
                 "trust_label": _trust_label(str(row.trust_class)),
                 "created_at": row.created_at,
+                "supersedes_id": row.supersedes_id,
             }
             for row in rows
         ]
@@ -525,6 +600,36 @@ async def extract_document(
     }
 
 
+@router.post("/api/documents/{id}/explain", response_model=schemas.ExplainResult)
+@endpoint
+async def explain_document(id: str, session: Session = Depends(db_session)) -> Any:
+    """Generate tone-guarded per-clause explanations (Phase 4)."""
+    from app.modules.intake import explanations
+
+    document = session.get(models.Document, id)
+    if document is None:
+        raise SourceUnavailable(f"unknown document: {id}")
+    explained = explanations.store_explanations(
+        session, matter_id=str(document.matter_id), document_id=id
+    )
+    return {"explained": explained}
+
+
+@router.post("/api/documents/{id}/summarize", response_model=schemas.SummaryResult)
+@endpoint
+async def summarize_document(id: str, session: Session = Depends(db_session)) -> Any:
+    """Generate one suggestion-labelled document summary (Phase 4)."""
+    from app.modules.intake import explanations
+
+    document = session.get(models.Document, id)
+    if document is None:
+        raise SourceUnavailable(f"unknown document: {id}")
+    fact = explanations.store_summary(
+        session, matter_id=str(document.matter_id), document_id=id
+    )
+    return {"fact_id": fact.id, "summary": str(fact.statement)}
+
+
 _CLAUSE_REF_RE = re.compile(r"\bclause\s+(\d+(?:\.\d+)?)\b", re.IGNORECASE)
 
 
@@ -579,6 +684,7 @@ async def upload_document(
         raw = base64.b64decode(body.file_base64, validate=True)
     except (binascii.Error, ValueError) as exc:
         raise ValueError("file_base64 is not valid base64") from exc
+    safety.check_upload(raw, what="uploaded file")
     upload_input_b64: str | None = None
     if body.media_type == "application/pdf":
         classified = pdf_intake.classify_pages(raw)
@@ -671,7 +777,12 @@ async def document_pages(id: str, session: Session = Depends(db_session)) -> Any
         raw_pages = job.result_json.get("pages", [])
         if isinstance(raw_pages, list):
             pages = [
-                {"page": item.get("page"), "source": item.get("source")}
+                {
+                    "page": item.get("page"),
+                    "source": item.get("source"),
+                    "confidence": item.get("confidence")
+                    or ("low" if item.get("source") == "vision" else "high"),
+                }
                 for item in raw_pages
                 if isinstance(item, dict)
             ]
@@ -720,6 +831,7 @@ async def scan_page(body: schemas.ScanRequest, session: Session = Depends(db_ses
     _require_matter(session, body.matter_id)
     try:
         image_bytes = base64.b64decode(body.image_base64, validate=True)
+        safety.check_upload(image_bytes, limit=safety.MAX_MEDIA_BYTES, what="scanned page")
     except (binascii.Error, ValueError) as exc:
         raise ValueError("image_base64 is not valid base64") from exc
     result = scan.scan_page(
@@ -797,6 +909,7 @@ async def create_dictation(
         raise SourceUnavailable(f"unknown clause: {body.clause_id}")
     try:
         audio_bytes = base64.b64decode(body.audio_base64, validate=True)
+        safety.check_upload(audio_bytes, limit=safety.MAX_MEDIA_BYTES, what="audio")
     except (binascii.Error, ValueError) as exc:
         raise ValueError("audio_base64 is not valid base64") from exc
     result = transcribe.transcribe_audio(audio_bytes, cache_dir=CASSETTES_DIR, session=session)
@@ -891,6 +1004,26 @@ async def register(body: schemas.RegisterRequest, session: Session = Depends(db_
         )
     except auth.AuthError as exc:
         return _error(400, "AUTH_FAILED", str(exc))
+    # New accounts join the existing workspace matters (Phase 0); matters
+    # created afterwards are creator-only until shared.
+    existing = session.execute(sa.select(models.Matter.id)).scalars().all()
+    joined = session.execute(
+        sa.select(models.MatterMember.matter_id).where(
+            models.MatterMember.user_id == user.id
+        )
+    ).scalars().all()
+    for matter_id in existing:
+        if matter_id not in joined:
+            session.add(
+                models.MatterMember(
+                    id=_new_id("MM"),
+                    matter_id=str(matter_id),
+                    user_id=str(user.id),
+                    role="lawyer",
+                    created_at=_utcnow(),
+                )
+            )
+    session.commit()
     return {
         "token": auth.issue_token(user),
         "email": user.email,
@@ -948,6 +1081,7 @@ async def transcribe_only(
     _require_matter(session, body.matter_id)
     try:
         audio_bytes = base64.b64decode(body.audio_base64, validate=True)
+        safety.check_upload(audio_bytes, limit=safety.MAX_MEDIA_BYTES, what="audio")
     except (binascii.Error, ValueError) as exc:
         raise ValueError("audio_base64 is not valid base64") from exc
     result = transcribe.transcribe_audio(audio_bytes, cache_dir=CASSETTES_DIR, session=session)
@@ -1562,6 +1696,8 @@ async def ingest_source(
                 "until": until if isinstance(until, str) else None,
             }
         )
+    # Canonical key order, matching sources.ingest_version (idempotency).
+    provisions.sort(key=lambda item: str(item["key"]))
     raw_text = "\n\n".join(str(item["text"]) for item in provisions)
     digest = sources.sha256_text(raw_text)
     same = session.execute(
@@ -1617,6 +1753,228 @@ async def ingest_source(
 def _impact_version_id(impact_id: str) -> str:
     """Impact ids are IMP-prefixed version ids (T4.5)."""
     return impact_id[4:] if impact_id.startswith("IMP-") else impact_id
+
+
+def _card_summary(session: Session, card: Any) -> dict[str, Any]:
+    """Lawyer-safe card view with its verbatim span (Phase 2a)."""
+    provision = session.get(models.Provision, card.provision_id)
+    text = str(provision.text) if provision is not None else ""
+    return {
+        "id": card.id,
+        "provision_id": card.provision_id,
+        "provision_key": str(provision.key) if provision is not None else "",
+        "claim_type": card.claim_type,
+        "interpretation": card.interpretation_text,
+        "span_text": text[int(card.span_start):int(card.span_end)],
+        "trust_class": card.trust_class,
+        "created_at": card.created_at,
+    }
+
+
+@router.get("/api/source-versions/{id}/provisions", response_model=schemas.ProvisionList)
+@endpoint
+async def list_provisions(id: str, session: Session = Depends(db_session)) -> Any:
+    """Provisions of one source version, for card drafting (Phase 2a)."""
+    if session.get(models.SourceVersion, id) is None:
+        raise SourceUnavailable(f"unknown source version: {id}")
+    rows = session.execute(
+        sa.select(models.Provision)
+        .where(models.Provision.source_version_id == id)
+        .order_by(models.Provision.id)
+    ).scalars().all()
+    return {
+        "provisions": [
+            {"id": row.id, "key": row.key, "source_version_id": row.source_version_id}
+            for row in rows
+        ]
+    }
+
+
+def _latest_clauses(session: Session, document_id: str) -> list[Any]:
+    """Clauses of a document's latest version, in clause order (Phase 5)."""
+    version = _latest_version(session, document_id)
+    if version is None:
+        return []
+    return list(
+        session.execute(
+            sa.select(models.Clause)
+            .where(models.Clause.document_version_id == version.id)
+            .order_by(models.Clause.id)
+        ).scalars().all()
+    )
+
+
+@router.get("/api/matters/{id}/compare", response_model=schemas.CompareReport)
+@endpoint
+async def compare_documents(
+    id: str, a: str = "", b: str = "", session: Session = Depends(db_session)
+) -> Any:
+    """Align two documents' clauses by reference (Phase 5)."""
+    _require_matter(session, id)
+    for doc_id in (a, b):
+        document = session.get(models.Document, doc_id)
+        if document is None or str(document.matter_id) != id:
+            raise SourceUnavailable(f"unknown document: {doc_id}")
+    clauses_a = {str(row.ref): row for row in _latest_clauses(session, a)}
+    clauses_b = {str(row.ref): row for row in _latest_clauses(session, b)}
+    pairs = []
+    for ref in sorted(set(clauses_a) & set(clauses_b)):
+        a_text, b_text = str(clauses_a[ref].text), str(clauses_b[ref].text)
+        pairs.append(
+            {"ref": ref, "a_text": a_text, "b_text": b_text, "changed": a_text != b_text}
+        )
+    return {
+        "document_a": a,
+        "document_b": b,
+        "pairs": pairs,
+        "only_a": sorted(set(clauses_a) - set(clauses_b)),
+        "only_b": sorted(set(clauses_b) - set(clauses_a)),
+    }
+
+
+@router.post("/api/matters/{id}/compare/flag", response_model=schemas.FlagResult)
+@endpoint
+async def flag_clause_pair(
+    id: str, body: dict[str, Any] | None = None, session: Session = Depends(db_session)
+) -> Any:
+    """Flag one differing clause pair for lawyer review (Phase 5).
+
+    Records a Review row — it never creates a finding: only the memory
+    service can decide a finding's status, via a checked proof.
+    """
+    _require_matter(session, id)
+    clause_ref = str((body or {}).get("clause_ref", "")).strip()
+    if not clause_ref:
+        raise ValueError("clause_ref is required")
+    session.add(
+        models.Review(
+            id=_new_id("RV"),
+            item_type="clause_pair",
+            item_id=clause_ref,
+            reason="Clause wording differs between the compared documents",
+            status="flagged",
+            reviewer="lawyer",
+            note=f"matter {id}",
+            created_at=_utcnow(),
+        )
+    )
+    session.commit()
+    return {"flagged": True, "clause_ref": clause_ref}
+
+
+@router.get("/api/documents/{id}/coverage", response_model=schemas.CoverageReport)
+@endpoint
+async def document_coverage(id: str, session: Session = Depends(db_session)) -> Any:
+    """Per-clause matched provision + latest finding state (Phase 5)."""
+    from app.modules.evidence import retrieval
+
+    document = session.get(models.Document, id)
+    if document is None:
+        raise SourceUnavailable(f"unknown document: {id}")
+    rows = []
+    for clause in _latest_clauses(session, id):
+        hits = retrieval.search_provisions(
+            session, f"{clause.heading} {clause.text}", limit=1
+        )
+        finding = session.execute(
+            sa.select(models.Finding)
+            .join(models.Claim, models.Finding.claim_id == models.Claim.id)
+            .where(models.Claim.clause_id == clause.id)
+            .order_by(models.Finding.created_at.desc())
+        ).scalars().first()
+        hit = hits[0] if hits else None
+        rows.append(
+            {
+                "clause_id": str(clause.id),
+                "ref": str(clause.ref),
+                "heading": str(clause.heading),
+                "provision_key": str(hit["key"]) if hit else "",
+                "source_title": str(hit["source_title"]) if hit else "",
+                "score": float(hit["score"]) if hit else 0.0,
+                "finding_status": (
+                    STATUS_LABELS.get(str(finding.status), str(finding.status))
+                    if finding is not None
+                    else None
+                ),
+            }
+        )
+    return {"document_id": id, "rows": rows}
+
+
+@router.get("/api/provisions/search", response_model=schemas.ProvisionSearchResult)
+@endpoint
+async def search_provisions(
+    q: str = "",
+    source_id: str | None = None,
+    limit: int = 5,
+    rerank: bool = False,
+    session: Session = Depends(db_session),
+) -> Any:
+    """Ranked provisions for any clause or question text (Phase 3).
+
+    `rerank=true` adds the semantic layer: one gateway call re-orders
+    the lexical shortlist by meaning (silent lexical fallback).
+    """
+    from app.modules.evidence import retrieval
+
+    pool = limit * 3 if rerank else limit
+    hits = retrieval.search_provisions(session, q, source_id=source_id, limit=pool)
+    if rerank and hits:
+        from app.modules.evidence import rerank as rerank_module
+
+        hits = rerank_module.rerank_hits(session, q, hits)[:limit]
+    return {"query": q, "hits": [{k: v for k, v in hit.items() if k != "sha256"} for hit in hits]}
+
+
+@router.get("/api/rule-cards/drafts", response_model=schemas.RuleCardDraftList)
+@endpoint
+async def list_card_drafts(session: Session = Depends(db_session)) -> Any:
+    """Open ai_inferred card drafts awaiting lawyer review (Phase 2a)."""
+    from app.services import rulecards
+
+    return {"drafts": [_card_summary(session, card) for card in rulecards.list_drafts(session)]}
+
+
+@router.post("/api/rule-cards/draft", response_model=schemas.RuleCardSummary, status_code=201)
+@endpoint
+async def draft_card(body: schemas.DraftCardRequest, session: Session = Depends(db_session)) -> Any:
+    """Model-draft one ai_inferred card for a provision (Phase 2a)."""
+    from app.services import rulecards
+
+    card = rulecards.draft_card(session, body.provision_id)
+    return _card_summary(session, card)
+
+
+@router.post("/api/rule-cards/{id}/confirm", response_model=schemas.RuleCardSummary)
+@endpoint
+async def confirm_card(
+    id: str, body: schemas.ConfirmCardRequest, session: Session = Depends(db_session)
+) -> Any:
+    """Lawyer-confirm a draft; mints the confirmed successor (Phase 2a)."""
+    from app.services import rulecards
+
+    card = rulecards.confirm_card(
+        session,
+        id,
+        reviewer=body.reviewer or "lawyer",
+        interpretation=body.interpretation,
+        claim_type=body.claim_type,
+    )
+    return _card_summary(session, card)
+
+
+@router.post("/api/rule-cards/{id}/reject", response_model=schemas.RuleCardSummary)
+@endpoint
+async def reject_card(id: str, session: Session = Depends(db_session)) -> Any:
+    """Lawyer-reject a draft; it leaves the queue (Phase 2a)."""
+    from app.services import rulecards
+
+    card = session.get(models.RuleCard, id)
+    if card is None:
+        raise SourceUnavailable(f"unknown draft card: {id}")
+    summary = _card_summary(session, card)
+    rulecards.reject_card(session, id)
+    return summary
 
 
 @router.get("/api/impact/{id}", response_model=schemas.ImpactReport)
@@ -1718,19 +2076,35 @@ async def reverify_impact(
 
 
 def _graph_label(kind: str, row: Any) -> str:
-    """Short human label for a graph node (T4.5)."""
+    """Short human label for a graph node (T4.5).
+
+    Labels name what the node *is* (the clause, the section, the test's
+    reading) — never internal ids or status codes, which the UI would
+    otherwise have to hide behind generic captions.
+    """
     if kind == "finding":
         return f"{row.id} {row.status}"
     if kind == "fact":
         return str(row.statement)[:60]
     if kind == "rule_card":
-        return f"{row.id} {row.claim_type}"
+        return str(row.interpretation_text)[:60]
     if kind == "provision":
-        return str(row.key)
+        key = str(row.key)
+        short = key.rsplit("_", 1)[-1] if "_" in key else key
+        return f"Rule {short[1:]}" if short.startswith("r") and short[1:].isdigit() else short
     if kind == "source_version":
         label = str(row.version_label)
         return f"{label} SIMULATED" if row.is_simulated else label
     return str(row.id)
+
+
+def _finding_graph_label(session: Session, finding: Any) -> str:
+    """Clause-based label for a finding node, e.g. 'Clause 10 — Breach…'."""
+    claim = session.get(models.Claim, finding.claim_id)
+    clause = session.get(models.Clause, claim.clause_id) if claim is not None else None
+    if clause is None:
+        return "Answer"
+    return f"Clause {clause.ref} — {clause.heading}"[:54]
 
 
 @router.get("/api/graph", response_model=schemas.GraphSlice)
@@ -1754,7 +2128,19 @@ async def get_graph(
     def add_node(kind: str, row: Any) -> None:
         node_id = str(row.id)
         if node_id not in nodes:
-            nodes[node_id] = {"id": node_id, "kind": kind, "label": _graph_label(kind, row)}
+            label = (
+                _finding_graph_label(session, row)
+                if kind == "finding"
+                else _graph_label(kind, row)
+            )
+            if kind == "source_version":
+                source = session.get(models.Source, row.source_id)
+                if source is not None:
+                    title = str(source.title).replace(
+                        "The Digital Personal Data Protection Act, 2023", "DPDP Act 2023"
+                    )
+                    label = f"{title} · {row.version_label}"[:54]
+            nodes[node_id] = {"id": node_id, "kind": kind, "label": label}
 
     def add_edge_view(src: str, dst: str, rel: str) -> None:
         if (src, dst, rel) not in seen_edges:
@@ -1787,7 +2173,10 @@ async def get_graph(
                     add_node("provision", provision)
                     add_edge_view(str(card.id), str(provision.id), "DERIVED_FROM")
                     version = session.get(models.SourceVersion, provision.source_version_id)
-                    if version is not None:
+                    # Simulated versions stay out of the dependency map:
+                    # the map shows the recorded law answers rest on,
+                    # not the what-if amendment (still previewable above).
+                    if version is not None and not version.is_simulated:
                         add_node("source_version", version)
                         add_edge_view(str(provision.id), str(version.id), "PART_OF")
     if focus is not None:
@@ -1849,6 +2238,34 @@ def _audit_matches(session: Session, row: models.AuditLog, matter_id: str | None
             if claim is not None and claim.matter_id == matter_id:
                 return True
     return False
+
+
+@router.get("/api/matters/{id}/audit-export", response_model=schemas.AuditExport)
+@endpoint
+async def audit_export(id: str, session: Session = Depends(db_session)) -> Any:
+    """Downloadable audit export for one matter (Phase 6)."""
+    _require_matter(session, id)
+    rows = session.execute(
+        sa.select(models.AuditLog).order_by(models.AuditLog.ts.desc()).limit(1000)
+    ).scalars().all()
+    return {
+        "matter_id": id,
+        "exported_at": _utcnow(),
+        "rows": [
+            {
+                "id": row.id,
+                "ts": row.ts,
+                "actor_type": row.actor_type,
+                "actor_id": row.actor_id,
+                "event": row.event,
+                "object_type": row.object_type,
+                "object_id": row.object_id,
+                "details": dict(row.details_json or {}),
+            }
+            for row in rows
+            if _audit_matches(session, row, id)
+        ],
+    }
 
 
 @router.get("/api/audit", response_model=schemas.AuditTrail)

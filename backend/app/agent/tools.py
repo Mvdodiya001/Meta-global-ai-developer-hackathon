@@ -268,7 +268,39 @@ def _resolve_version(
 def _lookup_source(
     session: Session, matter_id: str, args: dict[str, Any]
 ) -> dict[str, Any]:
-    """Fetch up to 5 provisions of one source version (T2.4)."""
+    """Fetch up to 5 provisions of one source version (T2.4).
+
+    Phase 3: with a `query` arg, retrieval mode ranks provisions across
+    every current source version instead (same tool, extended args).
+    """
+    query = args.get("query")
+    if isinstance(query, str) and query.strip():
+        from app.modules.evidence import retrieval
+
+        hits = retrieval.search_provisions(session, query, limit=MAX_PROVISIONS_PER_LOOKUP)
+        # Semantic re-rank (Phase 3): silent lexical fallback offline.
+        try:
+            from app.modules.evidence import rerank
+
+            hits = rerank.rerank_hits(session, query, hits)
+        except Exception:
+            pass
+        return {
+            "mode": "retrieval",
+            "query": query,
+            "provisions": [
+                {
+                    "provision_id": hit["provision_id"],
+                    "key": hit["key"],
+                    "text": hit["text"],
+                    "sha256": hit["sha256"],
+                    "score": hit["score"],
+                    "source_id": hit["source_id"],
+                }
+                for hit in hits
+            ],
+            "truncated": False,
+        }
     source_id = args.get("source_id")
     if not isinstance(source_id, str):
         raise ToolError("lookup_source needs a source_id", code="bad_args")

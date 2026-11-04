@@ -28,7 +28,7 @@ def create_app() -> FastAPI:
     comma-separated allow-list (or "*" for open demos). Unset = no CORS
     middleware, preserving same-origin/proxy behaviour.
     """
-    app = FastAPI(title="ClauseTrace", version="v15")
+    app = FastAPI(title="ClauseTrace", version="v22")
 
     cors_origins = os.environ.get("CT_CORS_ORIGINS", "")
     if cors_origins:
@@ -38,6 +38,37 @@ def create_app() -> FastAPI:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+    # Phase 6: optional per-client write rate limit. CT_RATE_LIMIT_PER_MIN
+    # unset/0 = off (demo + tests unaffected); production sets a ceiling.
+    rate_limit = int(os.environ.get("CT_RATE_LIMIT_PER_MIN", "0") or "0")
+    if rate_limit > 0:
+        import time as _time
+
+        buckets: dict[str, list[float]] = {}
+
+        @app.middleware("http")
+        async def _rate_limit(request, call_next):  # type: ignore[no-untyped-def]
+            """Reject write bursts beyond the configured ceiling (P6)."""
+            from fastapi.responses import JSONResponse
+
+            if request.method in ("POST", "PUT", "PATCH") and request.url.path.startswith("/api"):
+                key = request.client.host if request.client else "unknown"
+                now = _time.monotonic()
+                bucket = [t for t in buckets.get(key, []) if now - t < 60]
+                if len(bucket) >= rate_limit:
+                    return JSONResponse(
+                        status_code=429,
+                        content={
+                            "error": {
+                                "code": "RATE_LIMITED",
+                                "message": "too many requests; wait a minute and try again",
+                            }
+                        },
+                    )
+                bucket.append(now)
+                buckets[key] = bucket
+            return await call_next(request)
 
     @app.middleware("http")
     async def _auth_gate(request, call_next):  # type: ignore[no-untyped-def]

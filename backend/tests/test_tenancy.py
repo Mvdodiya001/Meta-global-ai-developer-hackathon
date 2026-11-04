@@ -28,7 +28,7 @@ def test_tenant_defaults_and_seed(tmp_path: Path) -> None:
     assert fact is not None and fact.tenant_id == DEMO_TENANT_ID
     scoped = tenant_query(sa.select(models.Fact), models.Fact, DEMO_TENANT_ID)
     rows = session.execute(scoped).scalars().all()
-    assert len(rows) == 13
+    assert len(rows) == 28  # 13 seeded + 15 understanding (Phase 1)
     other = tenant_query(sa.select(models.Fact), models.Fact, "other-tenant")
     assert session.execute(other).scalars().all() == []
     session.close()
