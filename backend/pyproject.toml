@@ -47,10 +47,10 @@ python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 
-# Optional production dependencies (CI installs only `.[dev]`, so these
-# modules may be absent). Code imports them lazily inside functions with
-# `# type: ignore[import-untyped]` for the installed-but-unstubbed case;
-# this override covers the not-installed-at-all case.
+# Optional production dependencies, imported lazily inside functions. CI and
+# `make setup` install `.[dev,prod]`, where they resolve for real (untyped,
+# hence the inline `type: ignore[import-untyped]` comments); this override
+# keeps plain `mypy` runs clean in a dev-only env.
 [[tool.mypy.overrides]]
-module = ["falkordb", "falkordb.*", "pypdf", "pypdf.*"]
+module = ["falkordb", "pypdf"]
 ignore_missing_imports = true

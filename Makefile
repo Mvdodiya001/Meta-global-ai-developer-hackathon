@@ -3,7 +3,7 @@
 # Starter Makefile. Muse Code extends it in T0.4 (backend targets). Human-only: `check`.
 
 setup:
-	cd backend && python3 -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
+	cd backend && python3 -m venv .venv && . .venv/bin/activate && pip install -e ".[dev,prod]"
 	cd frontend && npm install
 
 dev:
