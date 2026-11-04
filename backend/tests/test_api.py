@@ -247,6 +247,28 @@ def test_facts_and_trust_actions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     assert post(app, "/api/facts/NOPE/approve", {}).status_code == 404
 
 
+def test_facts_list_shows_only_current_facts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: after approve/challenge, the superseded row must leave
+    the facts list (it stays in the DB as history) — otherwise the
+    approval queue never shrinks and re-approving the old row 400s."""
+    app = real_app(tmp_path, monkeypatch, seed_compact)
+    approved = post(app, "/api/facts/F-01/approve", {"reviewer": "lawyer"})
+    assert approved.status_code == 200
+    new_id = approved.json()["fact_id"]
+    listed = get(app, "/api/matters/MAT-01/facts").json()["facts"]
+    assert [(fact["id"], fact["trust_class"]) for fact in listed] == [
+        (new_id, "lawyer_confirmed")
+    ]
+    challenged = post(app, f"/api/facts/{new_id}/challenge", {"reason": "doubt"})
+    assert challenged.status_code == 200
+    listed = get(app, "/api/matters/MAT-01/facts").json()["facts"]
+    assert [(fact["id"], fact["trust_class"]) for fact in listed] == [
+        (challenged.json()["fact_id"], "disputed")
+    ]
+
+
 def canned_loop(
     session: Session, **kwargs: Any
 ) -> LoopResult:

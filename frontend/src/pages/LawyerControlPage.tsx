@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { api } from '../api/client'
+import { api, ApiError } from '../api/client'
 import { currentMatterId, lastClaimId, preferredDocumentId } from '../api/demoSession'
 import {
   COMMENCEMENT_DATE,
@@ -93,9 +93,15 @@ export function LawyerControlPage() {
       setReviewedIds((ids) => (ids.includes(factId) ? ids : [...ids, factId]))
       setApproveNotice(null)
       return true
-    } catch {
-      // A second confirm lands on the superseded row server-side.
-      setApproveNotice('Already confirmed')
+    } catch (err) {
+      // A second confirm lands on the superseded row server-side
+      // (DECISION_REJECTED); anything else is a real save failure and
+      // must not be misreported as a confirmation.
+      setApproveNotice(
+        err instanceof ApiError && err.code === 'DECISION_REJECTED'
+          ? 'Already confirmed'
+          : 'That approval could not be saved. Try again.',
+      )
       return false
     }
   }
@@ -129,13 +135,12 @@ export function LawyerControlPage() {
   }
 
   async function handleChallenge(factId: string) {
-    if (!actionsEnabled) {
-      return
-    }
     const action = await api.challengeFact(factId)
     setFacts((current) => applyFactAction(current, action))
-    setRecomputed(true)
     if (baseFinding) {
+      // Only claim the dependents were recomputed when there is an
+      // answer in this session to recompute.
+      setRecomputed(true)
       setDependent(challengedFinding(baseFinding))
     }
   }
@@ -171,8 +176,9 @@ export function LawyerControlPage() {
           <div>
             <p className="text-sm font-semibold">Ask about a clause first</p>
             <p className="mt-0.5 text-sm">
-              The approval queue and validity checks open once there is an answer in this
-              session. Review a clause, then come back.
+              The validity and wording checks below open once there is an answer in this
+              session. Review a clause, then come back. You can approve or challenge facts
+              at any time.
             </p>
           </div>
         </div>
@@ -201,7 +207,6 @@ export function LawyerControlPage() {
       <FactTrustList
         facts={facts}
         reviewedIds={reviewedIds}
-        disabled={!actionsEnabled}
         onApprove={(id) => void handleApprove(id)}
         onChallenge={(id) => void handleChallenge(id)}
       />

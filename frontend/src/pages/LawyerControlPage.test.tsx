@@ -51,11 +51,30 @@ describe('LawyerControlPage', () => {
     renderPage()
     expect(await screen.findByRole('heading', { name: /Your control room/i })).toBeInTheDocument()
     expect(await screen.findByText(/Ask about a clause first/i)).toBeInTheDocument()
+    // Claim-dependent checks stay gated, but fact approval is standalone
+    // governance: it must work without an answer in this session.
     const approve = screen.queryAllByRole('button', { name: /^Approve$/i })
+    expect(approve.length).toBeGreaterThan(0)
     for (const button of approve) {
-      expect(button).toBeDisabled()
+      expect(button).toBeEnabled()
+    }
+    const challenge = screen.queryAllByRole('button', { name: /^Challenge$/i })
+    for (const button of challenge) {
+      expect(button).toBeEnabled()
     }
     expect(screen.getByRole('button', { name: /^Re-check$/i })).toBeDisabled()
+  })
+
+  it('approves a fact without any claim in the session', async () => {
+    clearClaimId()
+    renderPage()
+    const item = await screen.findByRole('listitem', {
+      name: /Clause 9.2 permits transfer of order data outside India/i,
+    })
+    fireEvent.click(within(item).getByRole('button', { name: /^Approve$/i }))
+    await waitFor(() => {
+      expect(item).toHaveTextContent('Confirmed by you')
+    })
   })
 
   describe('after Screen 1 has a claim', () => {

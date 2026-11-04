@@ -508,11 +508,20 @@ async def list_clauses(id: str, session: Session = Depends(db_session)) -> Any:
 @router.get("/api/matters/{id}/facts", response_model=schemas.FactList)
 @endpoint
 async def list_facts(id: str, session: Session = Depends(db_session)) -> Any:
-    """Facts with trust classes (F8)."""
+    """Current facts with trust classes (F8).
+
+    Superseded rows stay in the append-only table as history, but the
+    list is a current-state view: a row another fact supersedes is not
+    current (same rule as premises._current_fact), so approved or
+    challenged facts leave the approval queue instead of re-appearing.
+    """
     _require_matter(session, id)
+    superseded_ids = sa.select(models.Fact.supersedes_id).where(
+        models.Fact.supersedes_id.is_not(None)
+    )
     rows = session.execute(
         sa.select(models.Fact)
-        .where(models.Fact.matter_id == id)
+        .where(models.Fact.matter_id == id, models.Fact.id.not_in(superseded_ids))
         .order_by(models.Fact.id)
     ).scalars().all()
     return {
