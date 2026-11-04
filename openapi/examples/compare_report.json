@@ -1,0 +1,1 @@
+{"document_a": "DOC-01", "document_b": "DOC-02", "pairs": [{"ref": "9.2", "a_text": "Nimbus shall keep transfer logs for review.", "b_text": "Nimbus shall keep transfer logs for three years.", "changed": true}], "only_a": ["10"], "only_b": ["11"]}

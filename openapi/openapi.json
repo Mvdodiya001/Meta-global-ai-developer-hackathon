@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "ClauseTrace",
-    "version": "v15"
+    "version": "v22"
   },
   "paths": {
     "/api/health": {
@@ -59,6 +59,108 @@
                   },
                   "type": "object",
                   "title": "Response Root  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/matters": {
+      "get": {
+        "summary": "List Matters",
+        "description": "Matters visible to the caller (Phase 0).",
+        "operationId": "list_matters_api_matters_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Matter",
+        "description": "Create a matter; the creator becomes its owner (Phase 0).",
+        "operationId": "create_matter_api_matters_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatterCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -438,6 +540,86 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExtractResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/explain": {
+      "post": {
+        "summary": "Explain Document",
+        "description": "Generate tone-guarded per-clause explanations (Phase 4).",
+        "operationId": "explain_document_api_documents__id__explain_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplainResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/summarize": {
+      "post": {
+        "summary": "Summarize Document",
+        "description": "Generate one suggestion-labelled document summary (Phase 4).",
+        "operationId": "summarize_document_api_documents__id__summarize_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResult"
                 }
               }
             }
@@ -1428,6 +1610,429 @@
         }
       }
     },
+    "/api/source-versions/{id}/provisions": {
+      "get": {
+        "summary": "List Provisions",
+        "description": "Provisions of one source version, for card drafting (Phase 2a).",
+        "operationId": "list_provisions_api_source_versions__id__provisions_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisionList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/matters/{id}/compare": {
+      "get": {
+        "summary": "Compare Documents",
+        "description": "Align two documents' clauses by reference (Phase 5).",
+        "operationId": "compare_documents_api_matters__id__compare_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "a",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "A"
+            }
+          },
+          {
+            "name": "b",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "B"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/matters/{id}/compare/flag": {
+      "post": {
+        "summary": "Flag Clause Pair",
+        "description": "Flag one differing clause pair for lawyer review (Phase 5).\n\nRecords a Review row \u2014 it never creates a finding: only the memory\nservice can decide a finding's status, via a checked proof.",
+        "operationId": "flag_clause_pair_api_matters__id__compare_flag_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/coverage": {
+      "get": {
+        "summary": "Document Coverage",
+        "description": "Per-clause matched provision + latest finding state (Phase 5).",
+        "operationId": "document_coverage_api_documents__id__coverage_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/provisions/search": {
+      "get": {
+        "summary": "Search Provisions",
+        "description": "Ranked provisions for any clause or question text (Phase 3).\n\n`rerank=true` adds the semantic layer: one gateway call re-orders\nthe lexical shortlist by meaning (silent lexical fallback).",
+        "operationId": "search_provisions_api_provisions_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "rerank",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Rerank"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisionSearchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rule-cards/drafts": {
+      "get": {
+        "summary": "List Card Drafts",
+        "description": "Open ai_inferred card drafts awaiting lawyer review (Phase 2a).",
+        "operationId": "list_card_drafts_api_rule_cards_drafts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleCardDraftList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rule-cards/draft": {
+      "post": {
+        "summary": "Draft Card",
+        "description": "Model-draft one ai_inferred card for a provision (Phase 2a).",
+        "operationId": "draft_card_api_rule_cards_draft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftCardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleCardSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rule-cards/{id}/confirm": {
+      "post": {
+        "summary": "Confirm Card",
+        "description": "Lawyer-confirm a draft; mints the confirmed successor (Phase 2a).",
+        "operationId": "confirm_card_api_rule_cards__id__confirm_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmCardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleCardSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rule-cards/{id}/reject": {
+      "post": {
+        "summary": "Reject Card",
+        "description": "Lawyer-reject a draft; it leaves the queue (Phase 2a).",
+        "operationId": "reject_card_api_rule_cards__id__reject_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleCardSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/impact/{id}": {
       "get": {
         "summary": "Get Impact",
@@ -1571,6 +2176,46 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GraphSlice"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/matters/{id}/audit-export": {
+      "get": {
+        "summary": "Audit Export",
+        "description": "Downloadable audit export for one matter (Phase 6).",
+        "operationId": "audit_export_api_matters__id__audit_export_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditExport"
                 }
               }
             }
@@ -1958,6 +2603,33 @@
         "title": "AffectedFinding",
         "description": "One finding flagged by the impact engine (F11)."
       },
+      "AuditExport": {
+        "properties": {
+          "matter_id": {
+            "type": "string",
+            "title": "Matter Id"
+          },
+          "exported_at": {
+            "type": "string",
+            "title": "Exported At"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/AuditRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matter_id",
+          "exported_at",
+          "rows"
+        ],
+        "title": "AuditExport",
+        "description": "Downloadable per-matter audit export (Phase 6)."
+      },
       "AuditRow": {
         "properties": {
           "id": {
@@ -2268,6 +2940,118 @@
         "title": "ClauseUpdateRequest",
         "description": "Edited wording for one clause (stored as a new version)."
       },
+      "ComparePair": {
+        "properties": {
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "a_text": {
+            "type": "string",
+            "title": "A Text"
+          },
+          "b_text": {
+            "type": "string",
+            "title": "B Text"
+          },
+          "changed": {
+            "type": "boolean",
+            "title": "Changed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "a_text",
+          "b_text",
+          "changed"
+        ],
+        "title": "ComparePair",
+        "description": "One aligned clause pair across two documents (Phase 5)."
+      },
+      "CompareReport": {
+        "properties": {
+          "document_a": {
+            "type": "string",
+            "title": "Document A"
+          },
+          "document_b": {
+            "type": "string",
+            "title": "Document B"
+          },
+          "pairs": {
+            "items": {
+              "$ref": "#/components/schemas/ComparePair"
+            },
+            "type": "array",
+            "title": "Pairs"
+          },
+          "only_a": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Only A"
+          },
+          "only_b": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Only B"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_a",
+          "document_b",
+          "pairs",
+          "only_a",
+          "only_b"
+        ],
+        "title": "CompareReport",
+        "description": "Clause-level comparison of two documents (Phase 5)."
+      },
+      "ConfirmCardRequest": {
+        "properties": {
+          "reviewer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer"
+          },
+          "interpretation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interpretation"
+          },
+          "claim_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Type"
+          }
+        },
+        "type": "object",
+        "title": "ConfirmCardRequest",
+        "description": "Confirm-a-card body; edits are optional (Phase 2a)."
+      },
       "CounterfactualAffected": {
         "properties": {
           "finding_id": {
@@ -2372,6 +3156,78 @@
         ],
         "title": "CounterfactualResult",
         "description": "Read-only what-if traversal (F19, stretch T7.3)."
+      },
+      "CoverageReport": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "rows"
+        ],
+        "title": "CoverageReport",
+        "description": "Contract-vs-law roll-up for one document (Phase 5)."
+      },
+      "CoverageRow": {
+        "properties": {
+          "clause_id": {
+            "type": "string",
+            "title": "Clause Id"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "heading": {
+            "type": "string",
+            "title": "Heading"
+          },
+          "provision_key": {
+            "type": "string",
+            "title": "Provision Key"
+          },
+          "source_title": {
+            "type": "string",
+            "title": "Source Title"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "finding_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clause_id",
+          "ref",
+          "heading",
+          "provision_key",
+          "source_title",
+          "score"
+        ],
+        "title": "CoverageRow",
+        "description": "One clause with its matched provision + finding state (Phase 5)."
       },
       "DictationRequest": {
         "properties": {
@@ -2525,6 +3381,11 @@
           "source": {
             "type": "string",
             "title": "Source"
+          },
+          "confidence": {
+            "type": "string",
+            "title": "Confidence",
+            "default": "high"
           }
         },
         "type": "object",
@@ -2556,6 +3417,34 @@
         ],
         "title": "DocumentPages",
         "description": "Per-page origins of a document's latest completed intake (P-C)."
+      },
+      "DraftCardRequest": {
+        "properties": {
+          "provision_id": {
+            "type": "string",
+            "title": "Provision Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provision_id"
+        ],
+        "title": "DraftCardRequest",
+        "description": "Draft-a-card body (Phase 2a)."
+      },
+      "ExplainResult": {
+        "properties": {
+          "explained": {
+            "type": "integer",
+            "title": "Explained"
+          }
+        },
+        "type": "object",
+        "required": [
+          "explained"
+        ],
+        "title": "ExplainResult",
+        "description": "Per-clause explanations generated for one document (Phase 4)."
       },
       "ExtractResult": {
         "properties": {
@@ -2628,6 +3517,17 @@
           "created_at": {
             "type": "string",
             "title": "Created At"
+          },
+          "supersedes_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Id"
           }
         },
         "type": "object",
@@ -2965,6 +3865,25 @@
         ],
         "title": "FindingHistory",
         "description": "All finding versions for a claim (F12)."
+      },
+      "FlagResult": {
+        "properties": {
+          "flagged": {
+            "type": "boolean",
+            "title": "Flagged"
+          },
+          "clause_ref": {
+            "type": "string",
+            "title": "Clause Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flagged",
+          "clause_ref"
+        ],
+        "title": "FlagResult",
+        "description": "A clause pair flagged for lawyer review (Phase 5)."
       },
       "GraphEdge": {
         "properties": {
@@ -3353,6 +4272,66 @@
         "title": "MatterContext",
         "description": "Static demo panel row (F18)."
       },
+      "MatterCreateRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "client_name"
+        ],
+        "title": "MatterCreateRequest",
+        "description": "New matter body (Phase 0)."
+      },
+      "MatterList": {
+        "properties": {
+          "matters": {
+            "items": {
+              "$ref": "#/components/schemas/MatterSummary"
+            },
+            "type": "array",
+            "title": "Matters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matters"
+        ],
+        "title": "MatterList",
+        "description": "Matters visible to the caller (Phase 0)."
+      },
+      "MatterSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "client_name",
+          "title"
+        ],
+        "title": "MatterSummary",
+        "description": "One matter in the workspace list (Phase 0)."
+      },
       "ModelInfo": {
         "properties": {
           "id": {
@@ -3716,6 +4695,134 @@
         "title": "Provision",
         "description": "One provision inside a source version (F2)."
       },
+      "ProvisionHit": {
+        "properties": {
+          "provision_id": {
+            "type": "string",
+            "title": "Provision Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "source_title": {
+            "type": "string",
+            "title": "Source Title"
+          },
+          "source_version_id": {
+            "type": "string",
+            "title": "Source Version Id"
+          },
+          "version_label": {
+            "type": "string",
+            "title": "Version Label"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why"
+          },
+          "reranked": {
+            "type": "boolean",
+            "title": "Reranked",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "provision_id",
+          "key",
+          "source_id",
+          "source_title",
+          "source_version_id",
+          "version_label",
+          "score",
+          "text"
+        ],
+        "title": "ProvisionHit",
+        "description": "One ranked provision from retrieval search (Phase 3)."
+      },
+      "ProvisionList": {
+        "properties": {
+          "provisions": {
+            "items": {
+              "$ref": "#/components/schemas/ProvisionSummary"
+            },
+            "type": "array",
+            "title": "Provisions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provisions"
+        ],
+        "title": "ProvisionList",
+        "description": "Provisions of one source version (Phase 2a)."
+      },
+      "ProvisionSearchResult": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/ProvisionHit"
+            },
+            "type": "array",
+            "title": "Hits"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "hits"
+        ],
+        "title": "ProvisionSearchResult",
+        "description": "Ranked provisions for a query (Phase 3)."
+      },
+      "ProvisionSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "source_version_id": {
+            "type": "string",
+            "title": "Source Version Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "source_version_id"
+        ],
+        "title": "ProvisionSummary",
+        "description": "One provision row for pickers (Phase 2a)."
+      },
       "RegisterRequest": {
         "properties": {
           "email": {
@@ -3892,6 +4999,72 @@
         ],
         "title": "ReviewResult",
         "description": "Lawyer review outcome (F16)."
+      },
+      "RuleCardDraftList": {
+        "properties": {
+          "drafts": {
+            "items": {
+              "$ref": "#/components/schemas/RuleCardSummary"
+            },
+            "type": "array",
+            "title": "Drafts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "drafts"
+        ],
+        "title": "RuleCardDraftList",
+        "description": "Open ai_inferred drafts awaiting lawyer review (Phase 2a)."
+      },
+      "RuleCardSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "provision_id": {
+            "type": "string",
+            "title": "Provision Id"
+          },
+          "provision_key": {
+            "type": "string",
+            "title": "Provision Key"
+          },
+          "claim_type": {
+            "type": "string",
+            "title": "Claim Type"
+          },
+          "interpretation": {
+            "type": "string",
+            "title": "Interpretation"
+          },
+          "span_text": {
+            "type": "string",
+            "title": "Span Text"
+          },
+          "trust_class": {
+            "type": "string",
+            "title": "Trust Class"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "provision_id",
+          "provision_key",
+          "claim_type",
+          "interpretation",
+          "span_text",
+          "trust_class",
+          "created_at"
+        ],
+        "title": "RuleCardSummary",
+        "description": "One rule-card draft or confirmed card (Phase 2a)."
       },
       "Run": {
         "properties": {
@@ -4128,6 +5301,25 @@
         ],
         "title": "SourceVersionList",
         "description": "Version registry response (F1)."
+      },
+      "SummaryResult": {
+        "properties": {
+          "fact_id": {
+            "type": "string",
+            "title": "Fact Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fact_id",
+          "summary"
+        ],
+        "title": "SummaryResult",
+        "description": "One suggestion-labelled document summary (Phase 4)."
       },
       "ToolCall": {
         "properties": {

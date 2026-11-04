@@ -1,0 +1,1 @@
+{"matter_id": "MAT-01", "exported_at": "2026-01-01T00:00:00Z", "rows": [{"id": "A-01", "ts": "2026-01-01T00:00:00Z", "actor_type": "lawyer", "actor_id": "counsel@example.com", "event": "fact.approved", "object_type": "fact", "object_id": "F-01", "details": {}}]}
