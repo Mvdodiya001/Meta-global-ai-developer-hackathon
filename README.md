@@ -70,53 +70,108 @@ See [`NEW_WORK.md`](NEW_WORK.md). The public repo started on Day 1 before applic
 
 ## Honest limitations
 
-- One fictional contract (plus a fictional variant for upload testing) and a small official DPDP corpus. No real client or personal data.
-- Rule cards were written by the developer from official text. No lawyer has reviewed them; they stay `ai_inferred`.
+- Demo data is fictional (one seeded contract plus a variant for upload testing). The law corpus is real and official: DPDP Act 2023 (18 provisions), DPDP Rules 2025, IT Act 2000 and Copyright Act 1957 (55 provisions total). No real client or personal data.
+- Seeded rule cards stay `ai_inferred` until a lawyer confirms them in the Control room queue (the model can also draft new ones there). No practising lawyer has reviewed the seeded cards yet.
 - The simulated DPDP Act v2 amendment is labelled SIMULATED.
 - Not legal advice. No compliance certification.
 - Replay mode answers only recorded questions and as-of dates. Anything else needs `LLM_MODE=live` and a Meta API key.
-- Auth/multi-tenant enforcement and the source-approval workflow are designed and schema-ready; the shipped demo runs as a single demo tenant.
+- Multi-matter workspaces with membership ship today; auth enforcement is opt-in (`CT_AUTH_REQUIRED=1`) and needs a login-first route guard before it should become the default. Deep dynamic claim-typing in the agent loop is future work — unverifiable proofs still default to REQUIRES_REVIEW.
 - Open-weights challenger is not wired.
 
-## Run (replay, no API key)
+## Getting started
+
+### Prerequisites
+- **Python 3.12** and **Node 20+** (frontend), or just **Docker** for the one-command stack.
+- `poppler-utils` (`pdftoppm`) for scanned-PDF transcription: `sudo apt install poppler-utils` (Debian/Ubuntu) — already inside the Docker image.
+- No GPU, no paid services. The demo domain data is fictional.
+
+### Do I need an API key?
+**No — not to run, demo, or test.** The default `LLM_MODE=replay` answers from recorded cassettes offline at zero cost.
+
+You need exactly **one key** only for live model calls (new questions, new documents, live dictation):
+
+| Key | What it is | Where to get it | Used for |
+|-----|-----------|---------------|----------|
+| `MODEL_API_KEY` | Meta Model API key (`https://api.meta.ai/v1`) | Your Meta developer account | Muse Spark (proofs, extraction, explanations), Muse Spark challenger, voice transcription |
+
+That is the only secret in the system. Everything else runs keyless.
+
+### Environment (`.env`)
+Copy the template and fill in what you use — every variable is optional except `MODEL_API_KEY` in live mode:
 
 ```bash
-make setup
 cp .env.example .env
-make reset-demo
 ```
 
-Two terminals:
+| Variable | Default | Needed when |
+|----------|---------|-------------|
+| `MODEL_API_KEY` | *(empty)* | Only with `LLM_MODE=live` |
+| `LLM_MODE` | `replay` | `live` = real model calls (spends credit); `mock` = placeholder text |
+| `API_STUB` | `1` | Set `0` for the real API (the Docker stack already does) |
+| `DEMO_MODE` | `0` (off) | `1` only for the scripted demo helpers (`/api/demo/reset`, scenarios) |
+| `CLAUSETRACE_DB_URL` | *(unset → SQLite file)* | Postgres, e.g. `postgresql+psycopg://clausetrace:<pw>@127.0.0.1:5543/clausetrace` |
+| `CLAUSETRACE_DB` | `backend/db.sqlite3` | Custom SQLite path |
+| `POSTGRES_PASSWORD` | *(must set in `.env`)* | Password for `docker compose up` (Postgres + app share it; compose reads all secrets from `.env`) |
+| `CT_GRAPH_HOST` / `CT_GRAPH_PORT` / `CT_GRAPH_PASSWORD` | `127.0.0.1` / `6379` / *(none)* | FalkorDB graph traversal (optional — the app falls back to the record database) |
+| `CT_AUTH_REQUIRED` | `0` | `1` = bearer token required on `/api/*` |
+| `CT_AUTH_SECRET` | dev default | **Must** be set to your own secret outside local dev |
+| `CT_CORS_ORIGINS` | *(unset)* | Split hosting: your frontend origin, e.g. `https://your-app.vercel.app` |
+| `CT_RATE_LIMIT_PER_MIN` | `0` (off) | Per-client write ceiling for production |
+| `CT_TENANT_BUDGET_USD` | *(unset)* | Optional per-tenant model spend cap |
+| `CHALLENGER` | `off` | `on` = second-review pass on every finding (extra model call) |
 
+Frontend-only variables go in `frontend/.env.local`: `VITE_API_BASE` (API origin when not using the Vite proxy) and `VITE_USE_MOCKS=1` (fixture mode for UI-only work).
+
+### Option A — Docker (one command, recommended)
 ```bash
-# API — contract v22, replay
-cd backend && set -a; [ -f ../.env ] && . ../.env; set +a
-API_STUB=0 LLM_MODE=replay CHALLENGER=on \
-  .venv/bin/uvicorn app.main:app --port 8000 --reload
+cp .env.example .env          # defaults work; add MODEL_API_KEY only for live mode
+Set POSTGRES_PASSWORD in .env, then docker compose up --build -d
+curl http://127.0.0.1:8000/api/health     # {"status":"ok"}
+```
+Starts the API (:8000), Postgres (127.0.0.1:5543) and FalkorDB (127.0.0.1:6380), and seeds the demo database on first boot. Then run the UI: `cd frontend && npm install && npm run dev` → http://localhost:5173.
 
-cd frontend && npm run dev
+### Option B — Local processes (development)
+```bash
+make setup                    # backend .venv with all deps + frontend packages
+cp .env.example .env
+make reset-demo               # seed the demo database (~1s)
+```
+Two terminals:
+```bash
+# API (contract v22). API_STUB=0 = real router; leave LLM_MODE=replay for offline.
+cd backend && set -a; [ -f ../.env ] && . ../.env; set +a
+API_STUB=0 .venv/bin/uvicorn app.main:app --port 8000 --reload
+
+# UI
+cd frontend && npm run dev    # http://localhost:5173 (proxies /api to :8000)
 ```
 
-You do **not** need `DEMO_MODE=1` for the app itself. That flag only enables
-the scripted-demo helpers (`POST /api/demo/reset`, `POST /api/demo/scenario/*`).
-Asking, law changes, approvals, scans, dictation, clause updates, and sign-in
-all work without it. Sign-in is at `/signin`; account enforcement across the
-API is opt-in with `CT_AUTH_REQUIRED=1` (off for the demo).
+### Going live (real model calls)
+Set in `.env`, then restart the API (or `docker compose up -d`):
+```bash
+MODEL_API_KEY=<your-meta-model-api-key>
+LLM_MODE=live
+```
+Recorded questions still answer instantly from cassettes; anything new calls the model (~$0.002 per question at current pricing; lifetime project spend so far ≈ $1 of the $150 budget). Tests never use live.
 
-- UI: http://localhost:5173 · API: http://localhost:8000
-- Vite proxies `/api` to `http://127.0.0.1:8000`.
-- Always `make reset-demo` before a demo or `make record`. Approving a fact mints new rows and breaks cassette hashes.
-- Screen 1 default question: `Does clause 9.2 require Nimbus to keep transfer logs?` Recorded as-of dates: **2026-11-20** (default) and **2025-10-17**.
-- Run Screen 1 before Screen 3 (lawyer control uses that `claim_id`).
-- UNKNOWN-typed questions store UNKNOWN without drafting a proof. If the challenger cassette is missing, the finding is kept as REQUIRES_REVIEW (not a 502).
-- Backend image: `docker build -f backend/Dockerfile -t clausetrace-backend .`
-- Full stack (API + Postgres + FalkorDB): `PGPASSWORD=<pw> docker compose up --build -d` (API on :8000, Postgres on 127.0.0.1:5543, FalkorDB on 127.0.0.1:6380).
-- Split hosting (Vercel frontend + own server): set `VITE_API_BASE` to the API origin, set `CT_CORS_ORIGINS` to the app origin, and serve the API over HTTPS (Caddy or a tunnel).
-- Unit tests still use `openapi/examples` mocks (`MODE=test` or `VITE_USE_MOCKS=1`).
-- Upload a document from the Your matters page (PDF, DOCX, or text). Text pages are read directly; scanned pages are transcribed and labelled per page so you can spot-check them on the clause page before relying on answers.
-- Sign in from the nav. Dictate a fact on the Dictate page (microphone → transcript → save as proposed → confirm) or dictate new clause wording on the clause page; saving writes a new version and never edits history.
+### Seed, reset, backup
+```bash
+make seed          # fill an empty database
+make reset-demo    # wipe + reseed (follows CLAUSETRACE_DB_URL: SQLite file or Postgres)
+sh scripts/backup_demo.sh --cassettes   # timestamped backup under backups/
+```
+Always `make reset-demo` before a demo or `make record`. Approving a fact mints new rows and changes replay hashes until the next reset.
 
-Live model calls: set `MODEL_API_KEY` in `.env`, `LLM_MODE=live`. Tests never use live.
+### Deploy (split hosting)
+- **Backend** on your server: the Docker stack above, behind HTTPS (Caddy reverse-proxy or a tunnel — browsers block an HTTPS page calling an HTTP API, and live dictation needs `wss://`).
+- **Frontend** on Vercel: import the repo, set root directory `frontend`, set `VITE_API_BASE=https://<your-api-domain>`, and set `CT_CORS_ORIGINS=https://<your-app>.vercel.app` on the backend.
+
+### Good to know
+- You do **not** need `DEMO_MODE=1` for the app itself; asking, law changes, approvals, scans, dictation, clause updates, comparison and sign-in all work without it.
+- Sign-in is at `/signin`. Create an account there first when `CT_AUTH_REQUIRED=1` (the compose stack enforces it if you set it).
+- Default demo question: `Does clause 9.2 require Nimbus to keep transfer logs?` (as-of **2026-11-20**; also recorded: 2025-10-17). Run Review a clause before the Control room (it uses that session's claim).
+- Upload a document from Your matters (PDF, DOCX, or text). After an upload, every screen works on that document. Text pages are read directly; scanned pages are transcribed and flagged "Check this page" so you can spot-check them before relying on answers.
+- Dictate a fact on the Dictate page (microphone → transcript → save as proposed → confirm); toggle **Transcribe live** for streaming interim text. Saving clause wording always writes a new version — history is never edited.
 
 ## Checks
 

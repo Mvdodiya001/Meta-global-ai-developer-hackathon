@@ -1,10 +1,13 @@
 # ClauseTrace full backend stack: API + Postgres + FalkorDB.
 # One server is enough (demo traffic; ~500MB idle here, caps below).
-# Usage:
-#   PGPASSWORD=<strong-pw> docker compose up --build -d
+#
+# ALL secrets and runtime settings come from .env (gitignored) — this
+# file contains no passwords or keys and is safe to commit.
+#   cp .env.example .env   # then fill MODEL_API_KEY + POSTGRES_PASSWORD
+#   docker compose up --build -d
 #   curl http://127.0.0.1:8000/api/health
 # The API seeds the demo database on first boot automatically.
-# Postgres is published on 5433 and FalkorDB on 6380 to avoid clashing
+# Postgres is published on 5543 and FalkorDB on 6380 to avoid clashing
 # with existing host services; the API talks to both over the
 # internal network.
 
@@ -15,18 +18,16 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      API_STUB: 0
-      LLM_MODE: ${LLM_MODE:-replay}
-      MODEL_API_KEY: ${MODEL_API_KEY:-}
-      DEMO_MODE: 0
-      CHALLENGER: ${CHALLENGER:-on}
-      CHALLENGER_PROVIDER: meta
-      CLAUSETRACE_DB_URL: postgresql+psycopg://clausetrace:${PGPASSWORD:-clausetrace_pw}@postgres:5432/clausetrace
+      # Only wiring that differs inside the compose network; every
+      # secret/setting (MODEL_API_KEY, LLM_MODE, DEMO_MODE, CHALLENGER,
+      # API_STUB, CT_*) arrives via env_file above.
+      CLAUSETRACE_DB_URL: postgresql+psycopg://clausetrace:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/clausetrace
       CT_GRAPH_HOST: falkordb
-      CT_GRAPH_PORT: 6379
+      CT_GRAPH_PORT: "6379"
       CT_GRAPH_NAME: clausetrace
-      CT_AUTH_REQUIRED: 1
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,7 +40,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: clausetrace
-      POSTGRES_PASSWORD: ${PGPASSWORD:-clausetrace_pw}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       POSTGRES_DB: clausetrace
     volumes:
       - pgdata:/var/lib/postgresql/data
