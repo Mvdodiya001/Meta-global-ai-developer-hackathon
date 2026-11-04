@@ -49,7 +49,16 @@ export function MattersPage() {
         setMatter(await api.matter(picked))
       }
     } catch {
-      setError('The matter could not be loaded.')
+      // No token yet: the API is auth-enforced, so this is a sign-in
+      // prompt, not a failure.
+      const signedIn =
+        typeof window !== 'undefined' &&
+        Boolean(window.localStorage.getItem('clausetrace.token'))
+      setError(
+        signedIn
+          ? 'The matter could not be loaded.'
+          : 'Sign in to load your matters and upload documents.',
+      )
     } finally {
       setLoading(false)
     }
@@ -68,12 +77,21 @@ export function MattersPage() {
       />
 
       {error ? (
-        <StateMessage tone="danger" live="alert">
-          <p>{error}</p>
-          <Button variant="secondary" size="sm" className="mt-2" onClick={() => void load()}>
-            Try again
-          </Button>
-        </StateMessage>
+        error.startsWith('Sign in') ? (
+          <StateMessage tone="info">
+            <p>{error}</p>
+            <Link to="/signin" className="ct-btn ct-btn--primary ct-btn--sm mt-2">
+              Sign in
+            </Link>
+          </StateMessage>
+        ) : (
+          <StateMessage tone="danger" live="alert">
+            <p>{error}</p>
+            <Button variant="secondary" size="sm" className="mt-2" onClick={() => void load()}>
+              Try again
+            </Button>
+          </StateMessage>
+        )
       ) : null}
 
       {loading && !matter ? (

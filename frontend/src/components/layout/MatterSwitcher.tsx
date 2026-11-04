@@ -49,7 +49,19 @@ export function MatterSwitcher() {
     }
   }
 
-  if (failed || matters.length === 0) {
+  if (failed) {
+    // Auth-enforced API + no token yet: point at sign-in, don't vanish.
+    return (
+      <div className="px-1">
+        <p className="ct-nav-group !px-1">Matter</p>
+        <a href="/signin" className="ct-nav-link">
+          Sign in to see matters
+        </a>
+      </div>
+    )
+  }
+
+  if (matters.length === 0) {
     return null
   }
 
