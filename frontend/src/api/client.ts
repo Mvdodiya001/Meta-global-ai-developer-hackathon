@@ -1,5 +1,6 @@
 import { DEMO_SOURCE_ID, getApiBase, mocksEnabled } from './config'
 import {
+  fetchMockAdminOverview,
   fetchMockAudit,
   fetchMockClauses,
   fetchMockDiff,
@@ -50,6 +51,7 @@ import {
   pollMockRunEvents,
 } from './mocks'
 import type {
+  AdminOverview,
   AuditTrail,
   AuthResult,
   ClaimCreated,
@@ -613,6 +615,10 @@ export const api = {
     mocksEnabled()
       ? fetchMockAuth(body.email, '')
       : postJson<AuthResult>('/api/auth/login', body),
+  adminOverview: (): Promise<AdminOverview> =>
+    mocksEnabled()
+      ? fetchMockAdminOverview()
+      : cachedGetJson<AdminOverview>('/api/admin/overview', 15_000),
   me: (): Promise<AuthResult> =>
     mocksEnabled()
       ? fetchMockAuth('lawyer@example.com', 'Lawyer')

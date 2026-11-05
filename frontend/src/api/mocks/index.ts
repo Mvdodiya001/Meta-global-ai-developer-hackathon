@@ -32,6 +32,7 @@ import type {
   Proof,
   ProofVerifyBody,
   ProofVerifyResult,
+  AdminOverview,
   AuditExport,
   CompareReport,
   CoverageReport,
@@ -314,6 +315,17 @@ export async function fetchMockApproveFact(factId: string): Promise<FactAction> 
     return approveFact(fact)
   }
   return { fact_id: factId, trust_class: 'lawyer_confirmed', supersedes_id: factId }
+}
+
+export async function fetchMockAdminOverview(): Promise<AdminOverview> {
+  return {
+    tenant_id: 'demo',
+    matters: 2,
+    findings_by_status: { FOLLOWS: 3, REQUIRES_REVIEW: 1, UNKNOWN: 1 },
+    facts_by_trust: { lawyer_confirmed: 4, document_extracted: 25, ai_inferred: 36 },
+    spend_usd: 0.42,
+    jobs: { done: 5 },
+  }
 }
 
 export async function fetchMockAuditExport(matterId: string): Promise<AuditExport> {

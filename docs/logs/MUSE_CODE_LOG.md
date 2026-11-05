@@ -1008,3 +1008,9 @@ _(no entries yet)_
 - Repo clean: removed the two stray empty untracked dirs (frontend/src/design/, scripts/logs/); `git clean -nd` now reports nothing. Verified no secrets tracked (only .env.example, with MODEL_API_KEY empty), largest tracked file 180K (session log / demo wav), no build output or DB files tracked. Working tree now shows only README.md modified.
 - Checks: no code touched; Mermaid fences counted (4) and section visually re-read. Credit spend: none.
 - Ready for human commit: yes — suggested message: `README: add architecture diagrams, demo/live links, fresh check numbers`.
+
+## [Admin page unreachable on deployed site] DONE · 2026-11-05 IST
+- Root cause: frontend/src/pages/AdminPage.tsx fetched the overview with a raw relative `fetch('/api/admin/overview')` — no API base, no bearer token. In local dev the Vite proxy masked this; on the split deployment (Vercel + Oracle API) the relative URL returns the SPA index.html, JSON parsing fails, and even a correct URL would 401 (CT_AUTH_REQUIRED=1). Verified live: endpoint returns 200 with a token; the Vercel-relative URL returns HTML.
+- Fix: api.adminOverview() added to frontend/src/api/client.ts (cachedGetJson, 15s TTL; fetchMockAdminOverview added to mocks for test mode), AdminPage now uses it; 401 shows a sign-in prompt instead of the generic load error (same pattern as MattersPage). New AdminPage.test.tsx regression test.
+- Checks: tsc + lint clean, 54/54 frontend tests, build OK. Browser-verified against the production API (local preview build): /admin renders Matters=2, Estimated model spend $0.0219, Answer states=58. Test-only localhost CORS origin added then restored (only the Vercel origin remains on the server).
+- Credit spend: none. Ready for human commit: yes — suggested message: `Fix admin overview fetch (use API client: base URL + auth + cache)`.

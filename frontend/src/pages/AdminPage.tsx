@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 
-import { api } from '../api/client'
+import { Link } from 'react-router-dom'
+
+import { api, ApiError } from '../api/client'
 import { currentMatterId } from '../api/demoSession'
 import type { AdminOverview } from '../api/types'
 import { STATUS_LABELS, TRUST_LABELS } from '../content/glossary'
@@ -54,13 +56,16 @@ export function AdminPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/admin/overview')
-      if (!response.ok) {
-        throw new Error('failed')
-      }
-      setOverview((await response.json()) as AdminOverview)
-    } catch {
-      setError('The internal overview could not be loaded.')
+      // Must go through the API client: it adds the production API base
+      // and the bearer token. A raw relative fetch hits the static host
+      // on split deployments and sends no credentials.
+      setOverview(await api.adminOverview())
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 401
+          ? 'Sign in to load the internal overview.'
+          : 'The internal overview could not be loaded.',
+      )
     } finally {
       setLoading(false)
     }
@@ -79,12 +84,21 @@ export function AdminPage() {
       />
 
       {error ? (
-        <StateMessage tone="danger" live="alert">
-          <p>{error}</p>
-          <Button variant="secondary" size="sm" className="mt-2" onClick={() => void load()}>
-            Try again
-          </Button>
-        </StateMessage>
+        error.startsWith('Sign in') ? (
+          <StateMessage tone="info">
+            <p>{error}</p>
+            <Link to="/signin" className="ct-btn ct-btn--primary ct-btn--sm mt-2">
+              Sign in
+            </Link>
+          </StateMessage>
+        ) : (
+          <StateMessage tone="danger" live="alert">
+            <p>{error}</p>
+            <Button variant="secondary" size="sm" className="mt-2" onClick={() => void load()}>
+              Try again
+            </Button>
+          </StateMessage>
+        )
       ) : null}
 
       {loading ? <PanelSkeleton label="Loading the internal overview" /> : null}
