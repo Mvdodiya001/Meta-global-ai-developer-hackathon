@@ -6,7 +6,8 @@ A version-aware legal verification engine, started at the Meta Global AI Develop
 
 ClauseTrace shows what follows from accepted premises and stated source versions. It does not assert that the law or premises are true, and it is not legal advice.
 
-**3-minute demo video:** not uploaded yet.
+**3-minute demo video:** https://youtu.be/dTUU6wS-3lI
+**Live demo:** https://meta-global-ai-developer-hackathon.vercel.app (sign in, then Review a clause — ask about clause 9.2)
 
 ## Why it's different
 
@@ -37,6 +38,81 @@ Backend (Python 3.12, FastAPI) as a modular monolith with explicit domain bounda
 Data (hybrid): SQLite for zero-setup local work, PostgreSQL via `CLAUSETRACE_DB_URL` for shared/production use — the same models run on both. Dependency traversal runs on **FalkorDB first** with an automatic fallback to the record database (the graph is a rebuildable projection of the relational record; the UI shows which served it). Retrieval is a small RAG: deterministic ranking over all provisions, concept expansion for statute-vs-lawyer wording, and an optional AI re-rank with per-hit reasons. Contract: `openapi/openapi.json`, currently **v22**, additive-only, with lawyer display labels beside every machine field. Frontend: React 18 + Vite + TypeScript, generated API types.
 
 Invariants: only the memory service decides FOLLOWS / RULED_OUT / UNKNOWN / REQUIRES_REVIEW / CONFLICTING. A stale finding is replaced only after a fresh `lookup_source` of the current version. Premises must be lawyer-confirmed or document-extracted; AI-inferred facts can never support a proof. Simulated amendments carry a SIMULATED badge.
+
+### System architecture
+
+```mermaid
+flowchart LR
+  subgraph UI[React UI — Vite + TypeScript]
+    S1[Review a clause]
+    S2[Law changes + impact]
+    S3[Control room]
+    S4[Matters · Upload · Compare · Dictate]
+  end
+  UI -->|OpenAPI v22| API[FastAPI — modular monolith]
+  API --> VER[verification<br/>agent loop + memory]
+  API --> LAW[law<br/>sources · rule cards · diff]
+  API --> IMP[impact<br/>amendment → stale → re-verify]
+  API --> INT[intake<br/>extraction · scans · dictation · PDF]
+  API --> EVI[evidence<br/>facts · trust · retrieval]
+  API --> MAT[matters + identity]
+  VER --> GW[LLM gateway<br/>live / replay / mock]
+  GW --> SPARK[Muse Spark<br/>Meta Model API]
+  GW --> CHAL[Challenger pass<br/>second Muse Spark call]
+  VER --> CHK[checker<br/>deterministic · no model · no network]
+  CHK --> MEM[(record database<br/>SQLite or Postgres · append-only)]
+  VER --> MEM
+  IMP --> MEM
+  IMP --> GRAPH[(FalkorDB<br/>dependency traversal)]
+  GRAPH -. rebuildable projection · falls back to SQL .-> MEM
+```
+
+### Flow A — asking whether a clause follows
+
+```mermaid
+sequenceDiagram
+  actor L as Lawyer
+  participant UI as React UI
+  participant AG as Agent (Muse Spark, 6 tools)
+  participant CK as Deterministic checker
+  participant MS as Memory service
+  L->>UI: Ask about clause 9.2 (as-of date)
+  UI->>AG: question → typed claim
+  AG->>AG: lookup_source · get_premise
+  AG->>CK: verify_derivation (draft proof)
+  CK-->>AG: report
+  AG->>MS: propose_finding (proof)
+  MS->>CK: re-verify proof + citation hashes
+  MS->>MS: status table → FOLLOWS / RULED_OUT / UNKNOWN / REQUIRES_REVIEW
+  MS-->>UI: finding with clause quote, section quote, premises
+  UI-->>L: "AI draft — not yet reviewed"
+```
+
+### Flow B — when the law changes
+
+```mermaid
+flowchart TD
+  A[New source version ingested<br/>labelled SIMULATED when simulated] --> B[Provision diff]
+  B --> C{Which findings depended<br/>on changed provisions?}
+  C -->|reverse dependency traversal<br/>FalkorDB, SQL fallback| D[Dependent findings marked STALE<br/>old rows kept as history]
+  C -->|unrelated change| E[Flags nothing]
+  D --> F[Re-verify queue]
+  F --> G[Agent must re-query the<br/>current version — fresh lookup_source]
+  G --> H[New finding supersedes the old<br/>audit entry with versions + times]
+```
+
+### Deployment
+
+```mermaid
+flowchart LR
+  B[Browser] --> V[Vercel<br/>React frontend]
+  V -->|HTTPS · CORS allow-list| C[Caddy<br/>Let's Encrypt via sslip.io]
+  C --> API[Docker: FastAPI :8000]
+  API --> PG[(Docker: Postgres)]
+  API --> FK[(Docker: FalkorDB)]
+```
+
+Data flow notes: the model can never write a finding's status, approve its own facts, or read another matter's data — every tool call is scoped by `matter_id`, and every citation is pinned to `(source_version_id, provision_id, span, sha256)` and checked verbatim against the stored snapshot.
 
 ## How Meta models are used
 
@@ -181,7 +257,7 @@ make check-backend    # ruff, mypy, pytest
 make check            # both (human)
 ```
 
-Latest runs (2026-11-04): backend pytest **341 passed** (+3 infrastructure-gated skips), frontend vitest **47/47**, production build passes, eval gate **5/5 with 0 premise violations** (also wired into CI). Contract is **v22**.
+Latest runs (2026-11-05): backend pytest **344 passed** (+3 infrastructure-gated skips), ruff and mypy clean; frontend vitest **53/53**, TypeScript and lint clean, production build passes; eval gate **5/5 with 0 premise violations** (also wired into CI). Contract is **v22**.
 
 ## Source provenance
 
